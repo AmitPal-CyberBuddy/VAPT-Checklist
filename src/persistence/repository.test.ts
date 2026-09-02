@@ -15,7 +15,7 @@ import {
   updateTestState,
 } from './repository';
 import { TEST_LIBRARY } from '../data/library';
-import { computeMetrics } from '../domain/metrics';
+
 
 /**
  * Full write-path integration test against an in-memory IndexedDB.
@@ -49,24 +49,31 @@ describe('repository', () => {
     expect(upload.state.applicabilitySource).toBe('auto');
   });
 
-  it('enforces the state machine through the write path', async () => {
+  it('refuses to store Tested without a result', async () => {
     const engagement = await createEngagement({ name: 'State machine' });
 
-    await updateTestState(engagement.id, 'AUTH-001', { status: 'Tested' });
-    let items = await getChecklist(engagement.id);
-    let auth = items.find((i) => i.definition.id === 'AUTH-001')!;
-    expect(auth.state.result).toBeNull();
-    expect(computeMetrics(items).counts.awaitingResult).toBe(1);
+    await expect(
+      updateTestState(engagement.id, 'AUTH-001', { status: 'Tested' }),
+    ).rejects.toThrow(/inconsistent/i);
 
-    await updateTestState(engagement.id, 'AUTH-001', { result: 'Vulnerable' });
-    items = await getChecklist(engagement.id);
-    auth = items.find((i) => i.definition.id === 'AUTH-001')!;
+    const items = await getChecklist(engagement.id);
+    const auth = items.find((i) => i.definition.id === 'AUTH-001')!;
+    expect(auth.state.status).toBe('Not Tested');
+    expect(auth.state.result).toBeNull();
+  });
+
+  it('records status and result atomically, and allows revision', async () => {
+    const engagement = await createEngagement({ name: 'Atomic' });
+
+    await updateTestState(engagement.id, 'AUTH-001', { status: 'Tested', result: 'Vulnerable' });
+    let auth = (await getChecklist(engagement.id)).find((i) => i.definition.id === 'AUTH-001')!;
+    expect(auth.state.status).toBe('Tested');
     expect(auth.state.result).toBe('Vulnerable');
     expect(auth.state.testedAt).toBeTruthy();
 
     await updateTestState(engagement.id, 'AUTH-001', { status: 'N/A' });
-    items = await getChecklist(engagement.id);
-    auth = items.find((i) => i.definition.id === 'AUTH-001')!;
+    auth = (await getChecklist(engagement.id)).find((i) => i.definition.id === 'AUTH-001')!;
+    expect(auth.state.status).toBe('N/A');
     expect(auth.state.result).toBeNull();
   });
 

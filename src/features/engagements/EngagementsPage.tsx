@@ -9,9 +9,14 @@ import {
   Modal,
   ProgressBar,
 } from '../../ui/primitives';
-import { IconCopy, IconPlus, IconSearch, IconShield, IconTrash } from '../../ui/icons';
+import { IconCopy, IconDownload, IconPlus, IconSearch, IconShield, IconTrash } from '../../ui/icons';
 import { useEngagementSummaries } from '../../hooks/useData';
-import { deleteEngagement, duplicateEngagement, setEngagementStatus } from '../../persistence/repository';
+import {
+  deleteEngagement,
+  duplicateEngagement,
+  getChecklist,
+  setEngagementStatus,
+} from '../../persistence/repository';
 import { toast } from '../../ui/toast';
 import type { Engagement } from '../../domain/types';
 
@@ -20,6 +25,7 @@ export default function EngagementsPage() {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [pendingDelete, setPendingDelete] = useState<Engagement | null>(null);
+  const [exporting, setExporting] = useState<string | null>(null);
 
   const filtered = (summaries ?? []).filter((s) => {
     const q = query.trim().toLowerCase();
@@ -36,6 +42,23 @@ export default function EngagementsPage() {
     await deleteEngagement(pendingDelete.id);
     toast.success('Engagement deleted', pendingDelete.name);
     setPendingDelete(null);
+  }
+
+  /** Download Excel without leaving the list. */
+  async function handleExcel(engagement: Engagement) {
+    setExporting(engagement.id);
+    try {
+      const [{ exportEngagementToExcel }, items] = await Promise.all([
+        import('../../export/excel'),
+        getChecklist(engagement.id),
+      ]);
+      const fileName = await exportEngagementToExcel(engagement, items);
+      toast.success('Workbook downloaded', fileName);
+    } catch (error) {
+      toast.error('Excel export failed', String(error));
+    } finally {
+      setExporting(null);
+    }
   }
 
   async function handleDuplicate(engagement: Engagement) {
@@ -164,6 +187,15 @@ export default function EngagementsPage() {
                   </span>
                 </div>
                 <div className="flex items-center gap-1">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    title="Download Excel"
+                    disabled={exporting === engagement.id}
+                    onClick={() => void handleExcel(engagement)}
+                  >
+                    <IconDownload size={14} />
+                  </Button>
                   <Button
                     size="sm"
                     variant="ghost"

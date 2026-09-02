@@ -5,16 +5,41 @@ import { IconAlert, IconDownload } from '../../ui/icons';
 import { useChecklist, useEngagement, useMetrics } from '../../hooks/useData';
 import { buildFileName } from '../../export/fileName';
 import { exportBackup } from '../../persistence/repository';
-import { incompleteItems } from '../../domain/metrics';
+import { completedOf } from '../../domain/metrics';
 import { toast } from '../../ui/toast';
 
 const SHEETS = [
-  { key: 'summary', name: 'Summary', description: 'Engagement identity, coverage metrics and a findings overview.', fixed: true },
-  { key: 'checklist', name: 'Checklist', description: 'Every applicable test with status, result, notes, description and guidance.', fixed: true },
-  { key: 'findings', name: 'Findings', description: 'Vulnerable tests only, ordered Critical → Low.' },
-  { key: 'notApplicable', name: 'Not Applicable', description: 'Excluded tests with the rule and reason — an audit trail of scope decisions.' },
-  { key: 'context', name: 'Application Context', description: 'Every recorded fact about the target application.' },
-  { key: 'coverage', name: 'Coverage', description: 'Per-category counts and completion percentages.' },
+  {
+    key: 'summary',
+    name: 'Engagement Summary',
+    description:
+      'Name, application URL and type, created/export dates, the six assessment statistics, overall progress and the full application context.',
+    fixed: true,
+  },
+  {
+    key: 'assessment',
+    name: 'Assessment',
+    description:
+      'Every applicable test: ID, vulnerability, category, subcategory, priority, status, result and notes — plus description, guidance and standards mapping.',
+    fixed: true,
+  },
+  {
+    key: 'vulnerable',
+    name: 'Vulnerable Tests',
+    description: 'Only Status = Tested and Result = Vulnerable, ordered Critical → Low.',
+    fixed: true,
+  },
+  {
+    key: 'notApplicable',
+    name: 'Not Applicable',
+    description:
+      'Excluded tests with the rule and reason — the audit trail for every scope decision.',
+  },
+  {
+    key: 'coverage',
+    name: 'Coverage',
+    description: 'Per-category counts and progress, with a total row.',
+  },
 ];
 
 export default function ExportPage() {
@@ -23,15 +48,12 @@ export default function ExportPage() {
   const items = useChecklist(engagementId);
   const metrics = useMetrics(items);
 
-  const [includeFindings, setIncludeFindings] = useState(true);
   const [includeNotApplicable, setIncludeNotApplicable] = useState(true);
-  const [includeContext, setIncludeContext] = useState(true);
   const [includeCoverage, setIncludeCoverage] = useState(true);
   const [busy, setBusy] = useState(false);
 
   if (!engagement || !items) return <Card className="text-sm text-ink-400">Loading…</Card>;
 
-  const awaiting = incompleteItems(items);
   const notTested = metrics.counts.notTested;
 
   async function handleExcel() {
@@ -41,12 +63,10 @@ export default function ExportPage() {
       // Lazy-loaded: the XLSX writer is only fetched when an export is requested.
       const { exportEngagementToExcel } = await import('../../export/excel');
       const fileName = await exportEngagementToExcel(engagement, items, {
-        includeFindings,
         includeNotApplicable,
-        includeContext,
         includeCoverage,
       });
-      toast.success('Workbook generated', fileName);
+      toast.success('Workbook downloaded', fileName);
     } catch (error) {
       toast.error('Excel export failed', String(error));
     } finally {
@@ -56,21 +76,23 @@ export default function ExportPage() {
 
   async function handleBackup() {
     if (!engagement) return;
-    const backup = await exportBackup(engagement.id);
-    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = buildFileName(engagement, 'json');
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success('JSON backup downloaded', 'Restore it from Data & Settings.');
+    try {
+      const backup = await exportBackup(engagement.id);
+      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = buildFileName(engagement, 'json');
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success('Engagement JSON downloaded', 'Restore it from Data & Settings → Import.');
+    } catch (error) {
+      toast.error('Backup failed', String(error));
+    }
   }
 
   const toggles = [
-    { key: 'findings', value: includeFindings, set: setIncludeFindings },
     { key: 'notApplicable', value: includeNotApplicable, set: setIncludeNotApplicable },
-    { key: 'context', value: includeContext, set: setIncludeContext },
     { key: 'coverage', value: includeCoverage, set: setIncludeCoverage },
   ] as const;
 
@@ -80,13 +102,12 @@ export default function ExportPage() {
         <Card className="space-y-4">
           <SectionHeading
             title="Excel export"
-            description="The workbook is generated in your browser from the same data the dashboard shows. Nothing is uploaded."
+            description="Generated in your browser from the same data the dashboard shows. Nothing is uploaded."
           />
 
           <div className="space-y-2">
             {SHEETS.map((sheet) => {
               const toggle = toggles.find((t) => t.key === sheet.key);
-              const enabled = sheet.fixed || toggle?.value;
               return (
                 <div
                   key={sheet.key}
@@ -99,18 +120,20 @@ export default function ExportPage() {
                     </p>
                     <p className="mt-0.5 text-xs text-ink-500">{sheet.description}</p>
                   </div>
-                  {toggle ? (
-                    <Toggle checked={toggle.value} onChange={toggle.set} />
-                  ) : (
-                    <Badge tone={enabled ? 'success' : 'neutral'}>On</Badge>
-                  )}
+                  {toggle && <Toggle checked={toggle.value} onChange={toggle.set} />}
                 </div>
               );
             })}
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-ink-800 pt-4">
-            <p className="font-mono text-xs text-ink-500">{buildFileName(engagement)}</p>
+            <div>
+              <p className="font-mono text-xs text-ink-400">{buildFileName(engagement)}</p>
+              <p className="mt-0.5 text-[11px] text-ink-600">
+                Frozen headers, filter dropdowns, tuned column widths, colour-coded priority and
+                result cells.
+              </p>
+            </div>
             <Button
               variant="primary"
               size="lg"
@@ -118,18 +141,22 @@ export default function ExportPage() {
               icon={<IconDownload size={16} />}
               onClick={() => void handleExcel()}
             >
-              {busy ? 'Generating…' : 'Export to Excel'}
+              {busy ? 'Generating…' : 'Download Excel'}
             </Button>
           </div>
         </Card>
 
         <Card className="space-y-3">
           <SectionHeading
-            title="JSON backup"
-            description="Engagement data lives only in this browser. Take a backup before clearing site data or moving machines."
+            title="Engagement JSON backup"
+            description="A complete, re-importable copy of this engagement: context, applicability overrides, statuses, results and notes. Engagement data lives only in this browser — take a backup before clearing site data or moving machines."
             actions={
-              <Button variant="subtle" icon={<IconDownload size={15} />} onClick={() => void handleBackup()}>
-                Download backup
+              <Button
+                variant="subtle"
+                icon={<IconDownload size={15} />}
+                onClick={() => void handleBackup()}
+              >
+                Export Engagement JSON
               </Button>
             }
           />
@@ -142,30 +169,30 @@ export default function ExportPage() {
           <div className="grid grid-cols-2 gap-2">
             <Stat label="Applicable" value={metrics.counts.applicable} />
             <Stat label="Excluded" value={metrics.counts.excluded} />
-            <Stat label="Findings" value={metrics.counts.vulnerable} tone={metrics.counts.vulnerable ? 'vuln' : 'neutral'} />
-            <Stat label="Completion" value={`${Math.round(metrics.completion * 100)}%`} tone="brand" />
+            <Stat
+              label="Vulnerable"
+              value={metrics.counts.vulnerable}
+              tone={metrics.counts.vulnerable ? 'vuln' : 'neutral'}
+            />
+            <Stat
+              label="Progress"
+              value={`${Math.round(metrics.completion * 100)}%`}
+              tone="brand"
+              hint={`${completedOf(metrics.counts)} completed`}
+            />
           </div>
         </Card>
 
-        {(awaiting.length > 0 || notTested > 0) && (
-          <Card className="space-y-3 border-amber-500/30 bg-amber-500/5">
+        {notTested > 0 && (
+          <Card className="space-y-2 border-amber-500/30 bg-amber-500/5">
             <div className="flex items-start gap-2">
               <IconAlert size={16} className="mt-0.5 shrink-0 text-amber-400" />
-              <div>
-                <p className="text-sm font-medium text-amber-300">Assessment is not complete</p>
-                <ul className="mt-2 space-y-1 text-xs text-ink-300">
-                  {awaiting.length > 0 && (
-                    <li>
-                      {awaiting.length} test{awaiting.length === 1 ? '' : 's'} marked Tested with no
-                      result recorded — they will export with a blank Result column.
-                    </li>
-                  )}
-                  {notTested > 0 && (
-                    <li>
-                      {notTested} applicable test{notTested === 1 ? '' : 's'} still Not Tested.
-                    </li>
-                  )}
-                </ul>
+              <div className="text-sm">
+                <p className="font-medium text-amber-300">Assessment is not complete</p>
+                <p className="mt-1 text-xs text-ink-300">
+                  {notTested} applicable test{notTested === 1 ? '' : 's'} still Not Tested. They are
+                  exported with an empty status so the gap is visible in the report.
+                </p>
               </div>
             </div>
           </Card>
@@ -173,10 +200,10 @@ export default function ExportPage() {
 
         <Card className="space-y-2 text-xs text-ink-400">
           <p className="text-sm font-medium text-ink-100">Export notes</p>
-          <p>Generated locally with a bundled XLSX writer — no server, no network request.</p>
+          <p>Produced locally with a bundled XLSX writer — no server, no network request.</p>
           <p>
-            Sheets are styled for direct client delivery: priority and result cells are colour coded
-            and the header row is frozen.
+            Every number in the workbook comes from the same calculation the dashboard uses, so the
+            two can never disagree.
           </p>
         </Card>
       </div>

@@ -9,6 +9,15 @@
  *   I2. status !== 'Tested'  ⇒ result === null
  *   I3. applicable === false ⇒ status is reset to 'Not Tested', result null
  *   I4. Any decision can be revised at any time (no terminal states).
+ *
+ * I1 + I2 give the two identities the product guarantees:
+ *
+ *   Total Applicable = Not Tested + Tested + N/A
+ *   Tested           = Vulnerable + Not Vulnerable
+ *
+ * `assertPersistable()` is the gate: the repository refuses to write a state
+ * that would break them, so an inconsistent row cannot reach IndexedDB — for
+ * example `status = N/A` with `result = Vulnerable` is unrepresentable.
  */
 
 import type { TestResult, TestState, TestStatus } from './types';
@@ -26,6 +35,15 @@ export interface ValidationIssue {
   message: string;
 }
 
+export class InvalidTestStateError extends Error {
+  readonly issues: ValidationIssue[];
+  constructor(issues: ValidationIssue[]) {
+    super(`Refusing to persist an inconsistent test state: ${issues.map((i) => i.message).join(' ')}`);
+    this.name = 'InvalidTestStateError';
+    this.issues = issues;
+  }
+}
+
 /** Returns issues that block a state from being considered complete/valid. */
 export function validateState(state: Pick<TestState, 'status' | 'result'>): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
@@ -36,6 +54,16 @@ export function validateState(state: Pick<TestState, 'status' | 'result'>): Vali
     issues.push({ field: 'result', message: 'A result may only be set when status is Tested.' });
   }
   return issues;
+}
+
+/**
+ * Throws unless the state satisfies every invariant. Called on the write path
+ * so that no code path — UI, bulk edit, backup import — can store a
+ * contradictory record.
+ */
+export function assertPersistable(state: Pick<TestState, 'status' | 'result'>): void {
+  const issues = validateState(state);
+  if (issues.length > 0) throw new InvalidTestStateError(issues);
 }
 
 /**
@@ -90,12 +118,16 @@ export function isOutstanding(state: TestState): boolean {
   return state.applicable && state.status === 'Not Tested';
 }
 
-/** Applicable + Tested but missing its mandatory result. */
-export function isIncomplete(state: TestState): boolean {
-  return state.applicable && state.status === 'Tested' && !state.result;
+/**
+ * Legacy detector: `Tested` with no result. Cannot be created any more, but a
+ * database written by an earlier build may still hold such rows, so the
+ * repository repairs them on open.
+ */
+export function isInconsistent(state: TestState): boolean {
+  return validateState(state).length > 0;
 }
 
-/** Counted as done for progress purposes: Tested (with result) or N/A. */
+/** Counted as completed for progress purposes: Tested or N/A. */
 export function isResolved(state: TestState): boolean {
   if (!state.applicable) return false;
   if (state.status === 'N/A') return true;

@@ -2,15 +2,78 @@ import { useEffect, useRef, useState } from 'react';
 import { Badge, Button, Card, Modal, SectionHeading, Stat } from '../../ui/primitives';
 import { IconAlert, IconDownload, IconTrash } from '../../ui/icons';
 import { DB_NAME, DB_VERSION, estimateUsage } from '../../persistence/db';
-import { clearAllData, exportBackup, importBackup, syncLibrary } from '../../persistence/repository';
+import {
+  clearAllData,
+  exportBackup,
+  importBackup,
+  inspectBackup,
+  syncLibrary,
+  type BackupInspection,
+} from '../../persistence/repository';
 import { useEngagements } from '../../hooks/useData';
 import { LIBRARY_VERSION, TEST_LIBRARY } from '../../data/library';
 import { toast } from '../../ui/toast';
+
+function ImportPreview({ inspection }: { inspection: BackupInspection }) {
+  if (!inspection.ok) {
+    return (
+      <div className="space-y-3">
+        <div className="flex items-start gap-2 rounded-lg border border-rose-500/30 bg-rose-500/5 p-3">
+          <IconAlert size={16} className="mt-0.5 shrink-0 text-rose-400" />
+          <p className="text-sm text-rose-300">
+            Nothing was imported and your existing engagements are untouched.
+          </p>
+        </div>
+        <ul className="max-h-56 space-y-1 overflow-y-auto rounded-lg border border-ink-800 p-3 text-xs text-ink-300">
+          {inspection.issues.map((issue, index) => (
+            <li key={index} className="flex gap-2">
+              <span className="text-rose-400">•</span>
+              {issue}
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-2 gap-2">
+        <Stat label="Engagements" value={inspection.engagements} tone="brand" />
+        <Stat label="Test states" value={inspection.testStates} />
+      </div>
+      <ul className="space-y-1 rounded-lg border border-ink-800 p-3 text-xs text-ink-300">
+        {inspection.names.map((name) => (
+          <li key={name} className="truncate">
+            {name}
+          </li>
+        ))}
+      </ul>
+      {inspection.warnings.length > 0 && (
+        <ul className="space-y-1 rounded-lg border border-amber-500/25 bg-amber-500/5 p-3 text-xs text-amber-300">
+          {inspection.warnings.map((warning, index) => (
+            <li key={index}>{warning}</li>
+          ))}
+        </ul>
+      )}
+      <p className="text-xs text-ink-500">
+        Imported engagements are added alongside what you already have. If an id collides it is
+        re-keyed, so nothing is overwritten.
+      </p>
+    </div>
+  );
+}
 
 export default function SettingsPage() {
   const engagements = useEngagements();
   const [usage, setUsage] = useState<{ usage: number; quota: number } | null>(null);
   const [confirmClear, setConfirmClear] = useState(false);
+  const [pendingImport, setPendingImport] = useState<{
+    inspection: BackupInspection;
+    data: unknown;
+    fileName: string;
+  } | null>(null);
+  const [importing, setImporting] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -29,13 +92,36 @@ export default function SettingsPage() {
     toast.success('Backup downloaded', `${backup.engagements.length} engagement(s).`);
   }
 
-  async function handleImport(file: File) {
+  /**
+   * Two steps on purpose: the file is parsed and fully validated first, and
+   * the tester confirms what will be added. Nothing is written until then, so
+   * a malformed file can never touch existing engagements.
+   */
+  async function handleFileChosen(file: File) {
+    let parsed: unknown;
     try {
-      const parsed = JSON.parse(await file.text());
-      const { engagements: count } = await importBackup(parsed);
-      toast.success('Backup restored', `${count} engagement(s) imported.`);
+      parsed = JSON.parse(await file.text());
+    } catch {
+      toast.error('Import failed', 'That file is not valid JSON.');
+      return;
+    }
+    setPendingImport({ inspection: inspectBackup(parsed), data: parsed, fileName: file.name });
+  }
+
+  async function confirmImport() {
+    if (!pendingImport?.inspection.ok) return;
+    setImporting(true);
+    try {
+      const { engagements: count, tests } = await importBackup(pendingImport.data);
+      toast.success(
+        'Backup restored',
+        `${count} engagement(s), ${tests} test state(s) imported.`,
+      );
+      setPendingImport(null);
     } catch (error) {
-      toast.error('Import failed', String(error));
+      toast.error('Import failed', error instanceof Error ? error.message : String(error));
+    } finally {
+      setImporting(false);
     }
   }
 
@@ -78,11 +164,15 @@ export default function SettingsPage() {
           description="A JSON backup contains every engagement, context and recorded result. Import merges into this browser; duplicate IDs are re-keyed rather than overwritten."
         />
         <div className="flex flex-wrap gap-2">
-          <Button variant="primary" icon={<IconDownload size={15} />} onClick={() => void handleBackupAll()}>
-            Download full backup
+          <Button
+            variant="primary"
+            icon={<IconDownload size={15} />}
+            onClick={() => void handleBackupAll()}
+          >
+            Export all engagements (JSON)
           </Button>
           <Button variant="secondary" onClick={() => fileRef.current?.click()}>
-            Import backup file
+            Import Engagement JSON
           </Button>
           <input
             ref={fileRef}
@@ -91,7 +181,7 @@ export default function SettingsPage() {
             className="hidden"
             onChange={(e) => {
               const file = e.target.files?.[0];
-              if (file) void handleImport(file);
+              if (file) void handleFileChosen(file);
               e.target.value = '';
             }}
           />
@@ -153,6 +243,28 @@ export default function SettingsPage() {
           }
         />
       </Card>
+
+      <Modal
+        open={pendingImport !== null}
+        onClose={() => setPendingImport(null)}
+        title={pendingImport?.inspection.ok ? 'Confirm import' : 'This backup was rejected'}
+        description={pendingImport?.fileName}
+        width="md"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setPendingImport(null)}>
+              {pendingImport?.inspection.ok ? 'Cancel' : 'Close'}
+            </Button>
+            {pendingImport?.inspection.ok && (
+              <Button variant="primary" disabled={importing} onClick={() => void confirmImport()}>
+                {importing ? 'Importing…' : 'Import'}
+              </Button>
+            )}
+          </>
+        }
+      >
+        {pendingImport && <ImportPreview inspection={pendingImport.inspection} />}
+      </Modal>
 
       <Modal
         open={confirmClear}

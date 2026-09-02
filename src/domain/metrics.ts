@@ -5,7 +5,7 @@
  * source of truth (definitions + states). No component counts on its own.
  */
 
-import { isFinding, isIncomplete, isResolved } from './executionState';
+import { isFinding, isResolved } from './executionState';
 import type { CategoryId, ChecklistItem, Priority, TestDefinition, TestState } from './types';
 import { PRIORITIES, PRIORITY_ORDER } from './types';
 import { CATEGORIES } from '../data/categories';
@@ -21,8 +21,6 @@ export interface CoverageCounts {
   na: number;
   vulnerable: number;
   notVulnerable: number;
-  /** Applicable + Tested but no result recorded yet. */
-  awaitingResult: number;
 }
 
 export interface GroupMetrics<K extends string = string> {
@@ -63,7 +61,6 @@ export function emptyCounts(): CoverageCounts {
     na: 0,
     vulnerable: 0,
     notVulnerable: 0,
-    awaitingResult: 0,
   };
 }
 
@@ -82,12 +79,31 @@ function accumulate(counts: CoverageCounts, state: TestState): void {
       counts.na += 1;
       break;
     case 'Tested':
-      counts.tested += 1;
-      if (state.result === 'Vulnerable') counts.vulnerable += 1;
-      else if (state.result === 'Not Vulnerable') counts.notVulnerable += 1;
-      if (isIncomplete(state)) counts.awaitingResult += 1;
+      // Defensive: `Tested` always carries a result (the repository refuses to
+      // write otherwise), but a row from an older build might not. Counting it
+      // as Not Tested keeps both identities exact no matter what is on disk:
+      //   applicable = notTested + tested + na
+      //   tested     = vulnerable + notVulnerable
+      if (state.result === 'Vulnerable') {
+        counts.tested += 1;
+        counts.vulnerable += 1;
+      } else if (state.result === 'Not Vulnerable') {
+        counts.tested += 1;
+        counts.notVulnerable += 1;
+      } else {
+        counts.notTested += 1;
+      }
       break;
   }
+}
+
+/** The identities the product guarantees. Exposed so tests can assert them. */
+export function countsAreConsistent(counts: CoverageCounts): boolean {
+  return (
+    counts.applicable === counts.notTested + counts.tested + counts.na &&
+    counts.tested === counts.vulnerable + counts.notVulnerable &&
+    counts.total === counts.applicable + counts.excluded
+  );
 }
 
 /** Completed = Tested + N/A. The one progress formula in the product. */
@@ -286,10 +302,6 @@ export function nextUpQueue(items: ChecklistItem[], limit = 8): ChecklistItem[] 
         a.definition.id.localeCompare(b.definition.id),
     )
     .slice(0, limit);
-}
-
-export function incompleteItems(items: ChecklistItem[]): ChecklistItem[] {
-  return items.filter((i) => isIncomplete(i.state));
 }
 
 export function resolvedCount(items: ChecklistItem[]): number {

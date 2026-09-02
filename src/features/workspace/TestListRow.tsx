@@ -33,7 +33,6 @@ export function TestListRow({
   uncertain: boolean;
 }) {
   const { definition: d, state: s } = item;
-  const needsResult = s.status === 'Tested' && !s.result;
 
   return (
     <div
@@ -84,7 +83,6 @@ export function TestListRow({
               <Badge tone={priorityTone(d.priority)} className="px-1 py-0 text-[10px]">
                 {d.priority}
               </Badge>
-              {needsResult && <span className="text-amber-400">result required</span>}
               {uncertain && s.applicable && <span className="text-amber-500/80">unconfirmed</span>}
               {!s.applicable && <span className="text-ink-600">excluded</span>}
               {s.notes.trim() && <span className="text-ink-600">note</span>}

@@ -121,7 +121,7 @@ Rules are **per test, not per category**: `FILE-001` keys on file upload, `CLI-0
 `FACT_IMPACT` (derived from the same rules) tells the tester how many tests each context question
 decides.
 
-## 7. Persistence
+## 7. Persistence and integrity
 
 - Database `vapt-checklist`, schema version 1, three tables (`engagements`, `testStates`,
   `appMeta`).
@@ -132,12 +132,28 @@ decides.
 - `libraryVersion` is stored on each engagement; **Data & Settings → Sync** adds states for tests
   introduced by a newer library without touching recorded work.
 - JSON backup/restore exists because browser storage is deletable by the user or the browser.
+  `inspectBackup()` validates an untrusted file completely — shape, enums, cross-references,
+  duplicate ids and the state-machine invariants — before the import transaction opens, and the
+  transaction only ever adds records.
+- `assertPersistable()` guards every write path, so the counting identities
+  (`applicable = notTested + tested + na`, `tested = vulnerable + notVulnerable`) hold for every row
+  on disk. `repairIntegrity()` fixes rows left by earlier builds. See
+  [ADR 0013](adr/0013-unrepresentable-inconsistent-states.md).
 
 ## 8. Export
 
-`export/excel.ts` is **dynamically imported** the moment the user clicks Export, so the XLSX writer
-(~78 kB) is not part of the initial download. It produces a six-sheet workbook — Summary, Checklist,
-Findings, Not Applicable, Application Context, Coverage — styled for direct client delivery.
+`export/excel.ts` is **dynamically imported** the moment the user clicks Download Excel, so the XLSX
+writer is not part of the initial download. `planWorkbook()` describes the sheets as data (name,
+rows, column widths, tabular or not), which makes the whole structure unit-testable without a
+browser; `exportEngagementToExcel()` renders that plan and triggers the download.
+
+Sheets: **Engagement Summary** (identity, dates, statistics, application context), **Assessment**
+(every applicable test), **Vulnerable Tests**, plus optional **Not Applicable** and **Coverage**.
+
+`export/xlsxPostProcess.ts` adds what the writer cannot: it unzips the generated workbook with
+`fflate`, splices `<autoFilter>` into the data worksheets and rezips. Best-effort — any failure
+returns the untouched, still-valid workbook. See
+[ADR 0014](adr/0014-workbook-structure-and-autofilter.md).
 
 ## 9. Routing and GitHub Pages
 
@@ -155,6 +171,8 @@ Tests cover the parts where correctness actually matters:
 | `data/library.test.ts` | Library integrity, naming rules, state machine, metrics |
 | `data/knowledge.test.ts` | Taxonomy, aliases, search, references, applicability explanation, conservative filtering |
 | `persistence/repository.test.ts` | Full write path against a fake IndexedDB |
+| `persistence/persistence.test.ts` | Refresh survival, engagement isolation, counting identities, backup validation |
+| `domain/workflow.test.ts` | Progress rule, high-value ranking, conditional context, status/result |
 | `export/excel.test.ts` | Workbook composition and cell shape |
 | `app/App.smoke.test.tsx` | The app mounts, routes resolve, live data renders |
 

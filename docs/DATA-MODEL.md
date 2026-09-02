@@ -108,14 +108,24 @@ Enforced centrally in `src/domain/executionState.ts` (`applyTransition`, `valida
 
 | # | Invariant |
 | --- | --- |
-| I1 | `status === 'Tested'` ⇒ a `result` is required for the test to count as resolved |
+| I1 | `status === 'Tested'` ⇒ `result !== null` |
 | I2 | `status !== 'Tested'` ⇒ `result === null` |
 | I3 | `applicable === false` ⇒ status resets to `Not Tested`, `result = null` |
 | I4 | No terminal states — any decision can be revised |
 | I5 | Applicability, status and result are three independent axes |
 
-A test that is `Tested` with no result yet is **not** an error — it is a valid intermediate state,
-surfaced as *Result required* in the UI and counted in `awaitingResult`.
+These give the two identities the product guarantees:
+
+```text
+Total Applicable = Not Tested + Tested + N/A
+Tested           = Vulnerable + Not Vulnerable
+```
+
+They are enforced by `assertPersistable()` on **every** write path — single edit, bulk edit and
+backup import — so an inconsistent row cannot reach IndexedDB. `Status = N/A` with
+`Result = Vulnerable` is unrepresentable. The workspace records status and result in one atomic
+transition, so `Tested` never exists without a result. See
+[ADR 0013](adr/0013-unrepresentable-inconsistent-states.md).
 
 ## 4. Applicability rules
 
@@ -184,9 +194,9 @@ completion      = completed / applicable
 vulnerableRate  = vulnerable / (vulnerable + notVulnerable)
 ```
 
-`awaitingResult` (Tested with no result yet) is a **data-quality signal**, not a second progress
-number: the workspace highlights it, the dashboard banners it and the export reports it, but there
-is only ever one definition of progress.
+`countsAreConsistent(counts)` states the identities and is asserted in the tests. `accumulate()` is
+additionally defensive: a `Tested` row with no result (only possible in a database written by an
+older build) is counted as Not Tested, so the identities hold whatever is on disk.
 
 Also derived: per-category and per-priority groups, findings by priority, outstanding by priority,
 manual-override count, last activity timestamp, the findings list and the **high-value queue**.
@@ -230,7 +240,18 @@ Backup format:
 }
 ```
 
-Import re-keys colliding engagement IDs instead of overwriting.
+`inspectBackup(data)` validates an untrusted file before anything is written and returns:
+
+| Field | Meaning |
+| --- | --- |
+| `ok` / `issues` | Fatal problems — the file is rejected and nothing is written |
+| `warnings` | Non-fatal notes (e.g. states for tests missing from this library, which are skipped) |
+| `engagements` / `testStates` / `names` | What would be imported, shown for confirmation |
+
+Checks cover the format marker and version, object shapes, enum values (`status`, `result`),
+timestamps, scope arrays, duplicate ids, states pointing at engagements not in the file, and the
+state-machine invariants. Import then runs in a single transaction and re-keys colliding engagement
+IDs instead of overwriting, so it can only ever add.
 
 ## 7. Excel export model
 

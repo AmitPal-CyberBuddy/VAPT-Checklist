@@ -12,10 +12,14 @@ import { LIBRARY_VERSION, TEST_LIBRARY, TEST_BY_ID } from '../data/library';
 import { suggestApplicability } from '../domain/applicability';
 import {
   applyTransition,
+  assertPersistable,
+  validateState,
   createInitialState,
+  isInconsistent,
   stateKey,
   type StateTransition,
 } from '../domain/executionState';
+import { TEST_STATUSES, TEST_RESULTS } from '../domain/types';
 import type { ApplicationContext } from '../domain/context';
 import type { ChecklistItem, Engagement, EngagementStatus, TestState } from '../domain/types';
 
@@ -130,6 +134,12 @@ export async function getChecklist(engagementId: string): Promise<ChecklistItem[
   return items;
 }
 
+/**
+ * The single write path for a test result.
+ * `assertPersistable` runs before the record touches IndexedDB, so an
+ * inconsistent combination (Tested without a result, N/A with a result) throws
+ * instead of being stored.
+ */
 export async function updateTestState(
   engagementId: string,
   testId: string,
@@ -140,9 +150,11 @@ export async function updateTestState(
   await db.transaction('rw', db.testStates, db.engagements, async () => {
     const current = await db.testStates.get(key);
     if (!current) return;
-    updated = applyTransition(current, change);
-    await db.testStates.put(updated);
-    await db.engagements.update(engagementId, { updatedAt: updated.updatedAt });
+    const next = applyTransition(current, change);
+    assertPersistable(next);
+    updated = next;
+    await db.testStates.put(next);
+    await db.engagements.update(engagementId, { updatedAt: next.updatedAt });
   });
   return updated;
 }
@@ -160,9 +172,30 @@ export async function bulkUpdateTestStates(
     const updates = current
       .filter((s): s is TestState => !!s)
       .map((s) => applyTransition(s, change, timestamp));
+    // Validate the whole batch first — a bulk edit is all-or-nothing.
+    updates.forEach(assertPersistable);
     await db.testStates.bulkPut(updates);
     await db.engagements.update(engagementId, { updatedAt: timestamp });
   });
+}
+
+/**
+ * Repairs rows written by an earlier build that allowed `Tested` with no
+ * result. Idempotent, cheap, and run when an engagement is opened.
+ */
+export async function repairIntegrity(engagementId: string): Promise<number> {
+  const broken = (await listStates(engagementId)).filter(isInconsistent);
+  if (broken.length === 0) return 0;
+  const timestamp = now();
+  const repaired = broken.map((state) => ({
+    ...state,
+    status: 'Not Tested' as const,
+    result: null,
+    updatedAt: timestamp,
+  }));
+  repaired.forEach(assertPersistable);
+  await db.testStates.bulkPut(repaired);
+  return repaired.length;
 }
 
 /* -------------------------------------------------- applicability re-evaluation */
@@ -298,32 +331,219 @@ export async function exportBackup(engagementId?: string): Promise<BackupFile> {
   };
 }
 
-export async function importBackup(file: BackupFile): Promise<{ engagements: number }> {
-  if (file?.format !== 'vapt-checklist-backup') {
-    throw new Error('Unrecognised backup file.');
+/* ------------------------------------------------------- backup validation */
+
+export class BackupValidationError extends Error {
+  readonly issues: string[];
+  constructor(issues: string[]) {
+    super(`Backup file rejected: ${issues[0]}`);
+    this.name = 'BackupValidationError';
+    this.issues = issues;
   }
+}
+
+export interface BackupInspection {
+  ok: boolean;
+  /** Fatal problems — the file is rejected. */
+  issues: string[];
+  /** Non-fatal notes; the import proceeds and drops the affected rows. */
+  warnings: string[];
+  engagements: number;
+  testStates: number;
+  /** States dropped because the test no longer exists in the bundled library. */
+  droppedStates: number;
+  libraryVersion?: string;
+  exportedAt?: string;
+  names: string[];
+}
+
+const isString = (v: unknown): v is string => typeof v === 'string';
+const isIsoish = (v: unknown): v is string => isString(v) && /^\d{4}-\d{2}-\d{2}/.test(v);
+
+/**
+ * Validates an untrusted file before a single byte reaches IndexedDB.
+ *
+ * Everything about a backup is attacker/accident-controlled: it is a JSON file
+ * a tester picked off disk. So the shape, the enums and the state-machine
+ * invariants are all re-checked here — an import can never introduce a record
+ * the app itself refuses to create.
+ */
+export function inspectBackup(data: unknown): BackupInspection {
+  const issues: string[] = [];
+  const warnings: string[] = [];
+  const empty: BackupInspection = {
+    ok: false,
+    issues,
+    warnings,
+    engagements: 0,
+    testStates: 0,
+    droppedStates: 0,
+    names: [],
+  };
+
+  if (typeof data !== 'object' || data === null) {
+    issues.push('The file does not contain a JSON object.');
+    return empty;
+  }
+  const file = data as Partial<BackupFile>;
+
+  if (file.format !== 'vapt-checklist-backup') {
+    issues.push('Not a VAPT Checklist backup (missing or wrong "format" marker).');
+    return empty;
+  }
+  if (file.version !== 1) {
+    issues.push(`Unsupported backup version: ${String(file.version)}. This build reads version 1.`);
+    return empty;
+  }
+  if (!Array.isArray(file.engagements) || !Array.isArray(file.testStates)) {
+    issues.push('The backup is missing its "engagements" or "testStates" array.');
+    return empty;
+  }
+  if (file.engagements.length === 0) {
+    issues.push('The backup contains no engagements.');
+    return empty;
+  }
+
+  const engagementIds = new Set<string>();
+  file.engagements.forEach((engagement, index) => {
+    const where = `Engagement #${index + 1}`;
+    if (!engagement || typeof engagement !== 'object') {
+      issues.push(`${where} is not an object.`);
+      return;
+    }
+    if (!isString(engagement.id) || engagement.id.trim() === '') {
+      issues.push(`${where} has no id.`);
+      return;
+    }
+    if (engagementIds.has(engagement.id)) issues.push(`${where} duplicates id ${engagement.id}.`);
+    engagementIds.add(engagement.id);
+
+    if (!isString(engagement.name) || engagement.name.trim() === '') {
+      issues.push(`${where} has no name.`);
+    }
+    if (!['Active', 'Completed', 'Archived'].includes(engagement.status as string)) {
+      issues.push(`${where} has an unknown status "${String(engagement.status)}".`);
+    }
+    if (typeof engagement.context !== 'object' || engagement.context === null) {
+      issues.push(`${where} has a malformed application context.`);
+    }
+    if (!Array.isArray(engagement.scope)) issues.push(`${where} has a malformed scope list.`);
+    if (!isIsoish(engagement.createdAt) || !isIsoish(engagement.updatedAt)) {
+      issues.push(`${where} has malformed timestamps.`);
+    }
+  });
+
+  let droppedStates = 0;
+  const seenStateKeys = new Set<string>();
+  file.testStates.forEach((state, index) => {
+    const where = `Test state #${index + 1}`;
+    if (!state || typeof state !== 'object') {
+      issues.push(`${where} is not an object.`);
+      return;
+    }
+    if (!isString(state.engagementId) || !engagementIds.has(state.engagementId)) {
+      issues.push(`${where} references an engagement that is not in the file.`);
+      return;
+    }
+    if (!isString(state.testId)) {
+      issues.push(`${where} has no test id.`);
+      return;
+    }
+    if (!TEST_BY_ID.has(state.testId)) {
+      droppedStates += 1;
+      return;
+    }
+    const key = stateKey(state.engagementId, state.testId);
+    if (seenStateKeys.has(key)) issues.push(`${where} duplicates ${state.testId}.`);
+    seenStateKeys.add(key);
+
+    if (!TEST_STATUSES.includes(state.status)) {
+      issues.push(`${where} (${state.testId}) has an unknown status "${String(state.status)}".`);
+    }
+    if (state.result !== null && !TEST_RESULTS.includes(state.result as never)) {
+      issues.push(`${where} (${state.testId}) has an unknown result "${String(state.result)}".`);
+    }
+    if (typeof state.applicable !== 'boolean') {
+      issues.push(`${where} (${state.testId}) has a malformed applicability flag.`);
+    }
+    if (typeof state.notes !== 'string') {
+      issues.push(`${where} (${state.testId}) has malformed notes.`);
+    }
+    // The imported record must satisfy the same state machine as a local one.
+    if (validateState(state as TestState).length > 0) {
+      issues.push(
+        `${where} (${state.testId}) is inconsistent: status "${String(state.status)}" with result "${String(state.result)}".`,
+      );
+    }
+  });
+
+  if (droppedStates > 0) {
+    warnings.push(
+      `${droppedStates} test state(s) reference tests that are not in library v${LIBRARY_VERSION} and will be skipped.`,
+    );
+  }
+  if (file.libraryVersion && file.libraryVersion !== LIBRARY_VERSION) {
+    warnings.push(
+      `Backup was taken on library v${file.libraryVersion}; this build ships v${LIBRARY_VERSION}. Missing tests will be seeded as Not Tested.`,
+    );
+  }
+
+  return {
+    ok: issues.length === 0,
+    issues: issues.slice(0, 12),
+    warnings,
+    engagements: file.engagements.length,
+    testStates: file.testStates.length - droppedStates,
+    droppedStates,
+    libraryVersion: file.libraryVersion,
+    exportedAt: file.exportedAt,
+    names: file.engagements.map((e) => (isString(e?.name) ? e.name : '(unnamed)')).slice(0, 8),
+  };
+}
+
+/**
+ * Imports a validated backup in one transaction. Colliding engagement IDs are
+ * re-keyed rather than overwritten, so an import can add to this browser but
+ * never damage what is already there.
+ */
+export async function importBackup(data: unknown): Promise<{ engagements: number; tests: number }> {
+  const inspection = inspectBackup(data);
+  if (!inspection.ok) throw new BackupValidationError(inspection.issues);
+
+  const file = data as BackupFile;
   const idMap = new Map<string, string>();
   const existing = new Set((await db.engagements.toArray()).map((e) => e.id));
 
-  const engagements = file.engagements.map((e) => {
-    const id = existing.has(e.id) ? nanoid(12) : e.id;
+  const engagements: Engagement[] = file.engagements.map((e) => {
+    const collides = existing.has(e.id);
+    const id = collides ? nanoid(12) : e.id;
     idMap.set(e.id, id);
-    return { ...e, id, name: existing.has(e.id) ? `${e.name} (imported)` : e.name };
+    return {
+      ...e,
+      id,
+      name: collides ? `${e.name} (imported)` : e.name,
+      scope: Array.isArray(e.scope) ? e.scope : [],
+      libraryVersion: e.libraryVersion ?? LIBRARY_VERSION,
+    };
   });
 
-  const testStates = file.testStates
-    .filter((s) => idMap.has(s.engagementId))
+  const testStates: TestState[] = file.testStates
+    .filter((s) => idMap.has(s.engagementId) && TEST_BY_ID.has(s.testId))
     .map((s) => {
       const engagementId = idMap.get(s.engagementId)!;
       return { ...s, engagementId, id: stateKey(engagementId, s.testId) };
     });
+  testStates.forEach(assertPersistable);
 
   await db.transaction('rw', db.engagements, db.testStates, async () => {
     await db.engagements.bulkPut(engagements);
     await db.testStates.bulkPut(testStates);
   });
 
-  return { engagements: engagements.length };
+  // Seed any tests the backup predates, so the engagement is complete.
+  for (const engagement of engagements) await syncLibrary(engagement.id);
+
+  return { engagements: engagements.length, tests: testStates.length };
 }
 
 export async function clearAllData(): Promise<void> {

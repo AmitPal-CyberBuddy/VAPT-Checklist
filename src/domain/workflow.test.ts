@@ -196,10 +196,11 @@ describe('status and result interaction', () => {
     expect(base.result).toBeNull();
   });
 
-  it('surfaces Tested-without-result so the tester is prompted', () => {
+  it('treats a resultless Tested row as not tested', () => {
     const tested = applyTransition(base, { status: 'Tested' });
     const m = computeMetrics([{ definition: TEST_BY_ID.get('AUTH-001')!, state: tested }]);
-    expect(m.counts.awaitingResult).toBe(1);
+    expect(m.counts.tested).toBe(0);
+    expect(m.counts.notTested).toBe(1);
   });
 
   it('requires no result for N/A', () => {
@@ -207,7 +208,6 @@ describe('status and result interaction', () => {
     expect(na.result).toBeNull();
     const m = computeMetrics([{ definition: TEST_BY_ID.get('AUTH-001')!, state: na }]);
     expect(m.counts.na).toBe(1);
-    expect(m.counts.awaitingResult).toBe(0);
   });
 
   it('lets the tester change the decision later', () => {

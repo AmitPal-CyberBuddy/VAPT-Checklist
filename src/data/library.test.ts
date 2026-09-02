@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { LIBRARY_VERSION, TEST_LIBRARY, validateLibrary } from './library';
 import { suggestApplicability } from '../domain/applicability';
 import { applyTransition, createInitialState, validateState } from '../domain/executionState';
-import { computeMetrics } from '../domain/metrics';
+import { computeMetrics, countsAreConsistent } from '../domain/metrics';
 import type { ChecklistItem } from '../domain/types';
 
 describe('test library', () => {
@@ -127,11 +127,14 @@ describe('metrics', () => {
     expect(m.completion).toBeCloseTo(2 / 3);
   });
 
-  it('still flags Tested rows with no result as a data-quality issue', () => {
+  it('never counts a resultless Tested row as tested', () => {
+    // Unreachable through the app (the repository refuses to write it) — this
+    // guards the metrics against legacy rows on disk.
     const items = [item('AUTH-001', (s) => applyTransition(s, { status: 'Tested' }))];
     const m = computeMetrics(items);
-    // Counted as completed (status is Tested) but surfaced for follow-up.
-    expect(m.completion).toBe(1);
-    expect(m.counts.awaitingResult).toBe(1);
+    expect(m.counts.tested).toBe(0);
+    expect(m.counts.notTested).toBe(1);
+    expect(m.completion).toBe(0);
+    expect(countsAreConsistent(m.counts)).toBe(true);
   });
 });

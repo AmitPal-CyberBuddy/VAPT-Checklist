@@ -8,9 +8,9 @@ import {
   Stat,
   priorityTone,
 } from '../../ui/primitives';
-import { IconAlert, IconCheck, IconExternal, IconTarget } from '../../ui/icons';
+import { IconCheck, IconExternal, IconTarget } from '../../ui/icons';
 import { useChecklist, useEngagement, useMetrics } from '../../hooks/useData';
-import { collectFindings, highValueTests, incompleteItems } from '../../domain/metrics';
+import { collectFindings, highValueTests } from '../../domain/metrics';
 import { contextCompleteness } from '../context/ContextForm';
 import { FACT_BY_KEY } from '../../domain/context';
 import { suggestApplicability } from '../../domain/applicability';
@@ -34,7 +34,6 @@ export default function DashboardPage() {
   const completed = c.tested + c.na;
   const findings = collectFindings(items);
   const highValue = highValueTests(items, engagement.context, 6);
-  const incomplete = incompleteItems(items);
   const completeness = contextCompleteness(engagement.context);
   const uncertain = items.filter(
     (i) => i.state.applicable && suggestApplicability(i.definition, engagement.context).uncertain,
@@ -125,31 +124,10 @@ export default function DashboardPage() {
         <Stat label="Not vulnerable" value={c.notVulnerable} tone="safe" />
       </div>
 
-      {/* Attention banners ------------------------------------------------ */}
-      {(incomplete.length > 0 || completeness.ratio < 0.5) && (
+      {/* Attention banner -------------------------------------------------- */}
+      {completeness.ratio < 0.5 && (
         <div className="grid gap-3 md:grid-cols-2">
-          {incomplete.length > 0 && (
-            <Card className="flex items-start gap-3 border-amber-500/30 bg-amber-500/5">
-              <IconAlert size={18} className="mt-0.5 shrink-0 text-amber-400" />
-              <div className="text-sm">
-                <p className="font-medium text-amber-300">
-                  {incomplete.length} test{incomplete.length === 1 ? '' : 's'} marked Tested without
-                  a result
-                </p>
-                <p className="mt-1 text-ink-400">
-                  Record Vulnerable / Not Vulnerable so the finding count is accurate.{' '}
-                  <Link
-                    to={`/e/${engagementId}/workspace?view=awaiting`}
-                    className="text-brand-400 hover:underline"
-                  >
-                    Open them →
-                  </Link>
-                </p>
-              </div>
-            </Card>
-          )}
-          {completeness.ratio < 0.5 && (
-            <Card className="flex items-start gap-3 border-brand-500/25 bg-brand-500/5">
+          <Card className="flex items-start gap-3 border-brand-500/25 bg-brand-500/5">
               <IconTarget size={18} className="mt-0.5 shrink-0 text-brand-400" />
               <div className="text-sm">
                 <p className="font-medium text-brand-400">
@@ -161,9 +139,8 @@ export default function DashboardPage() {
                     Refine the context →
                   </Link>
                 </p>
-              </div>
-            </Card>
-          )}
+            </div>
+          </Card>
         </div>
       )}
 

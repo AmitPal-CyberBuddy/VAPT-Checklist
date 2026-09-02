@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import clsx from 'clsx';
 import { Badge, Button, SegmentedControl, Textarea, priorityTone } from '../../ui/primitives';
 import { IconAlert, IconChevron, IconExternal } from '../../ui/icons';
@@ -69,30 +69,68 @@ export function TestDetailPanel({
 }) {
   const { definition: d, state: s } = item;
   const [notes, setNotes] = useState(s.notes);
+  /**
+   * "Tested" is never written on its own — the store refuses a Tested row with
+   * no result. Choosing Tested therefore parks the intent here until the
+   * tester picks Vulnerable / Not Vulnerable, which is written as one atomic
+   * transition. That keeps `Tested = Vulnerable + Not Vulnerable` true at all
+   * times, on screen and on disk.
+   */
+  const [pendingTested, setPendingTested] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pending = useRef<string | null>(null);
 
   useEffect(() => {
     setNotes(s.notes);
   }, [s.id, s.notes]);
 
-  // Flush a pending debounce when switching tests so nothing is lost.
-  useEffect(
-    () => () => {
-      if (timer.current) clearTimeout(timer.current);
-    },
-    [],
-  );
+  useEffect(() => {
+    setPendingTested(false);
+  }, [s.id, s.status]);
+
+  const flushNotes = useCallback(() => {
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = null;
+    const value = pending.current;
+    pending.current = null;
+    if (value !== null) void updateTestState(engagementId, d.id, { notes: value });
+  }, [engagementId, d.id]);
+
+  // Never lose a half-typed note: flush on unmount, tab hide and page unload.
+  useEffect(() => {
+    const onHide = () => flushNotes();
+    window.addEventListener('pagehide', onHide);
+    document.addEventListener('visibilitychange', onHide);
+    return () => {
+      window.removeEventListener('pagehide', onHide);
+      document.removeEventListener('visibilitychange', onHide);
+      flushNotes();
+    };
+  }, [flushNotes]);
 
   function saveNotes(value: string) {
     setNotes(value);
+    pending.current = value;
     if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(() => {
-      void updateTestState(engagementId, d.id, { notes: value });
-    }, 350);
+    timer.current = setTimeout(flushNotes, 350);
+  }
+
+  function chooseStatus(status: TestStatus) {
+    if (status === 'Tested' && !s.result) {
+      setPendingTested(true);
+      return;
+    }
+    setPendingTested(false);
+    void updateTestState(engagementId, d.id, { status });
+  }
+
+  function chooseResult(result: TestResult) {
+    setPendingTested(false);
+    void updateTestState(engagementId, d.id, { status: 'Tested', result });
   }
 
   const suggestion = suggestApplicability(d, context);
-  const needsResult = s.status === 'Tested' && !s.result;
+  const awaitingChoice = pendingTested && s.status !== 'Tested';
   const naWithoutReason = s.status === 'N/A' && !notes.trim();
 
   return (
@@ -132,43 +170,43 @@ export function TestDetailPanel({
           <div className="flex items-center gap-2">
             <span className="text-[11px] tracking-wider text-ink-500 uppercase">Status</span>
             <SegmentedControl
-              value={s.status}
+              value={awaitingChoice ? 'Tested' : s.status}
               options={STATUS_OPTIONS}
               disabled={!s.applicable}
-              onChange={(status) => void updateTestState(engagementId, d.id, { status })}
+              onChange={chooseStatus}
             />
           </div>
 
           <div
             className={clsx(
               'flex items-center gap-2 rounded-lg transition-all',
-              needsResult && 'ring-2 ring-amber-500/60 ring-offset-2 ring-offset-ink-900',
+              awaitingChoice && 'ring-2 ring-amber-500/70 ring-offset-2 ring-offset-ink-900',
             )}
           >
             <span className="text-[11px] tracking-wider text-ink-500 uppercase">Result</span>
             <SegmentedControl
               value={s.result}
               options={RESULT_OPTIONS}
-              disabled={s.status !== 'Tested'}
-              onChange={(result) => void updateTestState(engagementId, d.id, { result })}
+              disabled={s.status !== 'Tested' && !awaitingChoice}
+              onChange={chooseResult}
             />
           </div>
 
           <Button
             size="sm"
-            variant={needsResult ? 'subtle' : 'primary'}
+            variant={awaitingChoice ? 'subtle' : 'primary'}
             className="ml-auto"
             onClick={onNextUntested}
-            title="Jump to the next Not Tested item (n̶ → Enter)"
+            title="Jump to the next Not Tested item (Enter)"
           >
             Next untested →
           </Button>
         </div>
 
-        {needsResult && (
+        {awaitingChoice && (
           <p className="flex items-center gap-1.5 text-xs text-amber-400">
-            <IconAlert size={13} /> Select a result — “Tested” only counts once you record
-            Vulnerable or Not Vulnerable.
+            <IconAlert size={13} /> Choose Vulnerable or Not Vulnerable — “Tested” is only recorded
+            together with its result.
           </p>
         )}
       </div>

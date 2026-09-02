@@ -15,7 +15,7 @@ import { PRIORITIES, PRIORITY_ORDER, type CategoryId, type ChecklistItem } from 
 import { toast } from '../../ui/toast';
 
 type ScopeFilter = 'applicable' | 'excluded' | 'all' | 'manual' | 'unconfirmed';
-type StatusFilter = 'all' | 'Not Tested' | 'Tested' | 'N/A' | 'awaiting';
+type StatusFilter = 'all' | 'Not Tested' | 'Tested' | 'N/A';
 type ResultFilter = 'all' | 'Vulnerable' | 'Not Vulnerable';
 type SortBy = 'priority' | 'id' | 'name' | 'status' | 'recent';
 
@@ -46,7 +46,6 @@ export default function WorkspacePage() {
   const [query, setQuery] = useState('');
   const [scope, setScope] = useState<ScopeFilter>('applicable');
   const [status, setStatus] = useState<StatusFilter>(() => {
-    if (params.get('view') === 'awaiting') return 'awaiting';
     const requested = params.get('status');
     return requested === 'Not Tested' || requested === 'Tested' || requested === 'N/A'
       ? requested
@@ -96,8 +95,7 @@ export default function WorkspacePage() {
       if (scope === 'excluded' && s.applicable) return false;
       if (scope === 'manual' && s.applicabilitySource !== 'manual') return false;
       if (scope === 'unconfirmed' && !(s.applicable && uncertainIds.has(d.id))) return false;
-      if (status === 'awaiting' && !(s.applicable && s.status === 'Tested' && !s.result)) return false;
-      if (status !== 'all' && status !== 'awaiting' && s.status !== status) return false;
+      if (status !== 'all' && s.status !== status) return false;
       if (result !== 'all' && s.result !== result) return false;
       if (category !== 'all' && d.category !== category) return false;
       if (subcategory !== 'all' && d.subcategory !== subcategory) return false;
@@ -225,19 +223,31 @@ export default function WorkspacePage() {
           if (current) void updateTestState(engagementId, current.definition.id, { status: 'Not Tested' });
           break;
         case '2':
-          if (current) void updateTestState(engagementId, current.definition.id, { status: 'Tested' });
+          // Tested needs a result; pressing 2 focuses the choice rather than
+          // writing a half-recorded row. v / b complete it.
+          if (current && current.state.result) {
+            void updateTestState(engagementId, current.definition.id, { status: 'Tested' });
+          } else if (current) {
+            toast.info('Choose a result', 'Press v for Vulnerable or b for Not Vulnerable.');
+          }
           break;
         case '3':
           if (current) void updateTestState(engagementId, current.definition.id, { status: 'N/A' });
           break;
         case 'v':
-          if (current?.state.status === 'Tested') {
-            void updateTestState(engagementId, current.definition.id, { result: 'Vulnerable' });
+          if (current?.state.applicable) {
+            void updateTestState(engagementId, current.definition.id, {
+              status: 'Tested',
+              result: 'Vulnerable',
+            });
           }
           break;
         case 'b':
-          if (current?.state.status === 'Tested') {
-            void updateTestState(engagementId, current.definition.id, { result: 'Not Vulnerable' });
+          if (current?.state.applicable) {
+            void updateTestState(engagementId, current.definition.id, {
+              status: 'Tested',
+              result: 'Not Vulnerable',
+            });
           }
           break;
         case 'e':
@@ -320,7 +330,6 @@ export default function WorkspacePage() {
             <option value="Not Tested">Not Tested</option>
             <option value="Tested">Tested</option>
             <option value="N/A">N/A</option>
-            <option value="awaiting">Awaiting result</option>
           </Select>
           <Select value={result} onChange={(e) => setResult(e.target.value as ResultFilter)} className="w-36">
             <option value="all">Any result</option>

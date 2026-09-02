@@ -53,7 +53,7 @@ tracker · a client collaboration portal · a Burp Suite replacement · a scanne
 | **Result** | `Vulnerable` / `Not Vulnerable` — required only when status is `Tested` | Per engagement per test |
 | **Notes** | Free text observations | Per engagement per test |
 
-### Progress
+### Progress and integrity
 
 ```text
 Completed = Tested + N/A
@@ -62,6 +62,18 @@ Progress  = Completed / Total Applicable Tests
 
 One formula, defined once in `src/domain/metrics.ts`, used by the engagement list, the dashboard,
 every category and priority bar, and the Excel export.
+
+Two identities always hold — on screen, in the export and in the database:
+
+```text
+Total Applicable = Not Tested + Tested + N/A
+Tested           = Vulnerable + Not Vulnerable
+```
+
+They hold because inconsistent states are **unrepresentable**: status and result are written in a
+single atomic transition, and the repository refuses any record that would break an invariant. A
+row with `Status = N/A` and `Result = Vulnerable` cannot be created by the UI, by a bulk edit, or by
+importing a hand-edited backup file.
 
 Global test definitions and engagement state are never mixed. See
 [`docs/DATA-MODEL.md`](docs/DATA-MODEL.md).
@@ -259,12 +271,43 @@ You can also serve `dist/` from any static host, or open it from disk.
 
 ---
 
-## Data, privacy and backups
+## Persistence
 
-- Everything is stored in **IndexedDB in your browser** (`vapt-checklist` database).
-- Nothing is transmitted anywhere — there is no server to transmit to.
-- Clearing site data deletes your engagements. Use **Data & Settings → Download full backup** for a
-  portable JSON snapshot, and **Export** for the Excel deliverable.
+Everything is stored in **IndexedDB** (`vapt-checklist`) via Dexie — engagement details, application
+context, applicability overrides, statuses, results and notes. There is no server to transmit to and
+nothing is held only in memory, so a refresh, a crash or a closed tab never costs recorded work.
+Notes are debounced but flushed on tab hide, page unload and when you move to another test.
+
+Engagements are fully independent: each has its own context, its own applicable set, its own
+statuses, results, notes and metrics. Nothing is shared but the immutable test library.
+
+## Excel export
+
+**Download Excel** from any engagement card, or from the engagement's Export tab.
+
+| Sheet | Contents |
+| --- | --- |
+| **Engagement Summary** | Name, application URL and type, client, tester, created & export dates, the six assessment statistics, overall progress, findings by priority, and the full application context |
+| **Assessment** | Every applicable test — Test ID, Vulnerability Name, Category, Subcategory, Priority, Status, Result, Notes, plus description, guidance, aliases, applicability reasoning and OWASP/CWE |
+| **Vulnerable Tests** | Only `Status = Tested` and `Result = Vulnerable`, ordered Critical → Low |
+| **Not Applicable** *(optional)* | Excluded tests with the rule and reason — the audit trail for scope decisions |
+| **Coverage** *(optional)* | Per-category counts and progress, with a total row |
+
+Frozen header rows, frozen ID/name columns, filter dropdowns on every data sheet, tuned column
+widths and colour-coded priority and result cells. Generated in the browser with a bundled XLSX
+writer — no server, no upload — from the same data the dashboard renders.
+
+## Backup and restore
+
+- **Export Engagement JSON** (Export tab) — one engagement, complete and re-importable.
+- **Export all engagements** / **Import Engagement JSON** (Data & Settings).
+
+Imports are validated *before* anything is written: file shape, enum values, timestamps,
+cross-references, duplicate ids and the state-machine invariants. You get a report of what will be
+added and any warnings, and confirm before it lands. A rejected file changes nothing, and a
+colliding engagement id is re-keyed rather than overwritten — an import can only ever add.
+
+Clearing site data deletes your engagements, so take a backup before you do.
 
 ---
 

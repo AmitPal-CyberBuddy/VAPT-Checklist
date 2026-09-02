@@ -1,8 +1,10 @@
+import { useEffect, useRef } from 'react';
 import { NavLink, Outlet, useParams } from 'react-router-dom';
 import clsx from 'clsx';
 import { Badge, Card, ProgressBar, Select } from '../../ui/primitives';
 import { useChecklist, useEngagement, useMetrics } from '../../hooks/useData';
-import { setEngagementStatus } from '../../persistence/repository';
+import { repairIntegrity, setEngagementStatus } from '../../persistence/repository';
+import { toast } from '../../ui/toast';
 import { FACT_BY_KEY } from '../../domain/context';
 import type { EngagementStatus } from '../../domain/types';
 
@@ -18,6 +20,23 @@ export default function EngagementLayout() {
   const engagement = useEngagement(engagementId);
   const items = useChecklist(engagementId);
   const metrics = useMetrics(items);
+  const repaired = useRef<string | null>(null);
+
+  // A database written by an older build could hold `Tested` rows with no
+  // result. Repair them once per engagement so the stored data always
+  // satisfies the invariants the app now guarantees.
+  useEffect(() => {
+    if (!engagementId || repaired.current === engagementId) return;
+    repaired.current = engagementId;
+    void repairIntegrity(engagementId).then((count) => {
+      if (count > 0) {
+        toast.info(
+          `${count} incomplete record${count === 1 ? '' : 's'} reset`,
+          'They were marked Tested without a result and are now Not Tested.',
+        );
+      }
+    });
+  }, [engagementId]);
 
   if (engagement === undefined) {
     return <Card className="text-sm text-ink-400">Loading engagement…</Card>;
@@ -101,9 +120,6 @@ export default function EngagementLayout() {
           <Badge tone="safe">{c.notVulnerable} not vulnerable</Badge>
           <Badge tone="vulnerable">{c.vulnerable} vulnerable</Badge>
           <Badge tone="na">{c.na} N/A</Badge>
-          {c.awaitingResult > 0 && (
-            <Badge tone="warn">{c.awaitingResult} tested without a result</Badge>
-          )}
           <span className="ml-auto text-[11px] text-ink-600">
             {c.excluded} tests excluded from this engagement
           </span>
