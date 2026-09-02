@@ -16,15 +16,20 @@ import { IconCheck, IconExternal, IconList, IconTarget } from '../../ui/icons';
 import { useChecklist, useEngagement, useMetrics } from '../../hooks/useData';
 import { collectFindings, highValueTests } from '../../domain/metrics';
 import { contextCompleteness } from '../context/ContextForm';
-import { FACT_BY_KEY } from '../../domain/context';
+import { effectiveAssetTypes, effectiveContext, FACT_BY_KEY } from '../../domain/context';
 import { suggestApplicability } from '../../domain/applicability';
 import { safeExternalUrl } from '../../domain/untrusted';
 import type { Priority } from '../../domain/types';
+import {
+  applicationTypeLabel as applicationTypeName,
+  type ApplicationTypeId,
+} from '../../domain/applicationType';
+import { supportLevel } from '../../data/typeCoverage';
 
-function applicationTypeLabel(values: string[] | undefined): string {
-  if (!values || values.length === 0) return 'Not recorded';
+function surfaceLabel(engagement: { applicationType: ApplicationTypeId; context: object }): string {
   const options = FACT_BY_KEY.assetTypes.options ?? [];
-  return values.map((v) => options.find((o) => o.value === v)?.label ?? v).join(' · ');
+  const surfaces = effectiveAssetTypes(engagement.applicationType, engagement.context as never);
+  return surfaces.map((v) => options.find((o) => o.value === v)?.label ?? v).join(' · ');
 }
 
 /**
@@ -51,10 +56,11 @@ export default function DashboardPage() {
   const c = metrics.counts;
   const completed = c.tested + c.na;
   const findings = collectFindings(items);
-  const highValue = highValueTests(items, engagement.context, 6);
-  const completeness = contextCompleteness(engagement.context);
+  const resolved = effectiveContext(engagement);
+  const highValue = highValueTests(items, resolved, 6);
+  const completeness = contextCompleteness(engagement.context, engagement.applicationType);
   const unconfirmed = items.filter(
-    (i) => i.state.applicable && suggestApplicability(i.definition, engagement.context).uncertain,
+    (i) => i.state.applicable && suggestApplicability(i.definition, resolved).uncertain,
   );
   const safeUrl = safeExternalUrl(engagement.applicationUrl);
   const findingsByPriority = (['Critical', 'High', 'Medium', 'Low'] as Priority[]).filter(
@@ -101,7 +107,19 @@ export default function DashboardPage() {
             <div className="min-w-0">
               <dt className="text-micro tracking-wider text-ink-400 uppercase">Application type</dt>
               <dd className="mt-0.5 text-sm text-ink-200">
-                {applicationTypeLabel(engagement.context.assetTypes as string[] | undefined)}
+                <span className="flex flex-wrap items-center gap-1.5">
+                  {applicationTypeName(engagement.applicationType)}
+                  {supportLevel(engagement.applicationType) === 'limited' && (
+                    <Badge tone="warn" glyph="◐" title="Coverage for this domain is limited">
+                      Limited
+                    </Badge>
+                  )}
+                </span>
+                {surfaceLabel(engagement) !== applicationTypeName(engagement.applicationType) && (
+                  <span className="mt-0.5 block text-micro text-ink-400">
+                    Surfaces: {surfaceLabel(engagement)}
+                  </span>
+                )}
               </dd>
             </div>
           </dl>

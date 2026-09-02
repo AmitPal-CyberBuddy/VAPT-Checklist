@@ -24,7 +24,7 @@ export interface AppMeta {
 }
 
 export const DB_NAME = 'vapt-checklist';
-export const DB_VERSION = 1;
+export const DB_VERSION = 2;
 
 export class VaptDatabase extends Dexie {
   engagements!: Table<Engagement, string>;
@@ -38,6 +38,31 @@ export class VaptDatabase extends Dexie {
       testStates: 'id, engagementId, testId, [engagementId+testId], status, applicable',
       appMeta: 'key',
     });
+
+    /*
+     * v2 — application type became a first-class engagement field.
+     * Engagements created before it derive their type from the first asset
+     * type they recorded; the remainder become additional surfaces, so the
+     * derived asset list matches what the engagement had before.
+     */
+    this.version(2)
+      .stores({
+        engagements: 'id, name, status, updatedAt, createdAt, applicationType',
+        testStates: 'id, engagementId, testId, [engagementId+testId], status, applicable',
+        appMeta: 'key',
+      })
+      .upgrade((tx) =>
+        tx
+          .table('engagements')
+          .toCollection()
+          .modify((engagement: Engagement) => {
+            if (engagement.applicationType) return;
+            const recorded = (engagement.context?.assetTypes as string[] | undefined) ?? [];
+            engagement.applicationType = (recorded[0] as Engagement['applicationType']) ?? 'web-app';
+            const extra = recorded.slice(1);
+            if (extra.length > 0) engagement.context.additionalSurfaces = extra;
+          }),
+      );
   }
 }
 

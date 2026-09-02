@@ -7,7 +7,7 @@ import { repairIntegrity, setEngagementStatus } from '../../persistence/reposito
 import { toast } from '../../ui/toast';
 import { EmptyState, LinkButton } from '../../ui/primitives';
 import { IconAlert } from '../../ui/icons';
-import { FACT_BY_KEY } from '../../domain/context';
+import { effectiveAssetTypes, FACT_BY_KEY } from '../../domain/context';
 import { safeExternalUrl } from '../../domain/untrusted';
 import type { EngagementStatus } from '../../domain/types';
 
@@ -56,7 +56,7 @@ export default function EngagementLayout() {
   const c = metrics.counts;
   const safeUrl = safeExternalUrl(engagement.applicationUrl);
   const typeOptions = FACT_BY_KEY.assetTypes.options ?? [];
-  const applicationType = ((engagement.context.assetTypes as string[] | undefined) ?? [])
+  const applicationType = effectiveAssetTypes(engagement.applicationType, engagement.context)
     .map((v) => typeOptions.find((o) => o.value === v)?.label ?? v)
     .join(' · ');
 

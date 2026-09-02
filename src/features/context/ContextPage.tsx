@@ -39,7 +39,7 @@ export default function ContextPage() {
     [draft, engagement],
   );
 
-  const completeness = contextCompleteness(draft);
+  const completeness = contextCompleteness(draft, engagement?.applicationType);
 
   function setFact(key: ContextFactKey, value: boolean | string | string[] | undefined) {
     setDraft((c) => {
@@ -110,7 +110,7 @@ export default function ContextPage() {
         </InlineAlert>
       )}
 
-      <ContextForm context={draft} onChange={setFact} />
+      <ContextForm context={draft} onChange={setFact} applicationType={engagement.applicationType} />
 
       <Modal
         open={diffs !== null}

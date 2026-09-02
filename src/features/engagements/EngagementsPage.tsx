@@ -21,6 +21,7 @@ import {
 } from '../../persistence/repository';
 import { toast } from '../../ui/toast';
 import type { Engagement } from '../../domain/types';
+import { applicationTypeLabel } from '../../domain/applicationType';
 
 export default function EngagementsPage() {
   const summaries = useEngagementSummaries();
@@ -143,9 +144,11 @@ export default function EngagementsPage() {
                   >
                     {engagement.name}
                   </Link>
-                  <p className="mt-0.5 truncate text-xs text-ink-400">
-                    {engagement.clientName || 'No client recorded'}
-                    {engagement.testerName ? ` · ${engagement.testerName}` : ''}
+                  <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 truncate text-xs text-ink-400">
+                    <span>{applicationTypeLabel(engagement.applicationType)}</span>
+                    <span aria-hidden="true">·</span>
+                    <span>{engagement.clientName || 'No client recorded'}</span>
+                    {engagement.testerName && <span>· {engagement.testerName}</span>}
                   </p>
                 </div>
                 <Badge

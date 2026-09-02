@@ -38,6 +38,23 @@ export interface FactDefinition {
    */
   dependsOn?: { fact: ContextFactKey; equals: boolean | string };
   /**
+   * Not asked: computed from the engagement's application type. Rules may read
+   * it, the form never renders it.
+   */
+  derived?: boolean;
+  /**
+   * This answer is not read by any rule directly — it feeds the named derived
+   * fact, which is. Declaring it keeps the "every question changes the
+   * checklist" invariant honest instead of exempting the question.
+   */
+  feeds?: ContextFactKey;
+  /**
+   * Ask this question only for these application types. Absent means every
+   * type. Keeps a mobile engagement from being asked about server-side
+   * templating, and a SOAP engagement from being asked about SPA rendering.
+   */
+  appliesToTypes?: ApplicationTypeId[];
+  /**
    * Recorded for the report only — never referenced by an applicability rule.
    * Everything else must drive at least one test, which the unit tests enforce
    * in both directions so the context form cannot fill up with dead questions.
@@ -50,6 +67,8 @@ export interface ContextSection {
   title: string;
   description: string;
 }
+
+import type { ApplicationTypeId } from './applicationType';
 
 export type ContextSectionId =
   | 'target'
@@ -102,6 +121,7 @@ export const CONTEXT_SECTIONS: ContextSection[] = [
 export type ContextFactKey =
   // target
   | 'assetTypes'
+  | 'additionalSurfaces'
   | 'clientRendering'
   | 'internetFacing'
   // auth
@@ -165,12 +185,13 @@ const yesNo = (key: ContextFactKey, section: ContextSectionId, label: string, hi
 export const CONTEXT_FACTS: FactDefinition[] = [
   // ---------------------------------------------------------------- target
   {
+    // Derived from the engagement's application type plus `additionalSurfaces`.
+    // Rules read it; the tester is never asked it directly.
     key: 'assetTypes',
+    derived: true,
     label: 'Asset types in scope',
-    hint: 'Select every technology surface that will be tested.',
     type: 'multi',
     section: 'target',
-    core: true,
     options: [
       { value: 'web-app', label: 'Web Application' },
       { value: 'rest-api', label: 'REST API' },
@@ -183,7 +204,24 @@ export const CONTEXT_FACTS: FactDefinition[] = [
     ],
   },
   {
+    key: 'additionalSurfaces',
+    feeds: 'assetTypes',
+    label: 'Other surfaces in scope',
+    hint: 'Beyond the primary application type — a web app that also exposes an API, for example.',
+    type: 'multi',
+    section: 'target',
+    core: true,
+    appliesToTypes: ['web-app', 'rest-api', 'graphql-api', 'soap-api', 'mobile-android', 'mobile-ios'],
+    options: [
+      { value: 'web-app', label: 'Web Application' },
+      { value: 'rest-api', label: 'REST API' },
+      { value: 'graphql-api', label: 'GraphQL API' },
+      { value: 'soap-api', label: 'SOAP / XML-RPC API' },
+    ],
+  },
+  {
     key: 'clientRendering',
+    appliesToTypes: ['web-app'],
     label: 'Front-end rendering model',
     type: 'single',
     section: 'target',
@@ -250,24 +288,24 @@ export const CONTEXT_FACTS: FactDefinition[] = [
   ),
 
   // -------------------------------------------------------------- features
-  yesNo('hasFileUpload', 'features', 'File upload', undefined, true),
-  yesNo('hasFileDownload', 'features', 'File download / document retrieval', undefined, true),
-  yesNo('hasUserGeneratedContent', 'features', 'User generated content shown to others', 'Comments, profiles, messaging.'),
-  yesNo('hasSearch', 'features', 'Search or filtering functionality'),
-  yesNo('hasDataExport', 'features', 'Data export (CSV / XLSX / PDF)', undefined, true),
-  yesNo('hasEmailNotifications', 'features', 'Sends email / SMS notifications'),
-  yesNo('hasWorkflowOrTransactions', 'features', 'Multi-step workflows or transactions', 'Checkout, approvals, wizards.', true),
-  yesNo('hasCouponsOrPricing', 'features', 'Pricing, discounts, coupons or quantities'),
+  { ...yesNo('hasFileUpload', 'features', 'File upload', undefined, true), appliesToTypes: ['web-app', 'rest-api', 'graphql-api', 'soap-api', 'mobile-android', 'mobile-ios'] },
+  { ...yesNo('hasFileDownload', 'features', 'File download / document retrieval', undefined, true), appliesToTypes: ['web-app', 'rest-api', 'graphql-api', 'soap-api', 'mobile-android', 'mobile-ios'] },
+  { ...yesNo('hasUserGeneratedContent', 'features', 'User generated content shown to others', 'Comments, profiles, messaging.'), appliesToTypes: ['web-app'] },
+  { ...yesNo('hasSearch', 'features', 'Search or filtering functionality'), appliesToTypes: ['web-app', 'rest-api', 'graphql-api', 'soap-api', 'mobile-android', 'mobile-ios'] },
+  { ...yesNo('hasDataExport', 'features', 'Data export (CSV / XLSX / PDF)', undefined, true), appliesToTypes: ['web-app', 'rest-api', 'graphql-api', 'soap-api', 'mobile-android', 'mobile-ios'] },
+  { ...yesNo('hasEmailNotifications', 'features', 'Sends email / SMS notifications'), appliesToTypes: ['web-app', 'rest-api', 'graphql-api', 'soap-api', 'mobile-android', 'mobile-ios'] },
+  { ...yesNo('hasWorkflowOrTransactions', 'features', 'Multi-step workflows or transactions', 'Checkout, approvals, wizards.', true), appliesToTypes: ['web-app', 'rest-api', 'graphql-api', 'soap-api', 'mobile-android', 'mobile-ios'] },
+  { ...yesNo('hasCouponsOrPricing', 'features', 'Pricing, discounts, coupons or quantities'), appliesToTypes: ['web-app', 'rest-api', 'graphql-api', 'soap-api', 'mobile-android', 'mobile-ios'] },
 
   // ----------------------------------------------------------- integration
-  yesNo('acceptsUrlsFromUsers', 'integration', 'Accepts URLs / hostnames from users', 'Webhooks, imports, avatar-by-URL, PDF renderers.'),
+  { ...yesNo('acceptsUrlsFromUsers', 'integration', 'Accepts URLs / hostnames from users', 'Webhooks, imports, avatar-by-URL, PDF renderers.'), appliesToTypes: ['web-app', 'rest-api', 'graphql-api', 'soap-api', 'mobile-android', 'mobile-ios'] },
   yesNo('callsExternalServices', 'integration', 'Makes server-side calls to other services', undefined, true),
-  yesNo('parsesXml', 'integration', 'Parses XML, SVG, DOCX or XLSX input'),
-  yesNo('usesSerialization', 'integration', 'Accepts serialized objects', 'Java/PHP/.NET/Python serialized blobs, YAML, pickle.'),
-  yesNo('usesTemplating', 'integration', 'Renders server-side templates with user data'),
-  yesNo('usesWebsockets', 'integration', 'Uses WebSockets or SSE', undefined, true),
-  yesNo('usesCrossOriginRequests', 'integration', 'Browser calls a different origin', 'CORS is in play.'),
-  yesNo('usesThirdPartyScripts', 'integration', 'Loads third-party scripts / tag managers', undefined, true),
+  { ...yesNo('parsesXml', 'integration', 'Parses XML, SVG, DOCX or XLSX input'), appliesToTypes: ['web-app', 'rest-api', 'graphql-api', 'soap-api'] },
+  { ...yesNo('usesSerialization', 'integration', 'Accepts serialized objects', 'Java/PHP/.NET/Python serialized blobs, YAML, pickle.'), appliesToTypes: ['web-app', 'rest-api', 'graphql-api', 'soap-api'] },
+  { ...yesNo('usesTemplating', 'integration', 'Renders server-side templates with user data'), appliesToTypes: ['web-app', 'rest-api', 'graphql-api', 'soap-api'] },
+  { ...yesNo('usesWebsockets', 'integration', 'Uses WebSockets or SSE', undefined, true), appliesToTypes: ['web-app', 'rest-api', 'graphql-api', 'soap-api'] },
+  { ...yesNo('usesCrossOriginRequests', 'integration', 'Browser calls a different origin', 'CORS is in play.'), appliesToTypes: ['web-app'] },
+  { ...yesNo('usesThirdPartyScripts', 'integration', 'Loads third-party scripts / tag managers', undefined, true), appliesToTypes: ['web-app'] },
 
   // -------------------------------------------------------- infrastructure
   {
@@ -334,11 +372,49 @@ export const FACT_BY_KEY: Record<string, FactDefinition> = Object.fromEntries(
 
 /** Human readable rendering of a stored fact value, used by UI + export. */
 /**
+ * The asset surface an engagement actually covers: its application type plus
+ * any additional surfaces recorded. This is the single derivation point — the
+ * value is never stored, so it cannot drift from the application type.
+ */
+export function effectiveAssetTypes(
+  applicationType: ApplicationTypeId,
+  context: ApplicationContext,
+): string[] {
+  const extra = (context.additionalSurfaces as string[] | undefined) ?? [];
+  return [applicationType, ...extra.filter((s) => s !== applicationType)];
+}
+
+/**
+ * The context the applicability engine sees: what the tester recorded, plus
+ * the derived asset types. Every caller that evaluates rules for an engagement
+ * must use this rather than the raw context.
+ */
+export function effectiveContext(engagement: {
+  applicationType: ApplicationTypeId;
+  context: ApplicationContext;
+}): ApplicationContext {
+  return {
+    ...engagement.context,
+    assetTypes: effectiveAssetTypes(engagement.applicationType, engagement.context),
+  };
+}
+
+/**
  * Should this question be asked given what has been answered so far?
  * A dependency only hides the child when the parent is explicitly false/other —
  * an unanswered parent keeps the child visible.
  */
-export function isFactVisible(fact: FactDefinition, context: ApplicationContext): boolean {
+export function isFactVisible(
+  fact: FactDefinition,
+  context: ApplicationContext,
+  applicationType?: ApplicationTypeId,
+): boolean {
+  // Derived facts are computed, never asked.
+  if (fact.derived) return false;
+  // Questions that do not apply to this testing domain are not asked at all.
+  if (applicationType && fact.appliesToTypes && !fact.appliesToTypes.includes(applicationType)) {
+    return false;
+  }
   if (!fact.dependsOn) return true;
   const parent = context[fact.dependsOn.fact];
   if (parent === undefined || parent === '') return true;
@@ -349,10 +425,10 @@ export function isFactVisible(fact: FactDefinition, context: ApplicationContext)
 /** Facts worth asking, in schema order, honouring conditional visibility. */
 export function visibleFacts(
   context: ApplicationContext,
-  options: { coreOnly?: boolean } = {},
+  options: { coreOnly?: boolean; applicationType?: ApplicationTypeId } = {},
 ): FactDefinition[] {
   return CONTEXT_FACTS.filter(
-    (f) => (!options.coreOnly || f.core) && isFactVisible(f, context),
+    (f) => (!options.coreOnly || f.core) && isFactVisible(f, context, options.applicationType),
   );
 }
 

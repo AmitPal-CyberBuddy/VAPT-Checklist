@@ -7,6 +7,7 @@ import {
   type ContextFactKey,
   type FactDefinition,
 } from '../../domain/context';
+import type { ApplicationTypeId } from '../../domain/applicationType';
 import { Badge, Card, SectionHeading, Select } from '../../ui/primitives';
 import { FACT_IMPACT } from '../../data/library';
 
@@ -171,16 +172,22 @@ export function ContextForm({
   context,
   onChange,
   coreOnly = false,
+  applicationType,
 }: {
   context: ApplicationContext;
   onChange: (key: ContextFactKey, value: boolean | string | string[] | undefined) => void;
   coreOnly?: boolean;
+  /** Questions irrelevant to this testing domain are not rendered at all. */
+  applicationType?: ApplicationTypeId;
 }) {
   // Conditional questions: a fact whose parent is answered "no" is not asked.
   const sections = CONTEXT_SECTIONS.map((section) => ({
     section,
     facts: CONTEXT_FACTS.filter(
-      (f) => f.section === section.id && (!coreOnly || f.core) && isFactVisible(f, context),
+      (f) =>
+        f.section === section.id &&
+        (!coreOnly || f.core) &&
+        isFactVisible(f, context, applicationType),
     ),
   })).filter((s) => s.facts.length > 0);
 
@@ -200,15 +207,19 @@ export function ContextForm({
   );
 }
 
-export function contextCompleteness(context: ApplicationContext): {
+/** Completeness counts only the questions this domain actually asks. */
+export function contextCompleteness(
+  context: ApplicationContext,
+  applicationType?: ApplicationTypeId,
+): {
   answered: number;
   total: number;
   ratio: number;
 } {
-  const total = CONTEXT_FACTS.length;
-  const answered = CONTEXT_FACTS.filter((f) => {
+  const asked = CONTEXT_FACTS.filter((f) => isFactVisible(f, context, applicationType));
+  const answered = asked.filter((f) => {
     const v = context[f.key];
     return v !== undefined && v !== '' && !(Array.isArray(v) && v.length === 0);
   }).length;
-  return { answered, total, ratio: total === 0 ? 0 : answered / total };
+  return { answered, total: asked.length, ratio: asked.length === 0 ? 0 : answered / asked.length };
 }

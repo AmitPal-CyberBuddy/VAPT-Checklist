@@ -61,6 +61,7 @@ Full conventions: [`TEST-LIBRARY.md`](TEST-LIBRARY.md).
 | Field | Notes |
 | --- | --- |
 | `id`, `name`, `clientName`, `testerName` | Identity |
+| `applicationType` | The testing domain. Chosen before any context question; decides which questions are asked and which part of the library is in play |
 | `applicationUrl` | Primary target, shown on the dashboard and in the report |
 | `scope: string[]` | Additional hosts, URLs, package names |
 | `startDate`, `endDate`, `description` | Engagement admin |
@@ -174,9 +175,10 @@ Applicable because:
 
 `src/domain/metrics.ts` — the only place numbers are produced.
 
-The application **type** is deliberately *not* an engagement field: it lives once in
-`context.assetTypes`, where the applicability engine reads it, and the dashboard renders it from
-there. Duplicating it would create two copies that can disagree.
+`context.assetTypes` is **derived**, never asked: `effectiveContext(engagement)` computes it from
+`applicationType` plus the recorded `additionalSurfaces`. The domain is stored once, and every rule
+evaluation goes through that single derivation — see
+[`APPLICATION-TYPES.md`](APPLICATION-TYPES.md).
 
 ```text
 counts.total        = every library test seeded for the engagement

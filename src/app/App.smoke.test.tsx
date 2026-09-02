@@ -55,10 +55,11 @@ describe('application shell', () => {
 
   it('lists a stored engagement with live progress', async () => {
     const engagement = await createEngagement({
+      applicationType: 'web-app',
       name: 'ACME Portal',
       clientName: 'ACME Ltd',
       applicationUrl: 'https://acme.example.com',
-      context: { assetTypes: ['web-app'], hasAuthentication: true },
+      context: { hasAuthentication: true },
     });
     await updateTestState(engagement.id, 'AUTH-001', {
       status: 'Tested',
@@ -78,9 +79,10 @@ describe('application shell', () => {
 
   it('shows engagement identity, the six statistics and the vulnerable list on the dashboard', async () => {
     const engagement = await createEngagement({
+      applicationType: 'web-app',
       name: 'Dashboard Target',
       applicationUrl: 'https://app.example.com',
-      context: { assetTypes: ['web-app'], hasAuthentication: true, hasFileUpload: false },
+      context: { hasAuthentication: true, hasFileUpload: false },
     });
     await updateTestState(engagement.id, 'AUTH-001', {
       status: 'Tested',
@@ -112,8 +114,9 @@ describe('application shell', () => {
 
   it('renders the testing workspace with status and result controls', async () => {
     const engagement = await createEngagement({
+      applicationType: 'web-app',
       name: 'Workspace Target',
-      context: { assetTypes: ['web-app'], hasAuthentication: true },
+      context: { hasAuthentication: true },
     });
     window.location.hash = `#/e/${engagement.id}/workspace`;
     render(<App />);
@@ -132,7 +135,8 @@ describe('application shell', () => {
   });
 
   it('keeps the filter panel collapsed until it is asked for', async () => {
-    const engagement = await createEngagement({ name: 'Filters' });
+    const engagement = await createEngagement({ applicationType: 'web-app',
+      name: 'Filters' });
     window.location.hash = `#/e/${engagement.id}/workspace`;
     render(<App />);
 
@@ -147,7 +151,8 @@ describe('application shell', () => {
   });
 
   it('offers a specific empty state when a search matches nothing', async () => {
-    const engagement = await createEngagement({ name: 'Search' });
+    const engagement = await createEngagement({ applicationType: 'web-app',
+      name: 'Search' });
     window.location.hash = `#/e/${engagement.id}/workspace`;
     render(<App />);
 
@@ -180,9 +185,10 @@ describe('application shell', () => {
 
   it('explains why a test is applicable in the workspace', async () => {
     const engagement = await createEngagement({
+      applicationType: 'web-app',
       name: 'Explain Target',
       context: {
-        assetTypes: ['web-app', 'rest-api'],
+        additionalSurfaces: ['rest-api'],
         hasAuthentication: true,
         hasUserOwnedResources: true,
         hasMultipleRoles: true,
@@ -202,7 +208,8 @@ describe('application shell', () => {
   });
 
   it('shows how many tests a context question drives', async () => {
-    const engagement = await createEngagement({ name: 'Context Impact' });
+    const engagement = await createEngagement({ applicationType: 'web-app',
+      name: 'Context Impact' });
     window.location.hash = `#/e/${engagement.id}/context`;
     render(<App />);
     expect(await screen.findByRole('heading', { name: 'Application context' })).toBeTruthy();
@@ -221,8 +228,9 @@ describe('keyboard ergonomics', () => {
 
   it('makes the test list a single tab stop (roving tabindex)', async () => {
     const engagement = await createEngagement({
+      applicationType: 'web-app',
       name: 'Roving',
-      context: { assetTypes: ['web-app'], hasAuthentication: true },
+      context: { hasAuthentication: true },
     });
     window.location.hash = `#/e/${engagement.id}/workspace`;
     render(<App />);
@@ -241,8 +249,9 @@ describe('keyboard ergonomics', () => {
 
   it('announces the active test to screen readers', async () => {
     const engagement = await createEngagement({
+      applicationType: 'web-app',
       name: 'Announce',
-      context: { assetTypes: ['web-app'], hasAuthentication: true },
+      context: { hasAuthentication: true },
     });
     window.location.hash = `#/e/${engagement.id}/workspace?test=AUTH-001`;
     render(<App />);
@@ -254,7 +263,8 @@ describe('keyboard ergonomics', () => {
   });
 
   it('traps Tab inside a modal and closes it on Escape', async () => {
-    const engagement = await createEngagement({ name: 'Trap me' });
+    const engagement = await createEngagement({ applicationType: 'web-app',
+      name: 'Trap me' });
     window.location.hash = '#/';
     render(<App />);
 
@@ -285,8 +295,9 @@ describe('narrow viewports', () => {
 
   it('shows the list first and swaps to the test detail, with a way back', async () => {
     const engagement = await createEngagement({
+      applicationType: 'web-app',
       name: 'Small screen',
-      context: { assetTypes: ['web-app'], hasAuthentication: true },
+      context: { hasAuthentication: true },
     });
     window.location.hash = `#/e/${engagement.id}/workspace`;
     render(<App />);
@@ -316,8 +327,9 @@ describe('status is never communicated by colour alone', () => {
 
   it('pairs every status, result and priority with a text label', async () => {
     const engagement = await createEngagement({
+      applicationType: 'web-app',
       name: 'Non-colour',
-      context: { assetTypes: ['web-app'], hasAuthentication: true },
+      context: { hasAuthentication: true },
     });
     await updateTestState(engagement.id, 'AUTH-001', { status: 'Tested', result: 'Vulnerable' });
     await updateTestState(engagement.id, 'AUTH-003', { status: 'N/A' });

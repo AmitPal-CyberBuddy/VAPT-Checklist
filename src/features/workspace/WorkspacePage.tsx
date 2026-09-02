@@ -21,6 +21,7 @@ import { useChecklist, useEngagement } from '../../hooks/useData';
 import { useIsWide } from '../../hooks/useMediaQuery';
 import { bulkUpdateTestStates, updateTestState } from '../../persistence/repository';
 import { suggestApplicability } from '../../domain/applicability';
+import { effectiveContext } from '../../domain/context';
 import { PRIORITIES, PRIORITY_ORDER, type CategoryId, type ChecklistItem } from '../../domain/types';
 import { toast } from '../../ui/toast';
 
@@ -79,7 +80,8 @@ export default function WorkspacePage() {
   /** True when the last move came from the keyboard, so focus should follow. */
   const keyboardMove = useRef(false);
 
-  const context = engagement?.context ?? {};
+  // Rules always see the derived asset types, never the raw context.
+  const context = engagement ? effectiveContext(engagement) : {};
 
   useEffect(() => {
     const requested = params.get('test');

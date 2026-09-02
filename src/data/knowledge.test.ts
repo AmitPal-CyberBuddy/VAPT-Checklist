@@ -176,8 +176,16 @@ describe('applicability rules', () => {
   it('every non-metadata context fact drives at least one test', () => {
     const used = new Set<string>();
     for (const t of TEST_LIBRARY) rulefacts(t.applicability).forEach((f) => used.add(f));
-    const dead = CONTEXT_FACTS.filter((f) => !f.metadataOnly && !used.has(f.key)).map((f) => f.key);
+    const dead = CONTEXT_FACTS.filter(
+      // A question earns its place by driving a rule, or by feeding a derived
+      // fact that does.
+      (f) => !f.metadataOnly && !f.feeds && !used.has(f.key),
+    ).map((f) => f.key);
     expect(dead).toEqual([]);
+    // The one feeding question must feed a fact that is itself used.
+    for (const fact of CONTEXT_FACTS.filter((f) => f.feeds)) {
+      expect(used.has(fact.feeds!), `${fact.key} feeds an unused fact`).toBe(true);
+    }
   });
 
   it('never lets a rule depend on a metadata-only fact', () => {

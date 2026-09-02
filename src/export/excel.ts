@@ -27,7 +27,15 @@ import writeXlsxFile, {
 import { CATEGORY_BY_ID } from '../data/categories';
 import { LIBRARY_VERSION } from '../data/library';
 import { describeRule, suggestApplicability } from '../domain/applicability';
-import { CONTEXT_FACTS, CONTEXT_SECTIONS, formatFactValue } from '../domain/context';
+import {
+  CONTEXT_FACTS,
+  CONTEXT_SECTIONS,
+  effectiveAssetTypes,
+  effectiveContext,
+  formatFactValue,
+} from '../domain/context';
+import { applicationTypeLabel as applicationTypeName } from '../domain/applicationType';
+import { supportLevel } from '../data/typeCoverage';
 import { collectFindings, completedOf, computeMetrics } from '../domain/metrics';
 import type { ChecklistItem, Engagement, Priority } from '../domain/types';
 import { safeSpreadsheetText } from '../domain/untrusted';
@@ -121,6 +129,12 @@ const pct = (value: number, extra: Partial<Cell> = {}): Cell => ({
 
 const blank: Cell = { value: '', type: String };
 
+const SUPPORT_LABEL = {
+  supported: 'Supported — full coverage for this domain',
+  limited: 'Limited — see the notes below',
+  unsupported: 'Not supported',
+} as const;
+
 /**
  * Tester-controlled text. Identical to `text()` except that a leading formula
  * character is neutralised, so a note like `=HYPERLINK(...)` cannot execute
@@ -134,11 +148,11 @@ function datetime(iso: string | undefined): string {
   return iso.slice(0, 19).replace('T', ' ');
 }
 
-function applicationTypeLabel(engagement: Engagement): string {
-  const values = (engagement.context.assetTypes as string[] | undefined) ?? [];
-  if (values.length === 0) return '-';
+function applicationSurfaceLabel(engagement: Engagement): string {
   const options = CONTEXT_FACTS.find((f) => f.key === 'assetTypes')?.options ?? [];
-  return values.map((v) => options.find((o) => o.value === v)?.label ?? v).join(', ');
+  return effectiveAssetTypes(engagement.applicationType, engagement.context)
+    .map((v) => options.find((o) => o.value === v)?.label ?? v)
+    .join(', ');
 }
 
 /* ------------------------------------------------- sheet 1: Engagement Summary */
@@ -155,7 +169,15 @@ function summarySheet(
     [sectionTitle('Engagement', 4)],
     [label('Engagement name'), userText(engagement.name, { columnSpan: 3 })],
     [label('Application URL'), userText(engagement.applicationUrl ?? '-', { columnSpan: 3 })],
-    [label('Application type'), text(applicationTypeLabel(engagement), { columnSpan: 3 })],
+    [
+      label('Application type'),
+      text(applicationTypeName(engagement.applicationType), { columnSpan: 3 }),
+    ],
+    [
+      label('Support level'),
+      text(SUPPORT_LABEL[supportLevel(engagement.applicationType)], { columnSpan: 3 }),
+    ],
+    [label('Surfaces in scope'), text(applicationSurfaceLabel(engagement), { columnSpan: 3 })],
     [label('Client'), userText(engagement.clientName ?? '-', { columnSpan: 3 })],
     [label('Tester'), userText(engagement.testerName ?? '-', { columnSpan: 3 })],
     [label('Engagement status'), text(engagement.status, { columnSpan: 3 })],
@@ -217,7 +239,7 @@ function summarySheet(
   rows.push([header('Question'), header('Recorded answer'), header('Notes'), blank]);
 
   for (const section of CONTEXT_SECTIONS) {
-    const facts = CONTEXT_FACTS.filter((f) => f.section === section.id);
+    const facts = CONTEXT_FACTS.filter((f) => f.section === section.id && !f.derived);
     if (facts.length === 0) continue;
     rows.push([text(section.title, { fontWeight: 'bold', backgroundColor: BAND, columnSpan: 4 })]);
     for (const fact of facts) {
@@ -369,7 +391,7 @@ function notApplicableSheet(engagement: Engagement, items: ChecklistItem[]): She
   return [
     headers,
     ...excluded.map(({ definition: d, state: s }): Row => {
-      const suggestion = suggestApplicability(d, engagement.context);
+      const suggestion = suggestApplicability(d, effectiveContext(engagement));
       return [
         text(d.id),
         text(d.vulnerabilityName),

@@ -15,7 +15,7 @@ import { TEST_LIBRARY, TEST_BY_ID, LIBRARY_VERSION } from '../data/library';
 import { suggestApplicability } from '../domain/applicability';
 import { countsAreConsistent, computeMetrics } from '../domain/metrics';
 import { planWorkbook } from '../export/excel';
-import { CONTEXT_FACTS, type ApplicationContext } from '../domain/context';
+import { effectiveContext, visibleFacts, type ApplicationContext } from '../domain/context';
 import type { TestResult, TestStatus } from '../domain/types';
 
 /**
@@ -74,7 +74,8 @@ describe('§2 state integrity — every valid transition', () => {
   ];
 
   it.each(PATHS)('$name', async ({ steps, end }) => {
-    const engagement = await createEngagement({ name: 'Transitions' });
+    const engagement = await createEngagement({ applicationType: 'web-app',
+      name: 'Transitions' });
     for (const step of steps) {
       await updateTestState(engagement.id, 'AUTH-001', step);
     }
@@ -84,7 +85,8 @@ describe('§2 state integrity — every valid transition', () => {
   });
 
   it('cannot store N/A with a result, by any route', async () => {
-    const engagement = await createEngagement({ name: 'Invalid' });
+    const engagement = await createEngagement({ applicationType: 'web-app',
+      name: 'Invalid' });
 
     // Direct request for the contradiction.
     await updateTestState(engagement.id, 'AUTH-001', { status: 'N/A', result: 'Vulnerable' });
@@ -101,7 +103,8 @@ describe('§2 state integrity — every valid transition', () => {
   });
 
   it('cannot store Not Tested with a result, by any route', async () => {
-    const engagement = await createEngagement({ name: 'Invalid 2' });
+    const engagement = await createEngagement({ applicationType: 'web-app',
+      name: 'Invalid 2' });
     await updateTestState(engagement.id, 'AUTH-001', { status: 'Tested', result: 'Vulnerable' });
     await updateTestState(engagement.id, 'AUTH-001', { status: 'Not Tested' });
     expect(await state(engagement.id, 'AUTH-001')).toMatchObject({
@@ -117,7 +120,8 @@ describe('§2 state integrity — every valid transition', () => {
   });
 
   it('refuses Tested without a result rather than storing a half-record', async () => {
-    const engagement = await createEngagement({ name: 'Half' });
+    const engagement = await createEngagement({ applicationType: 'web-app',
+      name: 'Half' });
     await expect(
       updateTestState(engagement.id, 'AUTH-001', { status: 'Tested' }),
     ).rejects.toThrow(/inconsistent/i);
@@ -125,7 +129,8 @@ describe('§2 state integrity — every valid transition', () => {
   });
 
   it('clears execution state when a test is marked Not Applicable, and does not resurrect it', async () => {
-    const engagement = await createEngagement({ name: 'Applicability reset' });
+    const engagement = await createEngagement({ applicationType: 'web-app',
+      name: 'Applicability reset' });
     await updateTestState(engagement.id, 'AUTH-001', {
       status: 'Tested',
       result: 'Vulnerable',
@@ -156,7 +161,8 @@ describe('§11 corrupted local data cannot produce impossible numbers', () => {
   });
 
   it('normalises an unrecognised status and keeps the identities true', async () => {
-    const engagement = await createEngagement({ name: 'Corrupted' });
+    const engagement = await createEngagement({ applicationType: 'web-app',
+      name: 'Corrupted' });
     const key = `${engagement.id}::AUTH-001`;
     const row = (await db.testStates.get(key))!;
     // Simulate a partial write, a manual IndexedDB edit or a future build.
@@ -173,7 +179,8 @@ describe('§11 corrupted local data cannot produce impossible numbers', () => {
   });
 
   it('survives a state row with a nonsense result', async () => {
-    const engagement = await createEngagement({ name: 'Corrupted 2' });
+    const engagement = await createEngagement({ applicationType: 'web-app',
+      name: 'Corrupted 2' });
     const key = `${engagement.id}::AUTH-002`;
     const row = (await db.testStates.get(key))!;
     await db.testStates.put({ ...row, status: 'N/A', result: 'Exploited' as never });
@@ -289,20 +296,23 @@ describe('§3 applicability across real engagement profiles', () => {
   });
 
   it('resolves the checklist once the default wizard questions are answered', () => {
-    // The wizard asks the "core" questions. Answering only those must leave few
-    // unconfirmed tests, otherwise the narrowing promise is not delivered.
+    // The wizard establishes the application type, then asks that domain's core
+    // questions. Answering only those must leave few unconfirmed tests.
+    const applicationType = 'web-app' as const;
     const context: ApplicationContext = {};
-    for (const fact of CONTEXT_FACTS.filter((f) => f.core && !f.metadataOnly)) {
+    for (const fact of visibleFacts({}, { coreOnly: true, applicationType })) {
+      if (fact.metadataOnly) continue;
       if (fact.type === 'boolean') context[fact.key] = true;
       else if (fact.type === 'multi') context[fact.key] = [fact.options![0].value];
       else context[fact.key] = fact.options![0].value;
     }
-    const applicable = TEST_LIBRARY.filter((t) => suggestApplicability(t, context).applicable);
-    const unconfirmed = applicable.filter((t) => suggestApplicability(t, context).uncertain);
+    const resolved = effectiveContext({ applicationType, context });
+    const applicable = TEST_LIBRARY.filter((t) => suggestApplicability(t, resolved).applicable);
+    const unconfirmed = applicable.filter((t) => suggestApplicability(t, resolved).uncertain);
 
     expect(unconfirmed.length).toBeLessThan(applicable.length * 0.15);
-    // …and the wizard must stay short enough to fill in during scoping.
-    expect(CONTEXT_FACTS.filter((f) => f.core && !f.metadataOnly).length).toBeLessThanOrEqual(24);
+    // …and the domain's question set must stay short enough to fill in during scoping.
+    expect(visibleFacts({}, { coreOnly: true, applicationType }).length).toBeLessThanOrEqual(24);
   });
 
   it('never hides a Critical test that the context has not explicitly ruled out', () => {
@@ -397,7 +407,7 @@ describe('§3b applicability corrections found by the content audit', () => {
     const { db: database } = await import('../persistence/db');
     const { stateKey } = await import('../domain/executionState');
     await database.open();
-    const engagement = await create({ name: 'Pre-merge', context: { hasFileUpload: true } });
+    const engagement = await create({ name: 'Pre-merge', applicationType: 'web-app', context: { hasFileUpload: true } });
     // A finding recorded against a test that the audit merged away.
     await database.testStates.add({
       id: stateKey(engagement.id, 'FILE-006'),
@@ -446,11 +456,13 @@ describe('§6 persistence across a simulated browser restart', () => {
 
   it('retains every kind of edit after the database is closed and reopened', async () => {
     const a = await createEngagement({
+      applicationType: 'web-app',
       name: 'Engagement A',
       applicationUrl: 'https://a.example.com',
-      context: { assetTypes: ['web-app'], hasAuthentication: true, hasFileUpload: true },
+      context: { hasAuthentication: true, hasFileUpload: true },
     });
-    await createEngagement({ name: 'Engagement B', context: { hasFileUpload: false } });
+    await createEngagement({ applicationType: 'web-app',
+      name: 'Engagement B', context: { hasFileUpload: false } });
 
     await updateTestState(a.id, 'AUTH-001', { status: 'Tested', result: 'Vulnerable', notes: 'A1' });
     await updateTestState(a.id, 'FILE-001', { status: 'N/A', notes: 'no upload in this tier' });
@@ -502,13 +514,15 @@ describe('§5/§7 export reflects exactly one engagement, and matches the UI sta
 
   it('exports only the target engagement and mirrors every recorded value', async () => {
     const target = await createEngagement({
+      applicationType: 'web-app',
       name: 'Target Engagement',
       applicationUrl: 'https://target.example.com',
-      context: { assetTypes: ['web-app', 'rest-api'], hasAuthentication: true, hasFileUpload: true },
+      context: { additionalSurfaces: ['rest-api'], hasAuthentication: true, hasFileUpload: true },
     });
     const other = await createEngagement({
+      applicationType: 'web-app',
       name: 'Other Engagement',
-      context: { assetTypes: ['web-app'] },
+      context: { },
     });
 
     await updateTestState(target.id, 'AUTH-001', {
@@ -598,8 +612,10 @@ describe('§5/§7 export reflects exactly one engagement, and matches the UI sta
   });
 
   it('leaves other engagements untouched after heavy editing', async () => {
-    const heavy = await createEngagement({ name: 'Heavy', context: { hasAuthentication: true } });
-    const quiet = await createEngagement({ name: 'Quiet', context: { hasAuthentication: true } });
+    const heavy = await createEngagement({ applicationType: 'web-app',
+      name: 'Heavy', context: { hasAuthentication: true } });
+    const quiet = await createEngagement({ applicationType: 'web-app',
+      name: 'Quiet', context: { hasAuthentication: true } });
     const before = await getChecklist(quiet.id);
 
     const ids = TEST_LIBRARY.slice(0, 60).map((t) => t.id);

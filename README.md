@@ -166,9 +166,11 @@ Full conventions and how to add a test: [`docs/TEST-LIBRARY.md`](docs/TEST-LIBRA
 ## How the checklist gets narrowed
 
 ```text
+Application type              (the testing domain — chosen first)
+          ↓
 Complete VAPT knowledge base  (184 tests)
           ↓
-Application context           (40 recorded facts)
+Application context           (only the questions that domain uses)
           ↓
 Applicability rules           (per test, not per category)
           ↓
@@ -176,6 +178,21 @@ Relevant vulnerabilities      (explained, never hidden silently)
           ↓
 Testing checklist
 ```
+
+### Application types are only offered where the library backs them
+
+| Type | Support | Domain-specific tests |
+| --- | --- | --- |
+| Web Application | ✅ Supported | 42 |
+| REST API | ✅ Supported | 14 (+17 shared HTTP) |
+| GraphQL API | ✅ Supported | 21 (+17 shared HTTP) |
+| SOAP / XML-RPC API | ⚠️ Limited | 12, only one SOAP-specific |
+| Android / iOS | ⚠️ Limited | 10 — screening, not MASTG depth |
+| Cloud Environment | ⚠️ Limited | 4 — exposure, not a configuration review |
+| Thick / Desktop Client | ❌ Not supported | 0 — the option explains why and points you at the backend |
+
+Support levels are **computed from the library at runtime**, so the product cannot claim coverage it
+does not have. Details: [`docs/APPLICATION-TYPES.md`](docs/APPLICATION-TYPES.md).
 
 Applicability is **never a black box**. Each test shows the conditions that produced the decision:
 
@@ -329,6 +346,7 @@ Clearing site data deletes your engagements, so take a backup before you do.
 - [`docs/DESIGN-SYSTEM.md`](docs/DESIGN-SYSTEM.md) — visual language, vocabulary, responsive and accessibility rules
 - [`docs/AUDIT.md`](docs/AUDIT.md) — end-to-end product audit: what was tested, what was found, what was fixed
 - [`docs/CONTENT-AUDIT.md`](docs/CONTENT-AUDIT.md) — security content and applicability audit against WSTG / ASVS / OWASP Top 10
+- [`docs/APPLICATION-TYPES.md`](docs/APPLICATION-TYPES.md) — coverage matrix per application type, and the engagement flow built on it
 - [`docs/adr/`](docs/adr/) — architecture decision records
 - [`docs/deployment/`](docs/deployment/) — GitHub Pages deployment and workflows
 

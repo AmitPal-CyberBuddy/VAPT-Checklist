@@ -20,7 +20,8 @@ import {
   type StateTransition,
 } from '../domain/executionState';
 import { TEST_STATUSES, TEST_RESULTS } from '../domain/types';
-import type { ApplicationContext } from '../domain/context';
+import { effectiveContext, type ApplicationContext } from '../domain/context';
+import type { ApplicationTypeId } from '../domain/applicationType';
 import type { ChecklistItem, Engagement, EngagementStatus, TestState } from '../domain/types';
 
 const now = () => new Date().toISOString();
@@ -29,6 +30,8 @@ const now = () => new Date().toISOString();
 
 export interface EngagementDraft {
   name: string;
+  /** The testing domain — chosen before any context question. */
+  applicationType: ApplicationTypeId;
   clientName?: string;
   applicationUrl?: string;
   scope?: string[];
@@ -58,6 +61,7 @@ export async function createEngagement(draft: EngagementDraft): Promise<Engageme
   const engagement: Engagement = {
     id: nanoid(12),
     name: draft.name.trim(),
+    applicationType: draft.applicationType,
     clientName: draft.clientName?.trim() || undefined,
     applicationUrl: draft.applicationUrl?.trim() || undefined,
     scope: (draft.scope ?? []).map((s) => s.trim()).filter(Boolean),
@@ -72,8 +76,10 @@ export async function createEngagement(draft: EngagementDraft): Promise<Engageme
     updatedAt: timestamp,
   };
 
+  // The engine sees the derived asset types, never the raw context.
+  const resolved = effectiveContext(engagement);
   const states = TEST_LIBRARY.map((definition) => {
-    const suggestion = suggestApplicability(definition, engagement.context);
+    const suggestion = suggestApplicability(definition, resolved);
     return createInitialState(engagement.id, definition.id, suggestion.applicable, timestamp);
   });
 
@@ -108,6 +114,7 @@ export async function duplicateEngagement(id: string, newName: string): Promise<
   if (!source) return null;
   return createEngagement({
     name: newName,
+    applicationType: source.applicationType,
     clientName: source.clientName,
     applicationUrl: source.applicationUrl,
     scope: source.scope,
@@ -216,12 +223,15 @@ export async function previewApplicability(
   engagementId: string,
   context: ApplicationContext,
 ): Promise<ApplicabilityDiff[]> {
+  const engagement = await db.engagements.get(engagementId);
+  if (!engagement) return [];
+  const resolved = effectiveContext({ applicationType: engagement.applicationType, context });
   const states = await listStates(engagementId);
   const diffs: ApplicabilityDiff[] = [];
   for (const state of states) {
     const definition = TEST_BY_ID.get(state.testId);
     if (!definition) continue;
-    const suggestion = suggestApplicability(definition, context);
+    const suggestion = suggestApplicability(definition, resolved);
     if (suggestion.applicable !== state.applicable) {
       diffs.push({
         testId: state.testId,
@@ -246,6 +256,9 @@ export async function applyApplicability(
   context: ApplicationContext,
   options: { overrideManual?: boolean } = {},
 ): Promise<number> {
+  const engagement = await db.engagements.get(engagementId);
+  if (!engagement) return 0;
+  const resolved = effectiveContext({ applicationType: engagement.applicationType, context });
   const states = await listStates(engagementId);
   const timestamp = now();
   const updates: TestState[] = [];
@@ -254,7 +267,7 @@ export async function applyApplicability(
   for (const state of states) {
     const definition = TEST_BY_ID.get(state.testId);
     if (!definition) continue;
-    const suggestion = suggestApplicability(definition, context);
+    const suggestion = suggestApplicability(definition, resolved);
     const keepManual = state.applicabilitySource === 'manual' && !options.overrideManual;
     const protectWork = state.status !== 'Not Tested' && !suggestion.applicable;
 
@@ -305,7 +318,7 @@ export async function syncLibrary(engagementId: string): Promise<LibrarySyncResu
     createInitialState(
       engagementId,
       definition.id,
-      suggestApplicability(definition, engagement.context).applicable,
+      suggestApplicability(definition, effectiveContext(engagement)).applicable,
       timestamp,
     ),
   );

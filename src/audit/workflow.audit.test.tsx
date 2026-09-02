@@ -53,9 +53,11 @@ describe('§1 the engagement workflow, end to end', () => {
       target: { value: 'https://audit.example.com' },
     });
 
-    /* ---- Enter Context -------------------------------------------------- */
-    fireEvent.click(screen.getByRole('button', { name: 'Web Application' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Define application context' }));
+    /* ---- Application type (the domain decision) -------------------------- */
+    fireEvent.click(screen.getByRole('button', { name: 'Choose application type' }));
+    fireEvent.click(await screen.findByRole('button', { name: /Web Application.*Supported/s }));
+    expect(await screen.findByText('What this covers')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
 
     // Answering a question must visibly change the generated list.
     const before = Number(
@@ -135,8 +137,9 @@ describe('§4 dashboard arithmetic matches recorded state exactly', () => {
 
   it('shows counts that satisfy both identities and match the database', async () => {
     const engagement = await createEngagement({
+      applicationType: 'web-app',
       name: 'Maths',
-      context: { assetTypes: ['web-app'], hasAuthentication: true, hasFileUpload: true },
+      context: { hasAuthentication: true, hasFileUpload: true },
     });
 
     const items = await getChecklist(engagement.id);
@@ -192,8 +195,9 @@ describe('§8 search and filter combinations', () => {
     await clearAllData();
     setViewport(true);
     const engagement = await createEngagement({
+      applicationType: 'web-app',
       name: 'Filters',
-      context: { assetTypes: ['web-app', 'rest-api'], hasAuthentication: true, hasFileUpload: true },
+      context: { additionalSurfaces: ['rest-api'], hasAuthentication: true, hasFileUpload: true },
     });
     engagementId = engagement.id;
     await updateTestState(engagementId, 'INJ-001', { status: 'Tested', result: 'Vulnerable' });

@@ -29,8 +29,9 @@ describe('repository', () => {
 
   it('seeds one state per library test on creation', async () => {
     const engagement = await createEngagement({
+      applicationType: 'web-app',
       name: 'Test engagement',
-      context: { assetTypes: ['web-app'], hasAuthentication: true, hasFileUpload: false },
+      context: { hasAuthentication: true, hasFileUpload: false },
     });
     const items = await getChecklist(engagement.id);
     expect(items).toHaveLength(TEST_LIBRARY.length);
@@ -40,6 +41,7 @@ describe('repository', () => {
 
   it('applies context rules when seeding', async () => {
     const engagement = await createEngagement({
+      applicationType: 'web-app',
       name: 'No uploads',
       context: { hasFileUpload: false },
     });
@@ -50,7 +52,8 @@ describe('repository', () => {
   });
 
   it('refuses to store Tested without a result', async () => {
-    const engagement = await createEngagement({ name: 'State machine' });
+    const engagement = await createEngagement({ applicationType: 'web-app',
+      name: 'State machine' });
 
     await expect(
       updateTestState(engagement.id, 'AUTH-001', { status: 'Tested' }),
@@ -63,7 +66,8 @@ describe('repository', () => {
   });
 
   it('records status and result atomically, and allows revision', async () => {
-    const engagement = await createEngagement({ name: 'Atomic' });
+    const engagement = await createEngagement({ applicationType: 'web-app',
+      name: 'Atomic' });
 
     await updateTestState(engagement.id, 'AUTH-001', { status: 'Tested', result: 'Vulnerable' });
     let auth = (await getChecklist(engagement.id)).find((i) => i.definition.id === 'AUTH-001')!;
@@ -78,7 +82,8 @@ describe('repository', () => {
   });
 
   it('bulk updates a selection', async () => {
-    const engagement = await createEngagement({ name: 'Bulk' });
+    const engagement = await createEngagement({ applicationType: 'web-app',
+      name: 'Bulk' });
     const ids = TEST_LIBRARY.slice(0, 5).map((t) => t.id);
     await bulkUpdateTestStates(engagement.id, ids, {
       status: 'Tested',
@@ -91,6 +96,7 @@ describe('repository', () => {
 
   it('preserves manual overrides and recorded work when context changes', async () => {
     const engagement = await createEngagement({
+      applicationType: 'web-app',
       name: 'Context change',
       context: { hasFileUpload: true, hasAuthentication: true },
     });
@@ -122,6 +128,7 @@ describe('repository', () => {
 
   it('can force manual overrides back to the suggestion', async () => {
     const engagement = await createEngagement({
+      applicationType: 'web-app',
       name: 'Force',
       context: { hasFileUpload: true },
     });
@@ -136,6 +143,7 @@ describe('repository', () => {
 
   it('duplicates context without carrying results', async () => {
     const engagement = await createEngagement({
+      applicationType: 'web-app',
       name: 'Original',
       context: { hasAuthentication: true },
     });
@@ -148,7 +156,8 @@ describe('repository', () => {
   });
 
   it('round-trips a JSON backup', async () => {
-    const engagement = await createEngagement({ name: 'Backup me' });
+    const engagement = await createEngagement({ applicationType: 'web-app',
+      name: 'Backup me' });
     await updateTestState(engagement.id, 'AUTH-001', {
       status: 'Tested',
       result: 'Vulnerable',
@@ -171,7 +180,8 @@ describe('repository', () => {
   });
 
   it('re-keys an imported engagement that collides with an existing one', async () => {
-    const engagement = await createEngagement({ name: 'Collide' });
+    const engagement = await createEngagement({ applicationType: 'web-app',
+      name: 'Collide' });
     const backup = await exportBackup(engagement.id);
     await importBackup(backup);
     const all = await db.engagements.toArray();

@@ -32,9 +32,10 @@ describe('local persistence', () => {
 
   it('survives a page refresh', async () => {
     const engagement = await createEngagement({
+      applicationType: 'web-app',
       name: 'Refresh me',
       applicationUrl: 'https://app.example.com',
-      context: { assetTypes: ['web-app'], hasAuthentication: true },
+      context: { hasAuthentication: true },
     });
     await updateTestState(engagement.id, 'AUTH-001', {
       status: 'Tested',
@@ -73,10 +74,12 @@ describe('local persistence', () => {
 
   it('keeps engagements completely independent', async () => {
     const a = await createEngagement({
+      applicationType: 'web-app',
       name: 'Alpha',
       context: { hasFileUpload: true, hasAuthentication: true },
     });
     const b = await createEngagement({
+      applicationType: 'web-app',
       name: 'Bravo',
       context: { hasFileUpload: false, hasAuthentication: true },
     });
@@ -101,8 +104,10 @@ describe('local persistence', () => {
   });
 
   it('deleting one engagement leaves the other intact', async () => {
-    const a = await createEngagement({ name: 'Keep' });
-    const b = await createEngagement({ name: 'Remove' });
+    const a = await createEngagement({ applicationType: 'web-app',
+      name: 'Keep' });
+    const b = await createEngagement({ applicationType: 'web-app',
+      name: 'Remove' });
     await updateTestState(a.id, 'AUTH-001', { status: 'N/A' });
 
     await db.transaction('rw', db.engagements, db.testStates, async () => {
@@ -123,8 +128,9 @@ describe('data integrity', () => {
 
   it('holds both counting identities after arbitrary edits', async () => {
     const engagement = await createEngagement({
+      applicationType: 'web-app',
       name: 'Identities',
-      context: { assetTypes: ['web-app'], hasAuthentication: true },
+      context: { hasAuthentication: true },
     });
 
     const ids = TEST_LIBRARY.slice(0, 30).map((t) => t.id);
@@ -147,7 +153,8 @@ describe('data integrity', () => {
   });
 
   it('makes "N/A with a result" unrepresentable', async () => {
-    const engagement = await createEngagement({ name: 'Impossible' });
+    const engagement = await createEngagement({ applicationType: 'web-app',
+      name: 'Impossible' });
     await updateTestState(engagement.id, 'AUTH-001', { status: 'Tested', result: 'Vulnerable' });
     await updateTestState(engagement.id, 'AUTH-001', { status: 'N/A' });
 
@@ -163,7 +170,8 @@ describe('data integrity', () => {
   });
 
   it('rejects a whole bulk edit if any row would become inconsistent', async () => {
-    const engagement = await createEngagement({ name: 'Bulk guard' });
+    const engagement = await createEngagement({ applicationType: 'web-app',
+      name: 'Bulk guard' });
     const ids = TEST_LIBRARY.slice(0, 4).map((t) => t.id);
 
     await expect(
@@ -175,7 +183,8 @@ describe('data integrity', () => {
   });
 
   it('repairs legacy Tested-without-result rows on open', async () => {
-    const engagement = await createEngagement({ name: 'Legacy' });
+    const engagement = await createEngagement({ applicationType: 'web-app',
+      name: 'Legacy' });
     // Write past the repository, the way an older build did.
     const key = `${engagement.id}::AUTH-001`;
     const state = (await db.testStates.get(key))!;
@@ -199,6 +208,7 @@ describe('backup validation', () => {
 
   async function validBackup() {
     const engagement = await createEngagement({
+      applicationType: 'web-app',
       name: 'Backup source',
       applicationUrl: 'https://app.example.com',
       context: { hasAuthentication: true },
@@ -289,7 +299,8 @@ describe('backup validation', () => {
   });
 
   it('never touches existing data when an import is rejected', async () => {
-    const existing = await createEngagement({ name: 'Untouched' });
+    const existing = await createEngagement({ applicationType: 'web-app',
+      name: 'Untouched' });
     await updateTestState(existing.id, 'AUTH-001', { status: 'Tested', result: 'Not Vulnerable' });
     const before = await getChecklist(existing.id);
 

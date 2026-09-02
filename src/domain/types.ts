@@ -18,6 +18,8 @@ import type { ApplicationContext, ContextFactKey } from './context';
 /* Knowledge base                                                             */
 /* -------------------------------------------------------------------------- */
 
+import type { ApplicationTypeId } from './applicationType';
+
 export type Priority = 'Critical' | 'High' | 'Medium' | 'Low';
 
 export const PRIORITIES: Priority[] = ['Critical', 'High', 'Medium', 'Low'];
@@ -123,6 +125,13 @@ export type EngagementStatus = 'Active' | 'Completed' | 'Archived';
 export interface Engagement {
   id: string;
   name: string;
+  /**
+   * The testing domain. Established before any context question is asked,
+   * because it decides which questions are relevant and which part of the
+   * library is in play. `context.assetTypes` is derived from this plus
+   * `additionalSurfaces` — never stored twice.
+   */
+  applicationType: ApplicationTypeId;
   clientName?: string;
   /**
    * Primary application URL / base target. Part of engagement identity because
