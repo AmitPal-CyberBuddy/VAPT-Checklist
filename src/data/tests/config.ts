@@ -9,6 +9,7 @@ export const configTests: TestDefinition[] = [
     id: 'CONF-001',
     vulnerabilityName: 'Missing Security Headers',
     category: 'config',
+    subcategory: 'Security Headers',
     priority: 'Medium',
     description:
       'Responses omit protective headers such as X-Content-Type-Options, X-Frame-Options/frame-ancestors, Referrer-Policy and Permissions-Policy, weakening browser-side defence in depth.',
@@ -20,12 +21,14 @@ export const configTests: TestDefinition[] = [
     owasp: ['WSTG-CONF-12', 'A05:2021'],
     cwe: ['CWE-693'],
     applicability: browser,
+    aliases: ['Missing X-Frame-Options', 'Missing X-Content-Type-Options', 'Missing Referrer-Policy'],
     tags: ['headers', 'hardening'],
   },
   {
     id: 'CONF-002',
     vulnerabilityName: 'Directory Listing Enabled',
     category: 'config',
+    subcategory: 'Platform Hardening',
     priority: 'Medium',
     description:
       'The web server returns an index of directory contents when no default document exists, exposing file names, backups and application structure.',
@@ -37,12 +40,14 @@ export const configTests: TestDefinition[] = [
     owasp: ['WSTG-CONF-04'],
     cwe: ['CWE-548'],
     applicability: web,
+    aliases: ['Directory Indexing', 'Directory Browsing Enabled'],
     tags: ['hardening'],
   },
   {
     id: 'CONF-003',
     vulnerabilityName: 'Exposed Administrative Interface',
     category: 'config',
+    subcategory: 'Platform Hardening',
     priority: 'High',
     description:
       'Administrative consoles, management panels or framework dashboards are reachable from the same network exposure as normal users, often without additional access restriction.',
@@ -54,12 +59,14 @@ export const configTests: TestDefinition[] = [
     owasp: ['WSTG-CONF-05'],
     cwe: ['CWE-1188'],
     applicability: web,
+    aliases: ['Exposed Management Console', 'Admin Panel Exposure'],
     tags: ['hardening'],
   },
   {
     id: 'CONF-004',
     vulnerabilityName: 'Insecure HTTP Methods Enabled',
     category: 'config',
+    subcategory: 'Platform Hardening',
     priority: 'Medium',
     description:
       'Dangerous verbs such as PUT, DELETE, TRACE, CONNECT or arbitrary methods are accepted, enabling file placement, cross-site tracing or authorisation bypass via verb tampering.',
@@ -71,12 +78,14 @@ export const configTests: TestDefinition[] = [
     owasp: ['WSTG-CONF-06'],
     cwe: ['CWE-650'],
     applicability: web,
+    aliases: ['Dangerous HTTP Methods', 'TRACE Method Enabled', 'Cross-Site Tracing', 'WebDAV Methods Enabled'],
     tags: ['hardening'],
   },
   {
     id: 'CONF-005',
     vulnerabilityName: 'Vulnerable and Outdated Components',
     category: 'config',
+    subcategory: 'Component Management',
     priority: 'High',
     description:
       'The application runs server software, frameworks or JavaScript libraries with publicly known vulnerabilities, or versions that are past end of support.',
@@ -88,12 +97,14 @@ export const configTests: TestDefinition[] = [
     owasp: ['A06:2021', 'WSTG-CONF-01'],
     cwe: ['CWE-1104', 'CWE-1035'],
     applicability: rule.always(),
+    aliases: ['Outdated Software', 'Known Vulnerable Dependencies', 'End-of-Life Software', 'Unpatched Components'],
     tags: ['components'],
   },
   {
     id: 'CONF-006',
     vulnerabilityName: 'Cross-Domain Policy Misconfiguration',
     category: 'config',
+    subcategory: 'Platform Hardening',
     priority: 'Medium',
     description:
       'Legacy cross-domain policy files (crossdomain.xml, clientaccesspolicy.xml) grant wildcard access, allowing third-party rich clients to read authenticated responses.',
@@ -105,12 +116,14 @@ export const configTests: TestDefinition[] = [
     owasp: ['WSTG-CONF-08'],
     cwe: ['CWE-942'],
     applicability: browser,
+    aliases: ['Insecure crossdomain.xml', 'Flash Cross-Domain Policy'],
     tags: ['hardening'],
   },
   {
     id: 'CONF-007',
     vulnerabilityName: 'Debug and Diagnostic Endpoints Exposed',
     category: 'config',
+    subcategory: 'Platform Hardening',
     priority: 'High',
     description:
       'Debug modes, profilers, health/metrics endpoints or management actuators are enabled in a reachable environment, exposing configuration, memory dumps or remote control.',
@@ -122,12 +135,14 @@ export const configTests: TestDefinition[] = [
     owasp: ['WSTG-CONF-02', 'A05:2021'],
     cwe: ['CWE-489'],
     applicability: web,
+    aliases: ['Debug Mode Enabled', 'Exposed Actuator Endpoints', 'Exposed Metrics Endpoint'],
     tags: ['hardening'],
   },
   {
     id: 'CONF-008',
     vulnerabilityName: 'Weak or Missing Content Security Policy',
     category: 'config',
+    subcategory: 'Security Headers',
     priority: 'Medium',
     description:
       'CSP is absent, or is weakened by unsafe-inline, unsafe-eval, wildcard sources or exploitable JSONP endpoints in allowed origins, removing a key XSS mitigation.',
@@ -139,12 +154,14 @@ export const configTests: TestDefinition[] = [
     owasp: ['WSTG-CONF-12'],
     cwe: ['CWE-693'],
     applicability: browser,
+    aliases: ['Missing Content-Security-Policy', 'Unsafe-Inline CSP', 'CSP Bypass'],
     tags: ['headers'],
   },
   {
     id: 'CONF-009',
     vulnerabilityName: 'Improper Caching of Sensitive Responses',
     category: 'config',
+    subcategory: 'Response Caching',
     priority: 'Medium',
     description:
       'Authenticated pages or API responses lack no-store cache directives, so sensitive data persists in browser cache, shared proxies or CDN nodes.',
@@ -156,12 +173,14 @@ export const configTests: TestDefinition[] = [
     owasp: ['WSTG-ATHN-06'],
     cwe: ['CWE-525'],
     applicability: rule.is('hasAuthentication', true),
+    aliases: ['Missing Cache-Control', 'Web Cache Deception', 'Sensitive Data Cached by Proxy'],
     tags: ['caching'],
   },
   {
     id: 'CONF-010',
     vulnerabilityName: 'Insufficient Logging and Monitoring of Security Events',
     category: 'config',
+    subcategory: 'Logging & Monitoring',
     priority: 'Medium',
     description:
       'Authentication failures, access control violations and high-risk actions are not logged or alerted on, allowing attacks to proceed undetected.',
@@ -170,15 +189,17 @@ export const configTests: TestDefinition[] = [
       'Generate controlled security events and confirm whether they are captured and attributable.',
       'Check that logs do not themselves contain credentials or full tokens.',
     ],
-    owasp: ['A09:2021', 'WSTG-ATHN-*'],
+    owasp: ['A09:2021'],
     cwe: ['CWE-778'],
     applicability: rule.any(rule.is('testingApproach', 'grey-box'), rule.is('testingApproach', 'white-box')),
+    aliases: ['Security Logging Failures', 'Missing Audit Trail', 'Insufficient Monitoring'],
     tags: ['monitoring'],
   },
   {
     id: 'CONF-011',
     vulnerabilityName: 'Insecure Default Platform Configuration',
     category: 'config',
+    subcategory: 'Platform Hardening',
     priority: 'Medium',
     description:
       'Sample applications, default virtual hosts, default accounts or shipped example content remain deployed, providing unnecessary and often vulnerable functionality.',
@@ -190,12 +211,14 @@ export const configTests: TestDefinition[] = [
     owasp: ['WSTG-CONF-01', 'A05:2021'],
     cwe: ['CWE-1188'],
     applicability: web,
+    aliases: ['Sample Applications Deployed', 'Default Installation Files'],
     tags: ['hardening'],
   },
   {
     id: 'CONF-012',
     vulnerabilityName: 'Missing Subresource Integrity for Third-Party Scripts',
     category: 'config',
+    subcategory: 'Supply Chain',
     priority: 'Low',
     description:
       'Externally hosted scripts are loaded without integrity attributes, so a compromise of the third party or its CDN results in arbitrary script execution in the application origin.',
@@ -207,6 +230,7 @@ export const configTests: TestDefinition[] = [
     owasp: ['A08:2021'],
     cwe: ['CWE-353'],
     applicability: rule.all(browser, rule.is('usesThirdPartyScripts', true)),
+    aliases: ['Missing SRI', 'Unpinned Third-Party Script'],
     tags: ['supply-chain'],
   },
 ];
@@ -216,6 +240,7 @@ export const transportTests: TestDefinition[] = [
     id: 'TLS-001',
     vulnerabilityName: 'Weak TLS Configuration',
     category: 'transport',
+    subcategory: 'TLS Configuration',
     priority: 'Medium',
     description:
       'The server supports deprecated protocol versions (SSLv3, TLS 1.0/1.1), weak ciphers, or insecure renegotiation, allowing downgrade or cryptographic attacks on data in transit.',
@@ -227,12 +252,14 @@ export const transportTests: TestDefinition[] = [
     owasp: ['WSTG-CRYP-01'],
     cwe: ['CWE-326', 'CWE-327'],
     applicability: rule.is('internetFacing', true),
+    aliases: ['Weak Cipher Suites', 'Deprecated TLS Versions', 'SSL/TLS Downgrade', 'Insecure Renegotiation'],
     tags: ['tls'],
   },
   {
     id: 'TLS-002',
     vulnerabilityName: 'Invalid or Untrusted TLS Certificate',
     category: 'transport',
+    subcategory: 'Certificate Validation',
     priority: 'Medium',
     description:
       'The certificate is expired, self-signed, mismatched to the hostname, or signed with a weak algorithm, undermining server authentication and training users to bypass warnings.',
@@ -244,12 +271,14 @@ export const transportTests: TestDefinition[] = [
     owasp: ['WSTG-CRYP-01'],
     cwe: ['CWE-295'],
     applicability: rule.is('internetFacing', true),
+    aliases: ['Expired Certificate', 'Self-Signed Certificate', 'Certificate Hostname Mismatch'],
     tags: ['tls'],
   },
   {
     id: 'TLS-003',
     vulnerabilityName: 'Missing HTTP Strict Transport Security',
     category: 'transport',
+    subcategory: 'TLS Configuration',
     priority: 'Medium',
     description:
       'Without HSTS the browser will attempt plaintext connections, exposing users to SSL stripping on the first or subsequent requests.',
@@ -261,12 +290,14 @@ export const transportTests: TestDefinition[] = [
     owasp: ['WSTG-CONF-07'],
     cwe: ['CWE-319'],
     applicability: rule.all(rule.includes('assetTypes', 'web-app'), rule.is('internetFacing', true)),
+    aliases: ['Missing HSTS', 'SSL Stripping Exposure'],
     tags: ['tls', 'headers'],
   },
   {
     id: 'TLS-004',
     vulnerabilityName: 'Cleartext Transmission of Sensitive Data',
     category: 'transport',
+    subcategory: 'Data in Transit',
     priority: 'High',
     description:
       'Credentials, tokens or personal data traverse an unencrypted channel, or the application is reachable over plain HTTP without redirect, allowing interception.',
@@ -278,12 +309,14 @@ export const transportTests: TestDefinition[] = [
     owasp: ['WSTG-ATHN-01', 'A02:2021'],
     cwe: ['CWE-319'],
     applicability: rule.always(),
+    aliases: ['Cleartext HTTP', 'Unencrypted Credentials in Transit', 'Missing HTTPS Redirect'],
     tags: ['tls'],
   },
   {
     id: 'TLS-005',
     vulnerabilityName: 'Mixed Content Loading',
     category: 'transport',
+    subcategory: 'Data in Transit',
     priority: 'Low',
     description:
       'An HTTPS page loads scripts, styles, images or frames over HTTP, allowing an on-path attacker to tamper with page content or downgrade protection.',
@@ -295,12 +328,14 @@ export const transportTests: TestDefinition[] = [
     owasp: ['WSTG-CRYP-03'],
     cwe: ['CWE-311'],
     applicability: rule.includes('assetTypes', 'web-app'),
+    aliases: ['Mixed Content', 'Insecure Resource Loading over HTTP'],
     tags: ['tls'],
   },
   {
     id: 'TLS-006',
     vulnerabilityName: 'Sensitive Data Exposed in TLS-Adjacent Channels',
     category: 'transport',
+    subcategory: 'Data in Transit',
     priority: 'Low',
     description:
       'Sensitive values leak outside the encrypted payload — via SNI-visible hostnames, unencrypted DNS, Referer headers to third parties or unprotected WebSocket upgrades.',
@@ -312,6 +347,7 @@ export const transportTests: TestDefinition[] = [
     owasp: ['WSTG-CRYP-03'],
     cwe: ['CWE-319'],
     applicability: rule.any(rule.is('usesWebsockets', true), rule.is('usesThirdPartyScripts', true)),
+    aliases: ['Unencrypted WebSocket', 'Referer Leakage to Third Parties'],
     tags: ['tls'],
   },
 ];

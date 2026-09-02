@@ -9,7 +9,9 @@ import {
 } from '../../ui/primitives';
 import { IconChevron, IconExternal } from '../../ui/icons';
 import { categoryName } from '../../data/categories';
+import { resolveReferences } from '../../data/references';
 import { describeRule, suggestApplicability } from '../../domain/applicability';
+import { ApplicabilityExplanation } from './ApplicabilityExplanation';
 import type { ApplicationContext } from '../../domain/context';
 import type { ChecklistItem, TestResult, TestStatus } from '../../domain/types';
 import { updateTestState } from '../../persistence/repository';
@@ -52,7 +54,8 @@ export function ChecklistRow({
   useEffect(() => setNotes(s.notes), [s.notes]);
 
   useEffect(() => {
-    if (highlighted && rowRef.current) {
+    // Guarded: scrollIntoView is unavailable in some embedded/test environments.
+    if (highlighted && typeof rowRef.current?.scrollIntoView === 'function') {
       rowRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   }, [highlighted]);
@@ -106,6 +109,7 @@ export function ChecklistRow({
             </button>
             <Badge tone={priorityTone(d.priority)}>{d.priority}</Badge>
             <span className="font-mono text-[11px] text-ink-600">{d.id}</span>
+            <span className="hidden text-[11px] text-ink-500 lg:inline">{d.subcategory}</span>
             {!s.applicable && <Badge tone="na">Excluded</Badge>}
             {overridden && s.applicable && <Badge tone="brand" title="Applicability set manually">Manual</Badge>}
             {suggestion.uncertain && s.applicable && (
@@ -149,6 +153,11 @@ export function ChecklistRow({
                   What this vulnerability is
                 </p>
                 <p className="text-sm leading-relaxed text-ink-200">{d.description}</p>
+                {d.aliases && d.aliases.length > 0 && (
+                  <p className="mt-1.5 text-[11px] text-ink-500">
+                    Also known as: <span className="text-ink-400">{d.aliases.join(' · ')}</span>
+                  </p>
+                )}
               </div>
               <div>
                 <p className="mb-1 text-[11px] font-medium tracking-wider text-ink-400 uppercase">
@@ -183,16 +192,14 @@ export function ChecklistRow({
               </div>
 
               <div className="panel-muted space-y-2 p-3">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
                     <p className="text-xs font-medium text-ink-200">
                       Applicable to this engagement
                     </p>
-                    <p className="mt-0.5 text-[11px] text-ink-500">
+                    <ApplicabilityExplanation suggestion={suggestion} className="mt-1.5" />
+                    <p className="mt-1.5 text-[11px] text-ink-600">
                       Rule: {describeRule(d.applicability)}
-                    </p>
-                    <p className="mt-0.5 text-[11px] text-ink-500">
-                      {suggestion.reasons.join(' · ') || 'No context facts recorded'}
                     </p>
                   </div>
                   <SegmentedControl
@@ -232,21 +239,18 @@ export function ChecklistRow({
               </div>
 
               <div className="flex flex-wrap items-center gap-2 text-[11px] text-ink-500">
-                <span className="text-ink-400">{categoryName(d.category)}</span>
-                {(d.owasp ?? []).map((o) => (
-                  <Badge key={o} tone="neutral">
-                    {o}
-                  </Badge>
-                ))}
-                {(d.cwe ?? []).map((cwe) => (
+                <span className="text-ink-400">
+                  {categoryName(d.category)} · {d.subcategory}
+                </span>
+                {resolveReferences(d).map((reference) => (
                   <a
-                    key={cwe}
-                    href={`https://cwe.mitre.org/data/definitions/${cwe.replace('CWE-', '')}.html`}
+                    key={reference.label}
+                    href={reference.url}
                     target="_blank"
                     rel="noreferrer noopener"
                     className="inline-flex items-center gap-1 rounded-md border border-ink-600 px-1.5 py-0.5 hover:border-brand-500/50 hover:text-brand-400"
                   >
-                    {cwe}
+                    {reference.label}
                     <IconExternal size={10} />
                   </a>
                 ))}

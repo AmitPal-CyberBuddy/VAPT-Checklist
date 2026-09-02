@@ -3,12 +3,19 @@ import { rule } from '../../domain/applicability';
 
 const auth = rule.is('hasAuthentication', true);
 const roles = rule.is('hasMultipleRoles', true);
+/** Object-addressable data is the precondition for object-level authorization flaws. */
+const objectResources = rule.any(
+  rule.is('hasUserOwnedResources', true),
+  rule.is('hasMultiTenancy', true),
+  rule.includes('assetTypes', 'rest-api', 'graphql-api'),
+);
 
 export const authorizationTests: TestDefinition[] = [
   {
     id: 'AUTHZ-001',
     vulnerabilityName: 'Broken Access Control',
     category: 'authorization',
+    subcategory: 'Access Control Enforcement',
     priority: 'Critical',
     description:
       'The application fails to enforce, or enforces inconsistently, restrictions on what authenticated users can do — permitting access to functions and data outside their permission set.',
@@ -21,12 +28,14 @@ export const authorizationTests: TestDefinition[] = [
     owasp: ['A01:2021', 'WSTG-ATHZ-02'],
     cwe: ['CWE-284', 'CWE-862'],
     applicability: auth,
+    aliases: ['Missing Access Control', 'Improper Authorization', 'Broken Access Control'],
     tags: ['authorization'],
   },
   {
     id: 'AUTHZ-002',
     vulnerabilityName: 'IDOR / Broken Object Level Authorization (BOLA)',
     category: 'authorization',
+    subcategory: 'Object Level Authorization',
     priority: 'Critical',
     description:
       'Object identifiers supplied by the client are used to retrieve or modify records without verifying that the requester owns them, exposing other users\' data.',
@@ -38,13 +47,15 @@ export const authorizationTests: TestDefinition[] = [
     ],
     owasp: ['API1:2023', 'WSTG-ATHZ-04'],
     cwe: ['CWE-639', 'CWE-566'],
-    applicability: auth,
+    applicability: rule.all(auth, objectResources),
+    aliases: ['IDOR', 'BOLA', 'Insecure Direct Object Reference', 'Broken Object Level Authorization'],
     tags: ['authorization', 'idor'],
   },
   {
     id: 'AUTHZ-003',
     vulnerabilityName: 'Vertical Privilege Escalation',
     category: 'authorization',
+    subcategory: 'Privilege Escalation',
     priority: 'Critical',
     description:
       'A lower-privileged user can invoke functionality reserved for higher-privileged roles such as administrators.',
@@ -56,12 +67,14 @@ export const authorizationTests: TestDefinition[] = [
     owasp: ['WSTG-ATHZ-03', 'A01:2021'],
     cwe: ['CWE-269'],
     applicability: rule.all(auth, roles),
+    aliases: ['Vertical Privilege Escalation', 'Admin Function Access by Standard User'],
     tags: ['authorization'],
   },
   {
     id: 'AUTHZ-004',
     vulnerabilityName: 'Horizontal Privilege Escalation',
     category: 'authorization',
+    subcategory: 'Privilege Escalation',
     priority: 'High',
     description:
       'A user can act on resources belonging to another user of the same privilege level, typically through identifier manipulation in state-changing operations.',
@@ -72,13 +85,15 @@ export const authorizationTests: TestDefinition[] = [
     ],
     owasp: ['WSTG-ATHZ-04'],
     cwe: ['CWE-639'],
-    applicability: auth,
+    applicability: rule.all(auth, objectResources),
+    aliases: ['Horizontal Privilege Escalation', 'Cross-Account Access', 'Cross-User Data Modification'],
     tags: ['authorization'],
   },
   {
     id: 'AUTHZ-005',
     vulnerabilityName: 'Forced Browsing to Restricted Resources',
     category: 'authorization',
+    subcategory: 'Access Control Enforcement',
     priority: 'High',
     description:
       'Restricted pages, files and endpoints are protected only by not being linked, and can be reached by requesting the URL directly.',
@@ -90,12 +105,14 @@ export const authorizationTests: TestDefinition[] = [
     owasp: ['WSTG-ATHZ-01'],
     cwe: ['CWE-425'],
     applicability: rule.always(),
+    aliases: ['Forced Browsing', 'Unprotected Resource Access', 'Security Through Obscurity'],
     tags: ['authorization'],
   },
   {
     id: 'AUTHZ-006',
     vulnerabilityName: 'Path Traversal in Access Control',
     category: 'authorization',
+    subcategory: 'Access Control Enforcement',
     priority: 'High',
     description:
       'Traversal sequences or URL encoding tricks in the request path bypass proxy, gateway or framework access control rules that match on prefixes.',
@@ -107,12 +124,14 @@ export const authorizationTests: TestDefinition[] = [
     owasp: ['WSTG-ATHZ-01'],
     cwe: ['CWE-22', 'CWE-288'],
     applicability: rule.any(rule.is('usesCdnOrProxy', true), rule.is('hasAdminInterface', true)),
+    aliases: ['Path Normalisation Bypass', 'Proxy Access Control Bypass', 'URL Path Confusion'],
     tags: ['authorization'],
   },
   {
     id: 'AUTHZ-007',
     vulnerabilityName: 'Mass Assignment / Broken Object Property Level Authorization',
     category: 'authorization',
+    subcategory: 'Object Level Authorization',
     priority: 'High',
     description:
       'The application binds client-supplied fields directly to internal objects, letting an attacker set properties they should not control (role, balance, verified, tenantId).',
@@ -124,12 +143,14 @@ export const authorizationTests: TestDefinition[] = [
     owasp: ['API3:2023'],
     cwe: ['CWE-915'],
     applicability: rule.all(auth, rule.includes('assetTypes', 'rest-api', 'graphql-api', 'web-app')),
+    aliases: ['Mass Assignment', 'Auto-Binding Vulnerability', 'BOPLA', 'Object Property Level Authorization'],
     tags: ['authorization', 'api'],
   },
   {
     id: 'AUTHZ-008',
     vulnerabilityName: 'Multi-Tenant Data Segregation Failure',
     category: 'authorization',
+    subcategory: 'Tenant Isolation',
     priority: 'Critical',
     description:
       'Tenant scoping is missing or client-controlled, so a user of one organisation can read or modify another organisation\'s data.',
@@ -141,12 +162,14 @@ export const authorizationTests: TestDefinition[] = [
     owasp: ['A01:2021', 'API1:2023'],
     cwe: ['CWE-653', 'CWE-639'],
     applicability: rule.is('hasMultiTenancy', true),
+    aliases: ['Cross-Tenant Access', 'Multi-Tenancy Isolation Failure', 'Tenant ID Manipulation'],
     tags: ['authorization', 'multi-tenant'],
   },
   {
     id: 'AUTHZ-009',
     vulnerabilityName: 'Broken Function Level Authorization (BFLA)',
     category: 'authorization',
+    subcategory: 'Function Level Authorization',
     priority: 'Critical',
     description:
       'API operations are exposed without per-operation authorisation, so any authenticated caller can invoke administrative or privileged functions.',
@@ -158,12 +181,14 @@ export const authorizationTests: TestDefinition[] = [
     owasp: ['API5:2023'],
     cwe: ['CWE-285'],
     applicability: rule.includes('assetTypes', 'rest-api', 'graphql-api', 'soap-api'),
+    aliases: ['BFLA', 'Missing Function Level Access Control', 'Broken Function Level Authorization'],
     tags: ['authorization', 'api'],
   },
   {
     id: 'AUTHZ-010',
     vulnerabilityName: 'Privilege Escalation via Role or Group Manipulation',
     category: 'authorization',
+    subcategory: 'Privilege Escalation',
     priority: 'High',
     description:
       'Role assignment functions can be invoked by unprivileged users, or role values inside tokens, cookies and hidden fields are trusted without verification.',
@@ -175,12 +200,14 @@ export const authorizationTests: TestDefinition[] = [
     owasp: ['WSTG-ATHZ-03'],
     cwe: ['CWE-269'],
     applicability: rule.all(auth, roles),
+    aliases: ['Role Manipulation', 'Self-Assigned Admin Role', 'Group Membership Abuse'],
     tags: ['authorization'],
   },
   {
     id: 'AUTHZ-011',
     vulnerabilityName: 'Access Control Based on Untrusted Headers or Referer',
     category: 'authorization',
+    subcategory: 'Access Control Enforcement',
     priority: 'High',
     description:
       'Authorisation decisions rely on client-controllable inputs such as Referer, X-Forwarded-For, custom role headers or the requesting hostname.',
@@ -192,12 +219,14 @@ export const authorizationTests: TestDefinition[] = [
     owasp: ['WSTG-ATHZ-01'],
     cwe: ['CWE-807', 'CWE-290'],
     applicability: rule.any(rule.is('usesCdnOrProxy', true), auth),
+    aliases: ['Header-Based Access Control Bypass', 'X-Forwarded-For Spoofing', 'Referer-Based Authorization'],
     tags: ['authorization'],
   },
   {
     id: 'AUTHZ-012',
     vulnerabilityName: 'Unauthorised Access to Generated Files and Exports',
     category: 'authorization',
+    subcategory: 'Object Level Authorization',
     priority: 'High',
     description:
       'Reports, invoices, attachments and exported datasets are stored at predictable or unauthenticated URLs, bypassing application-level access control.',
@@ -209,6 +238,7 @@ export const authorizationTests: TestDefinition[] = [
     owasp: ['A01:2021'],
     cwe: ['CWE-425', 'CWE-548'],
     applicability: rule.any(rule.is('hasDataExport', true), rule.is('hasFileDownload', true)),
+    aliases: ['Unprotected Report Download', 'Predictable Export URL', 'Pre-Signed URL Weakness'],
     tags: ['authorization'],
   },
 ];

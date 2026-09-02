@@ -276,6 +276,7 @@ export default function NewEngagementPage() {
                   <tr>
                     <th className="px-3 py-2 font-medium">ID</th>
                     <th className="px-3 py-2 font-medium">Vulnerability</th>
+                    <th className="px-3 py-2 font-medium">Subcategory</th>
                     <th className="px-3 py-2 font-medium">Priority</th>
                     <th className="px-3 py-2 font-medium">Why included</th>
                   </tr>
@@ -294,6 +295,9 @@ export default function NewEngagementPage() {
                           {definition.id}
                         </td>
                         <td className="px-3 py-1.5 text-ink-100">{definition.vulnerabilityName}</td>
+                        <td className="px-3 py-1.5 text-xs text-ink-500">
+                          {definition.subcategory}
+                        </td>
                         <td className="px-3 py-1.5">
                           <Badge
                             tone={
@@ -313,7 +317,10 @@ export default function NewEngagementPage() {
                           {suggestion.uncertain ? (
                             <span className="text-amber-400">Context incomplete</span>
                           ) : (
-                            suggestion.reasons[0]
+                            suggestion.conditions
+                              .filter((c) => c.outcome === 'met')
+                              .map((c) => c.label)
+                              .join(', ') || 'Baseline test'
                           )}
                         </td>
                       </tr>

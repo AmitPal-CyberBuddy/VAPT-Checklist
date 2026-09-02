@@ -75,10 +75,18 @@ Any decision can be revised at any time. There are deliberately no `Retest`, `Ev
 
 ## Bundled test library
 
-**184 vulnerability test definitions** across 18 categories, each with a real vulnerability name
-(SQL Injection, IDOR / BOLA, MFA Bypass, JWT Misconfiguration, SSRF, HTTP Request Smuggling …),
-priority, description, ordered testing guidance, OWASP/CWE mappings and a declarative applicability
-rule.
+| | |
+| --- | --- |
+| Vulnerability tests | **184** (31 Critical · 64 High · 72 Medium · 17 Low) |
+| Taxonomy | 18 categories → 100 subcategories |
+| Searchable aliases | 536 |
+| Testing guidance steps | 563 |
+| Context-driven tests | 163 (21 baseline tests always apply) |
+| Application context facts | 40 (38 drive applicability rules) |
+
+Every entry carries a canonical vulnerability name, category **and subcategory**, priority,
+description, ordered testing guidance, a declarative applicability rule, aliases, OWASP/CWE mapping
+and derived reference links.
 
 | | | | |
 | --- | --- | --- | --- |
@@ -88,7 +96,50 @@ rule.
 | GraphQL | Information Disclosure | Availability & Rate Limiting | Cloud & Infrastructure |
 | Mobile Application | Privacy & Data Protection | | |
 
-Browse it in-app under **Test Library**.
+**Canonical names, not duplicates.** IDOR, BOLA and *Insecure Direct Object Reference* are one test
+with aliases — searching any of them lands on `AUTHZ-002`. Names and aliases share one namespace and
+a validator fails the build if two tests claim the same term.
+
+**Search covers everything**: name, alias, test ID, category, subcategory, tags, description,
+testing guidance, OWASP/CWE codes and (on the checklist) your own notes. The index is built once at
+load, so filtering stays instant.
+
+Full conventions and how to add a test: [`docs/TEST-LIBRARY.md`](docs/TEST-LIBRARY.md).
+
+---
+
+## How the checklist gets narrowed
+
+```text
+Complete VAPT knowledge base  (184 tests)
+          ↓
+Application context           (40 recorded facts)
+          ↓
+Applicability rules           (per test, not per category)
+          ↓
+Relevant vulnerabilities      (explained, never hidden silently)
+          ↓
+Testing checklist
+```
+
+Applicability is **never a black box**. Each test shows the conditions that produced the decision:
+
+```text
+IDOR / Broken Object Level Authorization (BOLA)
+
+Applicable because:
+  ✓ Application has authentication            — Yes
+  ✓ Users own individual records or objects   — Yes
+  ✓ Asset types: REST API                     — Web Application, REST API
+```
+
+Filtering is deliberately **conservative**. A fact you have not recorded evaluates to *unknown*, and
+unknown keeps the test in scope with an **Unconfirmed** badge — never silently removed. No Critical
+test is ever excluded on unknown facts alone, and the tester can override any decision from the
+checklist row (the override is preserved when the context later changes).
+
+The context form shows how many tests each question decides, so you can see which answers actually
+move the checklist.
 
 ---
 
@@ -164,6 +215,7 @@ You can also serve `dist/` from any static host, or open it from disk.
 
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — layers, data flow, module map
 - [`docs/DATA-MODEL.md`](docs/DATA-MODEL.md) — entities, invariants, metrics, export model
+- [`docs/TEST-LIBRARY.md`](docs/TEST-LIBRARY.md) — knowledge base conventions, taxonomy, authoring guide
 - [`docs/adr/`](docs/adr/) — architecture decision records
 - [`docs/deployment/`](docs/deployment/) — GitHub Pages deployment and workflows
 

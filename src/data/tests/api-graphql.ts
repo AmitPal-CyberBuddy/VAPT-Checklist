@@ -10,6 +10,7 @@ export const apiTests: TestDefinition[] = [
     id: 'API-001',
     vulnerabilityName: 'Missing Authentication on API Endpoints',
     category: 'api',
+    subcategory: 'API Authentication',
     priority: 'Critical',
     description:
       'One or more API operations are reachable without credentials, either by design oversight or because authentication is applied at the gateway but not on all routes.',
@@ -21,12 +22,14 @@ export const apiTests: TestDefinition[] = [
     owasp: ['API2:2023'],
     cwe: ['CWE-306'],
     applicability: anyApi,
+    aliases: ['Unauthenticated API Endpoint', 'Missing API Authentication', 'Gateway Bypass'],
     tags: ['api'],
   },
   {
     id: 'API-002',
     vulnerabilityName: 'Excessive Data Exposure in API Responses',
     category: 'api',
+    subcategory: 'API Data Exposure',
     priority: 'High',
     description:
       'Endpoints return complete objects and rely on the client to display only part of them, leaking fields such as password hashes, internal IDs, tokens, roles or other users\' data.',
@@ -38,12 +41,14 @@ export const apiTests: TestDefinition[] = [
     owasp: ['API3:2023'],
     cwe: ['CWE-213'],
     applicability: anyApi,
+    aliases: ['Excessive Data Exposure', 'Over-Fetching', 'Hidden Fields in API Response'],
     tags: ['api', 'disclosure'],
   },
   {
     id: 'API-003',
     vulnerabilityName: 'Unrestricted Resource Consumption on API',
     category: 'api',
+    subcategory: 'API Resource Controls',
     priority: 'High',
     description:
       'The API lacks per-client rate limits, payload size limits or pagination ceilings, permitting abuse, cost inflation and denial of service.',
@@ -55,12 +60,14 @@ export const apiTests: TestDefinition[] = [
     owasp: ['API4:2023'],
     cwe: ['CWE-770'],
     applicability: anyApi,
+    aliases: ['Missing API Rate Limiting', 'Unrestricted Resource Consumption', 'Unbounded Pagination'],
     tags: ['api', 'dos'],
   },
   {
     id: 'API-004',
     vulnerabilityName: 'HTTP Verb Tampering and Method Confusion',
     category: 'api',
+    subcategory: 'Request Handling',
     priority: 'Medium',
     description:
       'Authorisation or routing differs by HTTP method, so an unexpected verb (or an override header) reaches the handler without the intended checks.',
@@ -72,12 +79,14 @@ export const apiTests: TestDefinition[] = [
     owasp: ['API5:2023'],
     cwe: ['CWE-650'],
     applicability: anyApi,
+    aliases: ['Verb Tampering', 'HTTP Method Override Abuse', 'Method-Based Access Bypass'],
     tags: ['api'],
   },
   {
     id: 'API-005',
     vulnerabilityName: 'Deprecated or Shadow API Versions Exposed',
     category: 'api',
+    subcategory: 'API Surface Management',
     priority: 'High',
     description:
       'Older or undocumented API versions remain deployed with weaker controls, unpatched code or debug behaviour.',
@@ -89,12 +98,14 @@ export const apiTests: TestDefinition[] = [
     owasp: ['API9:2023'],
     cwe: ['CWE-1059'],
     applicability: anyApi,
+    aliases: ['Shadow API', 'Zombie API', 'Improper Inventory Management'],
     tags: ['api'],
   },
   {
     id: 'API-006',
     vulnerabilityName: 'Insecure API Key Handling',
     category: 'api',
+    subcategory: 'API Authentication',
     priority: 'High',
     description:
       'API keys are embedded in clients, transmitted in URLs, never rotated, unscoped, or serve as the only authorisation control.',
@@ -106,12 +117,14 @@ export const apiTests: TestDefinition[] = [
     owasp: ['API2:2023'],
     cwe: ['CWE-798', 'CWE-522'],
     applicability: rule.includes('authMechanisms', 'api-key'),
+    aliases: ['Exposed API Key', 'Unscoped API Key', 'API Key Leakage'],
     tags: ['api'],
   },
   {
     id: 'API-007',
     vulnerabilityName: 'Missing Request Schema Validation',
     category: 'api',
+    subcategory: 'Request Handling',
     priority: 'Medium',
     description:
       'The API accepts unexpected fields, types and structures, causing type confusion, logic errors or injection into downstream systems.',
@@ -123,12 +136,14 @@ export const apiTests: TestDefinition[] = [
     owasp: ['API8:2023'],
     cwe: ['CWE-20'],
     applicability: anyApi,
+    aliases: ['Missing Schema Validation', 'Type Confusion', 'Unvalidated JSON Input'],
     tags: ['api'],
   },
   {
     id: 'API-008',
     vulnerabilityName: 'Content-Type Confusion',
     category: 'api',
+    subcategory: 'Request Handling',
     priority: 'Medium',
     description:
       'The API parses request bodies based on loose or attacker-controlled content types, enabling XML processing on a JSON endpoint, CSRF via simple content types or parser mismatches.',
@@ -140,12 +155,14 @@ export const apiTests: TestDefinition[] = [
     owasp: ['API8:2023'],
     cwe: ['CWE-436'],
     applicability: restLike,
+    aliases: ['JSON/XML Parser Confusion', 'Content-Type Bypass'],
     tags: ['api'],
   },
   {
     id: 'API-009',
     vulnerabilityName: 'Unrestricted Access to Sensitive Business Flows',
     category: 'api',
+    subcategory: 'API Resource Controls',
     priority: 'High',
     description:
       'Business-critical flows are exposed via API without abuse protection, allowing automated purchasing, booking, reservation or messaging at scale.',
@@ -157,12 +174,14 @@ export const apiTests: TestDefinition[] = [
     owasp: ['API6:2023'],
     cwe: ['CWE-799'],
     applicability: rule.all(anyApi, rule.is('hasWorkflowOrTransactions', true)),
+    aliases: ['Business Flow Abuse', 'Unrestricted Access to Sensitive Business Flows'],
     tags: ['api', 'business-logic'],
   },
   {
     id: 'API-010',
     vulnerabilityName: 'SOAP / WSDL Interface Weakness',
     category: 'api',
+    subcategory: 'SOAP Services',
     priority: 'High',
     description:
       'SOAP services expose their WSDL publicly, accept unsigned or unencrypted messages, or are vulnerable to XML-layer attacks and operation-level authorisation gaps.',
@@ -171,15 +190,17 @@ export const apiTests: TestDefinition[] = [
       'Invoke administrative operations directly and test WS-Security enforcement.',
       'Test XML attacks (XXE, XML bombs, signature wrapping) against the endpoint.',
     ],
-    owasp: ['WSTG-*'],
+    owasp: ['API5:2023', 'WSTG-INPV-07'],
     cwe: ['CWE-285', 'CWE-611'],
     applicability: rule.includes('assetTypes', 'soap-api'),
+    aliases: ['SOAP Operation Abuse', 'WS-Security Bypass', 'XML Web Service Weakness'],
     tags: ['api', 'soap'],
   },
   {
     id: 'API-011',
     vulnerabilityName: 'Unsafe Consumption of Third-Party APIs',
     category: 'api',
+    subcategory: 'Third-Party Integration',
     priority: 'Medium',
     description:
       'Data received from upstream services is trusted implicitly — no validation, no TLS verification, blind redirect following — allowing a compromised or spoofed partner to attack the application.',
@@ -191,12 +212,14 @@ export const apiTests: TestDefinition[] = [
     owasp: ['API10:2023'],
     cwe: ['CWE-1104'],
     applicability: rule.is('callsExternalServices', true),
+    aliases: ['Unsafe Consumption of APIs', 'Upstream Trust Failure', 'Blind Redirect Following'],
     tags: ['api'],
   },
   {
     id: 'API-012',
     vulnerabilityName: 'Webhook Signature and Replay Weakness',
     category: 'api',
+    subcategory: 'Third-Party Integration',
     priority: 'Medium',
     description:
       'Inbound webhooks are accepted without signature verification, timestamp checking or replay protection, allowing forged events to drive business state.',
@@ -208,6 +231,7 @@ export const apiTests: TestDefinition[] = [
     owasp: ['API10:2023'],
     cwe: ['CWE-345'],
     applicability: rule.all(rule.is('callsExternalServices', true), anyApi),
+    aliases: ['Webhook Forgery', 'Unsigned Webhook', 'Webhook Replay'],
     tags: ['api'],
   },
 ];
@@ -217,6 +241,7 @@ export const graphqlTests: TestDefinition[] = [
     id: 'GQL-001',
     vulnerabilityName: 'GraphQL Introspection Enabled in Production',
     category: 'graphql',
+    subcategory: 'Schema Exposure',
     priority: 'Medium',
     description:
       'The full schema — including internal types, deprecated fields and administrative mutations — can be downloaded by any client.',
@@ -228,12 +253,14 @@ export const graphqlTests: TestDefinition[] = [
     owasp: ['API9:2023'],
     cwe: ['CWE-200'],
     applicability: graphql,
+    aliases: ['Introspection Enabled', 'Schema Disclosure', 'Field Suggestion Leakage'],
     tags: ['graphql'],
   },
   {
     id: 'GQL-002',
     vulnerabilityName: 'GraphQL Query Depth and Complexity Denial of Service',
     category: 'graphql',
+    subcategory: 'Query Controls',
     priority: 'High',
     description:
       'The server executes arbitrarily deep, recursive or wide queries with no cost limits, allowing a single request to exhaust resources.',
@@ -245,12 +272,14 @@ export const graphqlTests: TestDefinition[] = [
     owasp: ['API4:2023'],
     cwe: ['CWE-770'],
     applicability: graphql,
+    aliases: ['Query Depth Attack', 'Complexity Attack', 'GraphQL DoS', 'Circular Query Abuse'],
     tags: ['graphql', 'dos'],
   },
   {
     id: 'GQL-003',
     vulnerabilityName: 'GraphQL Batching and Alias-Based Brute Force',
     category: 'graphql',
+    subcategory: 'Query Controls',
     priority: 'High',
     description:
       'Query batching and field aliasing let an attacker perform thousands of operations in a single HTTP request, defeating rate limiting on login, OTP and lookup operations.',
@@ -262,12 +291,14 @@ export const graphqlTests: TestDefinition[] = [
     owasp: ['API4:2023'],
     cwe: ['CWE-307'],
     applicability: graphql,
+    aliases: ['Batching Attack', 'Alias Overloading', 'Rate Limit Bypass via Batching'],
     tags: ['graphql'],
   },
   {
     id: 'GQL-004',
     vulnerabilityName: 'Missing Field-Level Authorization in GraphQL',
     category: 'graphql',
+    subcategory: 'GraphQL Authorization',
     priority: 'Critical',
     description:
       'Authorisation is enforced at the query entry point but not on individual fields or nested resolvers, so sensitive data is reachable through alternate traversal paths.',
@@ -279,12 +310,14 @@ export const graphqlTests: TestDefinition[] = [
     owasp: ['API5:2023', 'API1:2023'],
     cwe: ['CWE-285'],
     applicability: graphql,
+    aliases: ['Field-Level Authorization Bypass', 'GraphQL BOLA', 'Nested Resolver Authorization Flaw'],
     tags: ['graphql'],
   },
   {
     id: 'GQL-005',
     vulnerabilityName: 'Injection via GraphQL Resolvers',
     category: 'graphql',
+    subcategory: 'GraphQL Injection',
     priority: 'Critical',
     description:
       'Arguments passed to resolvers reach databases, ORMs or system calls without sanitisation, producing SQL/NoSQL/command injection behind the GraphQL layer.',
@@ -296,12 +329,14 @@ export const graphqlTests: TestDefinition[] = [
     owasp: ['A03:2021'],
     cwe: ['CWE-89', 'CWE-943'],
     applicability: graphql,
+    aliases: ['Resolver Injection', 'GraphQL SQL Injection', 'Argument Injection'],
     tags: ['graphql', 'injection'],
   },
   {
     id: 'GQL-006',
     vulnerabilityName: 'Information Disclosure via GraphQL Errors',
     category: 'graphql',
+    subcategory: 'Schema Exposure',
     priority: 'Medium',
     description:
       'Error responses include stack traces, resolver paths, database messages or field suggestions that reveal schema and implementation details.',
@@ -313,12 +348,14 @@ export const graphqlTests: TestDefinition[] = [
     owasp: ['API9:2023'],
     cwe: ['CWE-209'],
     applicability: graphql,
+    aliases: ['GraphQL Error Leakage', 'Stack Trace in Extensions'],
     tags: ['graphql', 'disclosure'],
   },
   {
     id: 'GQL-007',
     vulnerabilityName: 'GraphQL Cross-Site Request Forgery',
     category: 'graphql',
+    subcategory: 'Transport Security',
     priority: 'Medium',
     description:
       'The endpoint accepts mutations over GET or form-encoded POST with cookie authentication, making cross-site forgery possible without CORS restrictions applying.',
@@ -330,6 +367,7 @@ export const graphqlTests: TestDefinition[] = [
     owasp: ['A01:2021'],
     cwe: ['CWE-352'],
     applicability: graphql,
+    aliases: ['GraphQL CSRF', 'GET-Based Mutation'],
     tags: ['graphql', 'csrf'],
   },
 ];

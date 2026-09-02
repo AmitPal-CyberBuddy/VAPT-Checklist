@@ -9,19 +9,41 @@
  *   - It returns a SUGGESTION, never a verdict.
  *   - Unknown facts resolve to `unknown`, and an unknown result is treated as
  *     "include, but flag as uncertain" — a missed test is worse than an extra.
- *   - Every suggestion carries human readable reasons for transparency.
+ *   - Every suggestion carries the individual conditions that produced it, so
+ *     the UI can show "Applicable because: ✓ API available, ✓ Multiple roles".
  */
 
 import type { ApplicabilityRule, TestDefinition } from './types';
-import { FACT_BY_KEY, formatFactValue, type ApplicationContext, type ContextFactKey } from './context';
+import {
+  FACT_BY_KEY,
+  formatFactValue,
+  type ApplicationContext,
+  type ContextFactKey,
+} from './context';
 
 export type Trilean = true | false | 'unknown';
+
+/** Outcome of one leaf condition inside a rule. */
+export type ConditionOutcome = 'met' | 'unmet' | 'unknown';
+
+export interface ApplicabilityCondition {
+  outcome: ConditionOutcome;
+  /** Short, positive phrasing: "File upload", "Authentication mechanisms: JWT". */
+  label: string;
+  /** What the engagement actually recorded for the underlying fact. */
+  detail: string;
+  fact: ContextFactKey;
+}
 
 export interface ApplicabilitySuggestion {
   applicable: boolean;
   /** True when the decision relied on facts the tester has not recorded. */
   uncertain: boolean;
-  /** Human readable justification lines. */
+  /** Leaf conditions with their individual outcomes, for explanation UI. */
+  conditions: ApplicabilityCondition[];
+  /** One-line human summary, used in exports and tooltips. */
+  summary: string;
+  /** Flat reason lines (condition label + detail). */
   reasons: string[];
 }
 
@@ -59,11 +81,30 @@ function optionLabel(fact: ContextFactKey, value: string): string {
   return FACT_BY_KEY[fact]?.options?.find((o) => o.value === value)?.label ?? value;
 }
 
-/** Core tri-state evaluation with reason collection. */
+function conditionLabel(rule: ApplicabilityRule & { kind: 'fact' | 'includes' }): string {
+  if (rule.kind === 'fact') {
+    if (rule.equals === true) return factLabel(rule.fact);
+    if (rule.equals === false) return `No ${factLabel(rule.fact).toLowerCase()}`;
+    return `${factLabel(rule.fact)}: ${optionLabel(rule.fact, rule.equals)}`;
+  }
+  return `${factLabel(rule.fact)}: ${rule.anyOf.map((v) => optionLabel(rule.fact, v)).join(' or ')}`;
+}
+
+function outcomeOf(value: Trilean): ConditionOutcome {
+  if (value === 'unknown') return 'unknown';
+  return value ? 'met' : 'unmet';
+}
+
+function flip(outcome: ConditionOutcome): ConditionOutcome {
+  if (outcome === 'unknown') return 'unknown';
+  return outcome === 'met' ? 'unmet' : 'met';
+}
+
+/** Core tri-state evaluation, collecting leaf conditions as it goes. */
 function evaluate(
   rule: ApplicabilityRule,
   context: ApplicationContext,
-  reasons: string[],
+  conditions: ApplicabilityCondition[],
 ): Trilean {
   switch (rule.kind) {
     case 'always':
@@ -71,50 +112,66 @@ function evaluate(
 
     case 'fact': {
       const value = context[rule.fact];
-      if (isUnset(value)) {
-        reasons.push(`${factLabel(rule.fact)} is not recorded`);
-        return 'unknown';
-      }
-      const matches = Array.isArray(value)
-        ? value.includes(String(rule.equals))
-        : value === rule.equals;
-      reasons.push(
-        `${factLabel(rule.fact)} = ${formatFactValue(rule.fact, value)}` +
-          (matches ? '' : ` (expected ${typeof rule.equals === 'boolean' ? (rule.equals ? 'Yes' : 'No') : optionLabel(rule.fact, rule.equals)})`),
-      );
-      return matches;
+      const result: Trilean = isUnset(value)
+        ? 'unknown'
+        : Array.isArray(value)
+          ? value.includes(String(rule.equals))
+          : value === rule.equals;
+      conditions.push({
+        outcome: outcomeOf(result),
+        label: conditionLabel(rule),
+        detail: isUnset(value) ? 'Not recorded' : formatFactValue(rule.fact, value),
+        fact: rule.fact,
+      });
+      return result;
     }
 
     case 'includes': {
       const value = context[rule.fact];
+      let result: Trilean;
       if (isUnset(value)) {
-        reasons.push(`${factLabel(rule.fact)} is not recorded`);
-        return 'unknown';
+        result = 'unknown';
+      } else {
+        const list = Array.isArray(value) ? value : [String(value)];
+        result = rule.anyOf.some((v) => list.includes(v));
       }
-      const list = Array.isArray(value) ? value : [String(value)];
-      const hit = rule.anyOf.filter((v) => list.includes(v));
-      if (hit.length > 0) {
-        reasons.push(`${factLabel(rule.fact)} includes ${hit.map((v) => optionLabel(rule.fact, v)).join(', ')}`);
-        return true;
-      }
-      reasons.push(
-        `${factLabel(rule.fact)} does not include ${rule.anyOf.map((v) => optionLabel(rule.fact, v)).join(' / ')}`,
-      );
-      return false;
+      conditions.push({
+        outcome: outcomeOf(result),
+        label: conditionLabel(rule),
+        detail: isUnset(value) ? 'Not recorded' : formatFactValue(rule.fact, value),
+        fact: rule.fact,
+      });
+      return result;
     }
 
     case 'all':
-      return and(rule.rules.map((r) => evaluate(r, context, reasons)));
+      return and(rule.rules.map((r) => evaluate(r, context, conditions)));
 
     case 'any':
-      return or(rule.rules.map((r) => evaluate(r, context, reasons)));
+      return or(rule.rules.map((r) => evaluate(r, context, conditions)));
 
-    case 'not':
-      return not(evaluate(rule.rule, context, reasons));
+    case 'not': {
+      const before = conditions.length;
+      const result = not(evaluate(rule.rule, context, conditions));
+      for (let i = before; i < conditions.length; i += 1) {
+        conditions[i] = { ...conditions[i], outcome: flip(conditions[i].outcome) };
+      }
+      return result;
+    }
 
     default:
       return 'unknown';
   }
+}
+
+function dedupe(conditions: ApplicabilityCondition[]): ApplicabilityCondition[] {
+  const seen = new Set<string>();
+  return conditions.filter((c) => {
+    const key = `${c.label}|${c.outcome}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 /**
@@ -125,37 +182,46 @@ export function suggestApplicability(
   definition: TestDefinition,
   context: ApplicationContext,
 ): ApplicabilitySuggestion {
-  const reasons: string[] = [];
-  const outcome = evaluate(definition.applicability, context, reasons);
-
   if (definition.applicability.kind === 'always') {
     return {
       applicable: true,
       uncertain: false,
-      reasons: ['Baseline test — always included'],
+      conditions: [],
+      summary: 'Baseline test — applies to every engagement',
+      reasons: ['Baseline test — applies to every engagement'],
     };
   }
+
+  const collected: ApplicabilityCondition[] = [];
+  const outcome = evaluate(definition.applicability, context, collected);
+  const conditions = dedupe(collected);
+  const reasons = conditions.map((c) => `${c.label} (${c.detail})`);
 
   if (outcome === 'unknown') {
     return {
       applicable: true,
       uncertain: true,
-      reasons: [
-        'Included because the application context is incomplete',
-        ...dedupe(reasons),
-      ],
+      conditions,
+      summary: 'Kept in scope — the application context does not yet rule it out',
+      reasons: ['Kept in scope because the application context is incomplete', ...reasons],
     };
   }
 
   return {
     applicable: outcome,
     uncertain: false,
-    reasons: dedupe(reasons),
+    conditions,
+    summary: outcome
+      ? `Applicable because ${conditions
+          .filter((c) => c.outcome === 'met')
+          .map((c) => c.label.toLowerCase())
+          .join(', ')}`
+      : `Not applicable — ${conditions
+          .filter((c) => c.outcome === 'unmet')
+          .map((c) => c.label.toLowerCase())
+          .join(', ')} not present`,
+    reasons,
   };
-}
-
-function dedupe(values: string[]): string[] {
-  return Array.from(new Set(values));
 }
 
 /** Batch helper used when creating or re-syncing an engagement. */
@@ -189,7 +255,7 @@ export const rule = {
   not: (r: ApplicabilityRule): ApplicabilityRule => ({ kind: 'not', rule: r }),
 };
 
-/** Render a rule as a compact readable string (used in the test drawer + export). */
+/** Render a rule as a compact readable string (test drawer + export). */
 export function describeRule(r: ApplicabilityRule): string {
   switch (r.kind) {
     case 'always':
@@ -209,4 +275,24 @@ export function describeRule(r: ApplicabilityRule): string {
     default:
       return 'Unknown rule';
   }
+}
+
+/** Every context fact a rule depends on — used to highlight relevant questions. */
+export function rulefacts(r: ApplicabilityRule, out: Set<ContextFactKey> = new Set()) {
+  switch (r.kind) {
+    case 'fact':
+    case 'includes':
+      out.add(r.fact);
+      break;
+    case 'all':
+    case 'any':
+      r.rules.forEach((child) => rulefacts(child, out));
+      break;
+    case 'not':
+      rulefacts(r.rule, out);
+      break;
+    default:
+      break;
+  }
+  return out;
 }

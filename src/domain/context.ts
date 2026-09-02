@@ -30,6 +30,12 @@ export interface FactDefinition {
   section: ContextSectionId;
   /** Facts flagged as core are asked in the quick engagement wizard. */
   core?: boolean;
+  /**
+   * Recorded for the report only — never referenced by an applicability rule.
+   * Everything else must drive at least one test, which the unit tests enforce
+   * in both directions so the context form cannot fill up with dead questions.
+   */
+  metadataOnly?: boolean;
 }
 
 export interface ContextSection {
@@ -106,6 +112,7 @@ export type ContextFactKey =
   | 'handlesPayments'
   | 'handlesHealthData'
   | 'hasMultiTenancy'
+  | 'hasUserOwnedResources'
   // features
   | 'hasFileUpload'
   | 'hasFileDownload'
@@ -226,6 +233,13 @@ export const CONTEXT_FACTS: FactDefinition[] = [
   yesNo('handlesPayments', 'data', 'Handles payments or card data'),
   yesNo('handlesHealthData', 'data', 'Handles health or other regulated data'),
   yesNo('hasMultiTenancy', 'data', 'Multi-tenant', 'Multiple customers/organisations share the deployment.'),
+  yesNo(
+    'hasUserOwnedResources',
+    'data',
+    'Users own individual records or objects',
+    'Orders, documents, messages, profiles addressed by an identifier — the precondition for IDOR/BOLA.',
+    true,
+  ),
 
   // -------------------------------------------------------------- features
   yesNo('hasFileUpload', 'features', 'File upload', undefined, true),
@@ -281,15 +295,25 @@ export const CONTEXT_FACTS: FactDefinition[] = [
   {
     key: 'environment',
     label: 'Environment under test',
+    hint: 'Recorded in the report; does not change which tests apply.',
     type: 'single',
     section: 'engagement',
+    metadataOnly: true,
     options: [
       { value: 'production', label: 'Production' },
       { value: 'staging', label: 'Staging / UAT' },
       { value: 'development', label: 'Development' },
     ],
   },
-  yesNo('credentialsProvided', 'engagement', 'Test credentials provided'),
+  {
+    ...yesNo(
+      'credentialsProvided',
+      'engagement',
+      'Test credentials provided',
+      'Affects how you test, not which vulnerabilities apply.',
+    ),
+    metadataOnly: true,
+  },
 ];
 
 export const FACT_BY_KEY: Record<string, FactDefinition> = Object.fromEntries(

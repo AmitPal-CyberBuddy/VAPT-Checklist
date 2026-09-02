@@ -55,8 +55,15 @@ export interface Category {
   /** Two/three letter code used as the test ID prefix. */
   code: string;
   description: string;
+  /**
+   * Second taxonomy level. Every test in the category declares one of these,
+   * which keeps grouping and filtering meaningful once a category grows past
+   * a dozen entries.
+   */
+  subcategories: string[];
 }
 
+/** A resolved external link. Derived from standards codes, never hand-written. */
 export interface Reference {
   label: string;
   url: string;
@@ -79,20 +86,31 @@ export type ApplicabilityRule =
 export interface TestDefinition {
   /** Stable public identifier, e.g. `AUTH-001`. Never reused. */
   id: string;
-  /** WHAT vulnerability is assessed — the tester-facing identity. */
+  /**
+   * WHAT vulnerability is assessed — the tester-facing identity and the
+   * canonical industry name. Alternative names go in `aliases`, never into a
+   * second test.
+   */
   vulnerabilityName: string;
   category: CategoryId;
+  /** Second taxonomy level; must be one of the category's `subcategories`. */
+  subcategory: string;
   priority: Priority;
   /** What the weakness is and why it matters. */
   description: string;
   /** HOW to test — ordered, actionable steps. */
   testingGuidance: string[];
+  /** Declarative rule evaluated against the engagement's ApplicationContext. */
+  applicability: ApplicabilityRule;
+  /**
+   * Other industry terms for the same issue. Searchable, so a tester looking
+   * for "BOLA", "IDOR" or "Insecure Direct Object Reference" lands on one test
+   * rather than three near-duplicates.
+   */
+  aliases?: string[];
   /** Standards mapping (OWASP WSTG / Top 10 / API Top 10 / MASVS). */
   owasp?: string[];
   cwe?: string[];
-  references?: Reference[];
-  /** Declarative rule evaluated against the engagement's ApplicationContext. */
-  applicability: ApplicabilityRule;
   tags?: string[];
 }
 

@@ -6,7 +6,8 @@ import {
   type ContextFactKey,
   type FactDefinition,
 } from '../../domain/context';
-import { Card, SectionHeading, Select } from '../../ui/primitives';
+import { Badge, Card, SectionHeading, Select } from '../../ui/primitives';
+import { FACT_IMPACT } from '../../data/library';
 
 /**
  * Renders the Application Context form directly from the schema, so adding a
@@ -100,6 +101,7 @@ export function FactRow({
   const value = context[fact.key];
   const unknown =
     value === undefined || (Array.isArray(value) && value.length === 0) || value === '';
+  const impact = FACT_IMPACT.get(fact.key) ?? 0;
 
   return (
     <div
@@ -109,7 +111,20 @@ export function FactRow({
       )}
     >
       <div className="min-w-0 sm:pr-6">
-        <p className="text-sm text-ink-100">{fact.label}</p>
+        <p className="flex flex-wrap items-center gap-2 text-sm text-ink-100">
+          {fact.label}
+          {fact.metadataOnly ? (
+            <Badge tone="neutral" title="Recorded in the report; does not change applicability">
+              Report only
+            </Badge>
+          ) : (
+            impact > 0 && (
+              <Badge tone="brand" title={`This answer decides ${impact} test(s)`}>
+                {impact} tests
+              </Badge>
+            )
+          )}
+        </p>
         {fact.hint && <p className="mt-0.5 text-xs text-ink-500">{fact.hint}</p>}
       </div>
       <div className="shrink-0">

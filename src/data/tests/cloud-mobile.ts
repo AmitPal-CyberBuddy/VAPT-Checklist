@@ -9,6 +9,7 @@ export const cloudTests: TestDefinition[] = [
     id: 'CLOUD-001',
     vulnerabilityName: 'Publicly Accessible Cloud Storage',
     category: 'cloud',
+    subcategory: 'Storage Exposure',
     priority: 'Critical',
     description:
       'Object storage buckets or containers permit anonymous or authenticated-any-user read/write, exposing application data and enabling content tampering.',
@@ -20,12 +21,14 @@ export const cloudTests: TestDefinition[] = [
     owasp: ['A05:2021'],
     cwe: ['CWE-284'],
     applicability: cloud,
+    aliases: ['Public S3 Bucket', 'Open Blob Container', 'Misconfigured Object Storage'],
     tags: ['cloud'],
   },
   {
     id: 'CLOUD-002',
     vulnerabilityName: 'Cloud Instance Metadata Exposure',
     category: 'cloud',
+    subcategory: 'Identity & Access',
     priority: 'Critical',
     description:
       'The instance metadata service is reachable through SSRF or a proxy, exposing temporary IAM credentials and user-data that can lead to full account compromise.',
@@ -37,12 +40,14 @@ export const cloudTests: TestDefinition[] = [
     owasp: ['A10:2021'],
     cwe: ['CWE-918', 'CWE-522'],
     applicability: rule.all(cloud, rule.any(rule.is('acceptsUrlsFromUsers', true), rule.is('callsExternalServices', true))),
+    aliases: ['IMDS Exposure', 'Metadata Service SSRF', 'Cloud Credential Theft'],
     tags: ['cloud', 'ssrf'],
   },
   {
     id: 'CLOUD-003',
     vulnerabilityName: 'Overly Permissive IAM Configuration',
     category: 'cloud',
+    subcategory: 'Identity & Access',
     priority: 'High',
     description:
       'Application roles carry wildcard or excessive permissions, so a single application compromise escalates into control of the cloud account.',
@@ -54,12 +59,14 @@ export const cloudTests: TestDefinition[] = [
     owasp: ['A01:2021'],
     cwe: ['CWE-269'],
     applicability: rule.all(cloud, rule.any(rule.is('testingApproach', 'grey-box'), rule.is('testingApproach', 'white-box'))),
+    aliases: ['Excessive IAM Permissions', 'Wildcard IAM Policy', 'Cloud Privilege Escalation'],
     tags: ['cloud'],
   },
   {
     id: 'CLOUD-004',
     vulnerabilityName: 'Exposed Management Services and Ports',
     category: 'cloud',
+    subcategory: 'Network Exposure',
     priority: 'High',
     description:
       'Administrative services (SSH, RDP, database ports, message brokers, orchestration APIs) are reachable from untrusted networks.',
@@ -71,12 +78,14 @@ export const cloudTests: TestDefinition[] = [
     owasp: ['A05:2021'],
     cwe: ['CWE-1327'],
     applicability: rule.all(rule.is('internetFacing', true), rule.any(cloud, rule.is('hosting', 'on-prem'))),
+    aliases: ['Exposed SSH/RDP', 'Open Database Port', 'Management Interface Exposure'],
     tags: ['cloud', 'infrastructure'],
   },
   {
     id: 'CLOUD-005',
     vulnerabilityName: 'Insecure Container Configuration',
     category: 'cloud',
+    subcategory: 'Container Security',
     priority: 'High',
     description:
       'Containers run privileged, as root, with the host socket mounted or without resource limits, enabling escape to the host or lateral movement.',
@@ -88,12 +97,14 @@ export const cloudTests: TestDefinition[] = [
     owasp: ['A05:2021'],
     cwe: ['CWE-250'],
     applicability: rule.is('usesContainers', true),
+    aliases: ['Privileged Container', 'Container Escape', 'Docker Socket Exposure'],
     tags: ['cloud', 'container'],
   },
   {
     id: 'CLOUD-006',
     vulnerabilityName: 'Insecure Container Image Supply Chain',
     category: 'cloud',
+    subcategory: 'Container Security',
     priority: 'Medium',
     description:
       'Images are built from outdated bases, contain embedded secrets, are pulled by mutable tag, or come from unverified registries.',
@@ -105,12 +116,14 @@ export const cloudTests: TestDefinition[] = [
     owasp: ['A08:2021'],
     cwe: ['CWE-1104', 'CWE-798'],
     applicability: rule.is('usesContainers', true),
+    aliases: ['Vulnerable Base Image', 'Secrets in Image Layers', 'Unsigned Container Image'],
     tags: ['cloud', 'container'],
   },
   {
     id: 'CLOUD-007',
     vulnerabilityName: 'Kubernetes Control Plane Exposure',
     category: 'cloud',
+    subcategory: 'Orchestration',
     priority: 'Critical',
     description:
       'The Kubernetes API server, kubelet, dashboard or etcd is reachable with anonymous or weak authentication, allowing cluster takeover.',
@@ -122,12 +135,14 @@ export const cloudTests: TestDefinition[] = [
     owasp: ['A05:2021'],
     cwe: ['CWE-306'],
     applicability: rule.all(rule.is('usesContainers', true), rule.is('internetFacing', true)),
+    aliases: ['Exposed Kubernetes API', 'Kubernetes Dashboard Exposure', 'etcd Exposure'],
     tags: ['cloud', 'kubernetes'],
   },
   {
     id: 'CLOUD-008',
     vulnerabilityName: 'Subdomain Takeover',
     category: 'cloud',
+    subcategory: 'DNS & Domains',
     priority: 'High',
     description:
       'A DNS record points to a deprovisioned cloud resource, allowing an attacker to claim it and serve content from a trusted subdomain.',
@@ -139,6 +154,7 @@ export const cloudTests: TestDefinition[] = [
     owasp: ['A05:2021'],
     cwe: ['CWE-350'],
     applicability: rule.all(rule.is('hasSubdomains', true), rule.is('internetFacing', true)),
+    aliases: ['Dangling DNS Record', 'Domain Hijack via Deprovisioned Resource'],
     tags: ['cloud', 'dns'],
   },
 ];
@@ -148,6 +164,7 @@ export const mobileTests: TestDefinition[] = [
     id: 'MOB-001',
     vulnerabilityName: 'Insecure Local Data Storage',
     category: 'mobile',
+    subcategory: 'Local Data Storage',
     priority: 'High',
     description:
       'The application stores credentials, tokens or personal data in shared preferences, plist files, SQLite databases or external storage without protection.',
@@ -159,12 +176,14 @@ export const mobileTests: TestDefinition[] = [
     owasp: ['MASVS-STORAGE-1'],
     cwe: ['CWE-922'],
     applicability: mobile,
+    aliases: ['Insecure Data Storage', 'Sensitive Data in Shared Preferences', 'Unprotected Keychain Usage'],
     tags: ['mobile'],
   },
   {
     id: 'MOB-002',
     vulnerabilityName: 'Hardcoded Secrets in Application Package',
     category: 'mobile',
+    subcategory: 'Binary & Secrets',
     priority: 'High',
     description:
       'API keys, encryption keys or backend credentials are embedded in the APK/IPA and recoverable by any user through static analysis.',
@@ -176,12 +195,14 @@ export const mobileTests: TestDefinition[] = [
     owasp: ['MASVS-CRYPTO-1'],
     cwe: ['CWE-798'],
     applicability: mobile,
+    aliases: ['Hardcoded API Key in APK', 'Embedded Secrets', 'Reverse Engineered Credentials'],
     tags: ['mobile'],
   },
   {
     id: 'MOB-003',
     vulnerabilityName: 'Missing Certificate Pinning',
     category: 'mobile',
+    subcategory: 'Network Security',
     priority: 'Medium',
     description:
       'The application trusts any valid CA, so traffic can be intercepted with a user-installed certificate, exposing API traffic and tokens.',
@@ -193,12 +214,14 @@ export const mobileTests: TestDefinition[] = [
     owasp: ['MASVS-NETWORK-2'],
     cwe: ['CWE-295'],
     applicability: mobile,
+    aliases: ['No SSL Pinning', 'Certificate Pinning Bypass', 'MITM Exposure'],
     tags: ['mobile'],
   },
   {
     id: 'MOB-004',
     vulnerabilityName: 'Insufficient Root / Jailbreak Detection',
     category: 'mobile',
+    subcategory: 'Resilience',
     priority: 'Low',
     description:
       'The application runs unmodified on compromised devices, or the detection present is trivially bypassed, undermining client-side protections.',
@@ -210,12 +233,14 @@ export const mobileTests: TestDefinition[] = [
     owasp: ['MASVS-RESILIENCE-1'],
     cwe: ['CWE-693'],
     applicability: mobile,
+    aliases: ['Root Detection Bypass', 'Jailbreak Detection Bypass'],
     tags: ['mobile'],
   },
   {
     id: 'MOB-005',
     vulnerabilityName: 'Insecure Inter-Process Communication',
     category: 'mobile',
+    subcategory: 'Platform Integration',
     priority: 'High',
     description:
       'Exported activities, services, broadcast receivers, content providers or URL schemes allow other applications to invoke privileged functionality or read data.',
@@ -227,12 +252,14 @@ export const mobileTests: TestDefinition[] = [
     owasp: ['MASVS-PLATFORM-1'],
     cwe: ['CWE-926'],
     applicability: mobile,
+    aliases: ['Exported Activity', 'Intent Injection', 'Content Provider Exposure'],
     tags: ['mobile'],
   },
   {
     id: 'MOB-006',
     vulnerabilityName: 'Insecure WebView Configuration',
     category: 'mobile',
+    subcategory: 'Platform Integration',
     priority: 'High',
     description:
       'WebViews enable JavaScript bridges, universal file access or ignore TLS errors, exposing native functionality to remote web content.',
@@ -244,12 +271,14 @@ export const mobileTests: TestDefinition[] = [
     owasp: ['MASVS-PLATFORM-2'],
     cwe: ['CWE-749'],
     applicability: mobile,
+    aliases: ['WebView JavaScript Bridge Exposure', 'addJavascriptInterface Abuse', 'WebView File Access'],
     tags: ['mobile'],
   },
   {
     id: 'MOB-007',
     vulnerabilityName: 'Sensitive Data in Mobile Logs',
     category: 'mobile',
+    subcategory: 'Local Data Storage',
     priority: 'Medium',
     description:
       'The application writes tokens, credentials or personal data to device logs or crash reports accessible to other processes or vendors.',
@@ -261,12 +290,14 @@ export const mobileTests: TestDefinition[] = [
     owasp: ['MASVS-STORAGE-2'],
     cwe: ['CWE-532'],
     applicability: mobile,
+    aliases: ['Logcat Leakage', 'Sensitive Data in Crash Reports'],
     tags: ['mobile'],
   },
   {
     id: 'MOB-008',
     vulnerabilityName: 'Background Screenshot and Clipboard Leakage',
     category: 'mobile',
+    subcategory: 'Local Data Storage',
     priority: 'Low',
     description:
       'Sensitive screens are captured in the OS task-switcher snapshot, or sensitive values are copied to a clipboard readable by other apps.',
@@ -278,12 +309,14 @@ export const mobileTests: TestDefinition[] = [
     owasp: ['MASVS-PLATFORM-3'],
     cwe: ['CWE-200'],
     applicability: mobile,
+    aliases: ['Screenshot Leakage', 'Clipboard Exposure', 'Task Switcher Snapshot'],
     tags: ['mobile'],
   },
   {
     id: 'MOB-009',
     vulnerabilityName: 'Insecure Deep Link Handling',
     category: 'mobile',
+    subcategory: 'Platform Integration',
     priority: 'Medium',
     description:
       'Custom URL schemes or app links are registered without verification and pass untrusted parameters into privileged flows, enabling hijacking or forced actions.',
@@ -295,12 +328,14 @@ export const mobileTests: TestDefinition[] = [
     owasp: ['MASVS-PLATFORM-1'],
     cwe: ['CWE-939'],
     applicability: mobile,
+    aliases: ['Deep Link Hijacking', 'Custom URL Scheme Hijacking', 'App Link Abuse'],
     tags: ['mobile'],
   },
   {
     id: 'MOB-010',
     vulnerabilityName: 'Insufficient Binary Protection and Anti-Tampering',
     category: 'mobile',
+    subcategory: 'Resilience',
     priority: 'Low',
     description:
       'The binary lacks obfuscation and integrity verification, so business logic can be reverse engineered and the app repackaged with modifications.',
@@ -312,6 +347,7 @@ export const mobileTests: TestDefinition[] = [
     owasp: ['MASVS-RESILIENCE-2'],
     cwe: ['CWE-656'],
     applicability: mobile,
+    aliases: ['Missing Obfuscation', 'App Repackaging', 'Anti-Tampering Absent'],
     tags: ['mobile'],
   },
 ];

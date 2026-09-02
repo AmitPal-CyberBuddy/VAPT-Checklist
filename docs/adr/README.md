@@ -13,3 +13,6 @@ Consequences. Status is `Accepted` unless noted.
 | [0006](0006-minimal-execution-state-machine.md) | Minimal execution state machine |
 | [0007](0007-client-side-excel-generation.md) | Client-side Excel generation with write-excel-file |
 | [0008](0008-derived-metrics-single-source.md) | All metrics derived in one module |
+| [0009](0009-canonical-names-aliases-and-taxonomy.md) | Canonical vulnerability names with aliases, two-level taxonomy |
+| [0010](0010-derived-references.md) | References derived from validated standards codes |
+| [0011](0011-search-index-and-explained-applicability.md) | Prebuilt search index and explained applicability |

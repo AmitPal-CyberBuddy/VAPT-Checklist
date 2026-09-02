@@ -13,12 +13,15 @@ Source of truth: `src/domain/types.ts`, `src/domain/context.ts`.
 ║ vulnerabilityName:      ║            ║ testId: AUTH-001             ║
 ║   Authentication Bypass ║            ║ applicable: true             ║
 ║ category: authentication║            ║ suggestedApplicable: true    ║
-║ priority: Critical      ║            ║ applicabilitySource: auto    ║
-║ description: …          ║            ║ status: Tested               ║
-║ testingGuidance: […]    ║            ║ result: Not Vulnerable       ║
-║ owasp / cwe             ║            ║ notes: "…"                   ║
-║ applicability: rule     ║            ║ createdAt/updatedAt/testedAt ║
-╚═════════════════════════╝            ╚══════════════════════════════╝
+║ subcategory:            ║            ║ applicabilitySource: auto    ║
+║   Authentication Logic  ║            ║ status: Tested               ║
+║ priority: Critical      ║            ║ result: Not Vulnerable       ║
+║ description: …          ║            ║ notes: "…"                   ║
+║ testingGuidance: […]    ║            ║ createdAt/updatedAt/testedAt ║
+║ applicability: rule     ║            ╚══════════════════════════════╝
+║ aliases: […]            ║
+║ owasp / cwe / tags      ║
+╚═════════════════════════╝
 ```
 
 A `TestState` never copies the name, category or priority. Update the library and every engagement
@@ -30,18 +33,28 @@ immediately reflects the new wording without data migration.
 
 | Field | Type | Notes |
 | --- | --- | --- |
-| `id` | `string` | `CODE-NNN`, stable, never reused (`AUTH-001`) |
-| `vulnerabilityName` | `string` | **WHAT** is being assessed — the tester-facing identity |
+| `id` | `string` | `CODE-NNN`, stable, never reused (`AUTH-001`); prefix must match the category code |
+| `vulnerabilityName` | `string` | **WHAT** is being assessed — the canonical, tester-facing identity |
 | `category` | `CategoryId` | One of 18 categories |
+| `subcategory` | `string` | Must be one of the category's declared subcategories (100 in total) |
 | `priority` | `Critical \| High \| Medium \| Low` | Inherent risk of the vulnerability class |
 | `description` | `string` | What the weakness is and why it matters |
-| `testingGuidance` | `string[]` | **HOW** to test — ordered steps |
-| `owasp`, `cwe`, `references` | `string[]` | Standards mapping |
+| `testingGuidance` | `string[]` | **HOW** to test — ordered steps (≥2, each ≥25 chars) |
 | `applicability` | `ApplicabilityRule` | Declarative rule tree |
-| `tags` | `string[]` | Search aid |
+| `aliases` | `string[]` | Other industry terms for the same issue; searchable |
+| `owasp`, `cwe` | `string[]` | Standards mapping — also the source of reference links |
+| `tags` | `string[]` | Cross-cutting labels |
 
-Naming rule enforced by test: names describe a vulnerability
-(`Username Enumeration`), never a task (`Test Authentication`).
+Two naming rules are enforced by unit tests:
+
+1. Names describe a vulnerability (`Username Enumeration`), never a task (`Test Authentication`).
+2. Names and aliases share one namespace — no two tests may claim the same term.
+
+**References are derived, not stored.** `resolveReferences(definition)` maps each OWASP/CWE code to
+its canonical URL (see [ADR 0010](adr/0010-derived-references.md)); `validateLibrary()` rejects any
+code that is not well formed, which is how placeholders like `WSTG-ATHN-*` were eliminated.
+
+Full conventions: [`TEST-LIBRARY.md`](TEST-LIBRARY.md).
 
 ### `Engagement`
 
@@ -71,13 +84,22 @@ Primary key `${engagementId}::${testId}`.
 
 ### `ApplicationContext`
 
-`Partial<Record<ContextFactKey, boolean | string | string[]>>` — 38 facts across 7 sections
+`Partial<Record<ContextFactKey, boolean | string | string[]>>` — 40 facts across 7 sections
 (Target & Surface, Authentication & Identity, Data & Storage, Application Features,
 Integrations & Protocols, Infrastructure & Deployment, Engagement Parameters).
 
 Every fact is tri-state: `true`, `false`, or **absent = Unknown**. The schema in
 `src/domain/context.ts` is data, so the context form, the export sheet and the rule descriptions all
 render from one definition.
+
+Facts marked `metadataOnly` (environment under test, credentials provided) are recorded for the
+report but never referenced by a rule. Unit tests enforce this in both directions:
+
+- every non-metadata fact must drive at least one test — the form cannot accumulate dead questions;
+- no rule may depend on a metadata fact.
+
+`FACT_IMPACT` counts how many tests each fact decides; the context form shows it as a badge
+("12 tests") so the tester can see which answers move the checklist.
 
 ## 3. Invariants
 
@@ -114,6 +136,28 @@ Tri-state truth tables:
 | `not` | `unknown` → `unknown`; otherwise negate |
 
 Result mapping: `unknown` → **applicable, uncertain**. The tester is the final authority.
+
+Evaluation also returns the **individual leaf conditions** so the decision can be explained:
+
+```ts
+interface ApplicabilityCondition {
+  outcome: 'met' | 'unmet' | 'unknown';
+  label: string;   // "Users own individual records or objects"
+  detail: string;  // "Yes" | "No" | "Not recorded"
+  fact: ContextFactKey;
+}
+```
+
+which the UI renders as:
+
+```text
+Applicable because:
+  ✓ Application has authentication          — Yes
+  ✓ Users own individual records or objects — Yes
+  ? Multi-tenant                            — Not recorded
+```
+
+163 of the 184 tests are context-driven; 21 are baseline (`{ kind: 'always' }`).
 
 ## 5. Derived metrics
 
@@ -165,7 +209,7 @@ Import re-keys colliding engagement IDs instead of overwriting.
 | Sheet | Contents |
 | --- | --- |
 | **Summary** | Engagement identity, coverage counters, completion %, findings by priority, findings overview |
-| **Checklist** | Every applicable test: ID, vulnerability, category, priority, status, result, notes, description, guidance, OWASP, CWE, last updated |
+| **Checklist** | Every applicable test: ID, vulnerability, category, subcategory, priority, status, result, notes, description, guidance, aliases, applicability reason, OWASP, CWE, last updated |
 | **Findings** | Vulnerable tests only, Critical → Low |
 | **Not Applicable** | Excluded tests with rule, reason and whether it was auto or manual — the audit trail for scope decisions |
 | **Application Context** | Every fact, grouped by section, with Unknown highlighted |

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import 'fake-indexeddb/auto';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import App from '../App';
 import { db } from '../persistence/db';
 import { clearAllData, createEngagement, updateTestState } from '../persistence/repository';
@@ -84,5 +84,50 @@ describe('application shell', () => {
     render(<App />);
     expect(await screen.findByRole('heading', { name: 'Test library' })).toBeTruthy();
     expect(await screen.findByText('Cross-Site Request Forgery (CSRF)')).toBeTruthy();
+    // Subcategory is part of the row, not just the detail panel.
+    expect((await screen.findAllByText('Request Forgery')).length).toBeGreaterThan(0);
+  });
+
+  it('finds a vulnerability in the library by one of its aliases', async () => {
+    window.location.hash = '#/library';
+    render(<App />);
+    const search = await screen.findByPlaceholderText(/Search name, alias/);
+    fireEvent.change(search, { target: { value: 'bola' } });
+    await waitFor(() =>
+      expect(
+        screen.getByText('IDOR / Broken Object Level Authorization (BOLA)'),
+      ).toBeTruthy(),
+    );
+    expect(screen.getByText(/Matched on synonyms/)).toBeTruthy();
+  });
+
+  it('explains why a test is in scope on the checklist', async () => {
+    const engagement = await createEngagement({
+      name: 'Explain Target',
+      context: {
+        assetTypes: ['web-app', 'rest-api'],
+        hasAuthentication: true,
+        hasUserOwnedResources: true,
+        hasMultipleRoles: true,
+      },
+    });
+    window.location.hash = `#/e/${engagement.id}/checklist?test=AUTHZ-002`;
+    render(<App />);
+
+    expect(
+      await screen.findByText('IDOR / Broken Object Level Authorization (BOLA)'),
+    ).toBeTruthy();
+    expect(await screen.findByText('Applicable because:')).toBeTruthy();
+    expect(await screen.findByText('Users own individual records or objects')).toBeTruthy();
+    expect(await screen.findByText(/Also known as:/)).toBeTruthy();
+  });
+
+  it('shows how many tests a context question drives', async () => {
+    const engagement = await createEngagement({ name: 'Context Impact' });
+    window.location.hash = `#/e/${engagement.id}/context`;
+    render(<App />);
+    expect(await screen.findByRole('heading', { name: 'Application context' })).toBeTruthy();
+    expect((await screen.findAllByText(/^\d+ tests$/)).length).toBeGreaterThan(5);
+    expect((await screen.findAllByText('Report only')).length).toBe(2);
   });
 });

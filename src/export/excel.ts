@@ -178,23 +178,32 @@ const CHECKLIST_HEADERS = [
   'Test ID',
   'Vulnerability Name',
   'Category',
+  'Subcategory',
   'Priority',
   'Status',
   'Result',
   'Notes',
   'Description',
   'Testing Guidance',
+  'Also Known As',
+  'Applicability',
   'OWASP / Standard',
   'CWE',
   'Last Updated',
 ];
 
-function checklistRow(item: ChecklistItem): Row {
+function checklistRow(item: ChecklistItem, engagement: Engagement): Row {
   const { definition: d, state: s } = item;
+  const suggestion = suggestApplicability(d, engagement.context);
+  const applicability =
+    s.applicabilitySource === 'manual'
+      ? 'Included by tester (manual override)'
+      : suggestion.summary;
   return [
     text(d.id, { fontWeight: 'bold' }),
     text(d.vulnerabilityName, { fontWeight: 'bold' }),
     text(CATEGORY_BY_ID[d.category]?.name ?? d.category),
+    text(d.subcategory),
     text(d.priority, { backgroundColor: PRIORITY_BG[d.priority], align: 'center' }),
     text(s.status, { align: 'center' }),
     text(s.result ?? '', {
@@ -205,15 +214,17 @@ function checklistRow(item: ChecklistItem): Row {
     text(s.notes),
     text(d.description),
     text(d.testingGuidance.map((g, i) => `${i + 1}. ${g}`).join('\n')),
+    text((d.aliases ?? []).join(', ')),
+    text(applicability),
     text((d.owasp ?? []).join(', ')),
     text((d.cwe ?? []).join(', ')),
     text(s.status === 'Not Tested' && !s.notes ? '' : s.updatedAt.slice(0, 19).replace('T', ' ')),
   ];
 }
 
-function checklistSheet(items: ChecklistItem[]): SheetData {
+function checklistSheet(items: ChecklistItem[], engagement: Engagement): SheetData {
   const applicable = items.filter((i) => i.state.applicable);
-  return [CHECKLIST_HEADERS.map(header), ...applicable.map(checklistRow)];
+  return [CHECKLIST_HEADERS.map(header), ...applicable.map((i) => checklistRow(i, engagement))];
 }
 
 /* ---------------------------------------------------------------- sheet 3 */
@@ -225,6 +236,7 @@ function findingsSheet(items: ChecklistItem[]): SheetData {
     'Vulnerability Name',
     'Priority',
     'Category',
+    'Subcategory',
     'Notes / Observation',
     'Description',
     'OWASP / Standard',
@@ -233,7 +245,10 @@ function findingsSheet(items: ChecklistItem[]): SheetData {
   ].map(header);
 
   if (findings.length === 0) {
-    return [headers, [text('No vulnerabilities were recorded for this engagement.', { columnSpan: 9 })]];
+    return [
+      headers,
+      [text('No vulnerabilities were recorded for this engagement.', { columnSpan: 10 })],
+    ];
   }
 
   return [
@@ -243,6 +258,7 @@ function findingsSheet(items: ChecklistItem[]): SheetData {
       text(d.vulnerabilityName, { fontWeight: 'bold' }),
       text(d.priority, { backgroundColor: PRIORITY_BG[d.priority], align: 'center' }),
       text(CATEGORY_BY_ID[d.category]?.name ?? d.category),
+      text(d.subcategory),
       text(s.notes),
       text(d.description),
       text((d.owasp ?? []).join(', ')),
@@ -260,6 +276,7 @@ function notApplicableSheet(engagement: Engagement, items: ChecklistItem[]): She
     'Test ID',
     'Vulnerability Name',
     'Category',
+    'Subcategory',
     'Priority',
     'Excluded By',
     'Applicability Rule',
@@ -267,7 +284,10 @@ function notApplicableSheet(engagement: Engagement, items: ChecklistItem[]): She
   ].map(header);
 
   if (excluded.length === 0) {
-    return [headers, [text('No tests were excluded — the full library was assessed.', { columnSpan: 7 })]];
+    return [
+      headers,
+      [text('No tests were excluded — the full library was assessed.', { columnSpan: 8 })],
+    ];
   }
 
   return [
@@ -278,6 +298,7 @@ function notApplicableSheet(engagement: Engagement, items: ChecklistItem[]): She
         text(d.id),
         text(d.vulnerabilityName),
         text(CATEGORY_BY_ID[d.category]?.name ?? d.category),
+        text(d.subcategory),
         text(d.priority, { backgroundColor: PRIORITY_BG[d.priority], align: 'center' }),
         text(s.applicabilitySource === 'manual' ? 'Tester (manual)' : 'Context rule (auto)'),
         text(describeRule(d.applicability)),
@@ -386,19 +407,25 @@ export async function exportEngagementToExcel(
 
   const metrics = computeMetrics(items);
 
-  const sheets: SheetData[] = [summarySheet(engagement, items, metrics), checklistSheet(items)];
+  const sheets: SheetData[] = [
+    summarySheet(engagement, items, metrics),
+    checklistSheet(items, engagement),
+  ];
   const names: string[] = ['Summary', 'Checklist'];
-  const columns = [W([28, 22, 22, 22]), W([10, 34, 20, 10, 12, 14, 46, 60, 70, 18, 14, 18])];
+  const columns = [
+    W([28, 22, 22, 22]),
+    W([10, 34, 20, 22, 10, 12, 14, 46, 60, 70, 34, 42, 18, 14, 18]),
+  ];
 
   if (includeFindings) {
     sheets.push(findingsSheet(items));
     names.push('Findings');
-    columns.push(W([10, 34, 10, 20, 50, 60, 18, 14, 18]));
+    columns.push(W([10, 34, 10, 20, 22, 50, 60, 18, 14, 18]));
   }
   if (includeNotApplicable) {
     sheets.push(notApplicableSheet(engagement, items));
     names.push('Not Applicable');
-    columns.push(W([10, 34, 20, 10, 18, 40, 50]));
+    columns.push(W([10, 34, 20, 22, 10, 18, 40, 50]));
   }
   if (includeContext) {
     sheets.push(contextSheet(engagement));

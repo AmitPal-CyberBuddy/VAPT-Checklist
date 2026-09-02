@@ -26,7 +26,8 @@
 │ domain/              types · context · applicability ·           │
 │                      executionState · metrics      (pure, tested)│
 ├──────────────────────────────────────────────────────────────────┤
-│ data/                Bundled test library (immutable knowledge)  │
+│ data/                Bundled knowledge base: 184 test defs,      │
+│                      taxonomy, search index, reference resolver  │
 ├──────────────────────────────────────────────────────────────────┤
 │ export/              Excel workbook builder (lazy-loaded)        │
 └──────────────────────────────────────────────────────────────────┘
@@ -70,7 +71,24 @@ User clicks "Tested"
 
 There is exactly one write path. UI components never construct a `TestState` themselves.
 
-## 5. Applicability engine
+## 5. Knowledge layer
+
+```text
+data/
+  categories.ts    18 categories, each declaring its subcategories (100 total)
+  tests/*.ts       184 definitions grouped by area
+  library.ts       assembly, ordering, stats, FACT_IMPACT, validateLibrary()
+  references.ts    standards code → canonical URL (references are derived)
+  searchIndex.ts   lowercase haystack per test, built once at module load
+```
+
+The library is a product asset, so it is guarded like one. `validateLibrary()` rejects duplicate
+IDs, duplicate names *or aliases*, subcategories not declared on the category, ID prefixes that do
+not match the category code, thin descriptions and guidance, task-style titles and malformed
+standards codes. It runs in the unit tests, so a bad entry fails the build rather than reaching a
+tester. Conventions: [`TEST-LIBRARY.md`](TEST-LIBRARY.md).
+
+## 6. Applicability engine
 
 `domain/applicability.ts` evaluates a declarative rule tree against the engagement's
 `ApplicationContext`:
@@ -94,7 +112,13 @@ The engine only ever **suggests**. `TestState.applicabilitySource` records wheth
 came from the engine (`auto`) or the tester (`manual`), and re-evaluation never silently overwrites
 a manual override or a test that already has recorded work.
 
-## 6. Persistence
+Rules are **per test, not per category**: `FILE-001` keys on file upload, `CLI-010` on WebSockets,
+`AUTH-013` on OAuth appearing in the auth mechanisms. Evaluation returns each leaf condition with a
+`met` / `unmet` / `unknown` outcome so the UI can show the reasoning rather than a verdict, and
+`FACT_IMPACT` (derived from the same rules) tells the tester how many tests each context question
+decides.
+
+## 7. Persistence
 
 - Database `vapt-checklist`, schema version 1, three tables (`engagements`, `testStates`,
   `appMeta`).
@@ -106,31 +130,38 @@ a manual override or a test that already has recorded work.
   introduced by a newer library without touching recorded work.
 - JSON backup/restore exists because browser storage is deletable by the user or the browser.
 
-## 7. Export
+## 8. Export
 
 `export/excel.ts` is **dynamically imported** the moment the user clicks Export, so the XLSX writer
 (~78 kB) is not part of the initial download. It produces a six-sheet workbook — Summary, Checklist,
 Findings, Not Applicable, Application Context, Coverage — styled for direct client delivery.
 
-## 8. Routing and GitHub Pages
+## 9. Routing and GitHub Pages
 
 - `HashRouter`: `https://user.github.io/repo/#/e/abc/checklist` — refreshing a deep link never hits
   the Pages 404 handler.
 - `base: './'`: the same `dist/` works at `/`, at `/<repo>/`, on any static host and from `file://`.
 - `public/.nojekyll`: prevents Jekyll from ignoring hashed asset paths.
 
-## 9. Testing strategy
+## 10. Testing strategy
 
-`src/data/library.test.ts` covers the parts where correctness actually matters:
+Tests cover the parts where correctness actually matters:
 
-- library integrity (unique IDs, unique vulnerability names, non-generic naming, content present),
-- applicability semantics including the unknown-fact rule,
-- the execution state machine and its invariants,
-- metric derivation (completion, awaiting-result handling).
+| File | Covers |
+| --- | --- |
+| `data/library.test.ts` | Library integrity, naming rules, state machine, metrics |
+| `data/knowledge.test.ts` | Taxonomy, aliases, search, references, applicability explanation, conservative filtering |
+| `persistence/repository.test.ts` | Full write path against a fake IndexedDB |
+| `export/excel.test.ts` | Workbook composition and cell shape |
+| `app/App.smoke.test.tsx` | The app mounts, routes resolve, live data renders |
+
+Notable guarantees asserted: no Critical test is excluded on unknown facts alone; a described target
+narrows the checklist but never loses a whole category; every context fact drives a rule (or is
+explicitly metadata-only).
 
 UI is intentionally thin: it renders domain output and calls repository functions.
 
-## 10. Deliberate non-goals
+## 11. Deliberate non-goals
 
 Retest cycles, evidence upload, remediation workflow, multi-user collaboration, scanner
 integrations, server-side reporting. Each would require state or infrastructure that the product

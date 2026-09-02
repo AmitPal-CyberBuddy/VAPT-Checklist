@@ -9,6 +9,7 @@ export const sessionTests: TestDefinition[] = [
     id: 'SESS-001',
     vulnerabilityName: 'Session Fixation',
     category: 'session',
+    subcategory: 'Session Lifecycle',
     priority: 'High',
     description:
       'The session identifier issued before authentication is retained afterwards, so an attacker who plants a known session ID gains an authenticated session.',
@@ -20,12 +21,14 @@ export const sessionTests: TestDefinition[] = [
     owasp: ['WSTG-SESS-03'],
     cwe: ['CWE-384'],
     applicability: auth,
+    aliases: ['Session Fixation', 'Missing Session Rotation on Login'],
     tags: ['session'],
   },
   {
     id: 'SESS-002',
     vulnerabilityName: 'Missing Secure Attribute on Session Cookie',
     category: 'session',
+    subcategory: 'Cookie Security',
     priority: 'Medium',
     description:
       'Session cookies lack the Secure flag and may therefore be transmitted over plaintext HTTP, exposing them to interception.',
@@ -37,12 +40,14 @@ export const sessionTests: TestDefinition[] = [
     owasp: ['WSTG-SESS-02'],
     cwe: ['CWE-614'],
     applicability: rule.any(cookieSession, rule.all(auth, rule.includes('assetTypes', 'web-app'))),
+    aliases: ['Missing Secure Flag', 'Cookie Without Secure Attribute'],
     tags: ['session', 'cookies'],
   },
   {
     id: 'SESS-003',
     vulnerabilityName: 'Missing HttpOnly Attribute on Session Cookie',
     category: 'session',
+    subcategory: 'Cookie Security',
     priority: 'Medium',
     description:
       'Session cookies are readable by JavaScript, so any XSS becomes a direct session theft.',
@@ -54,12 +59,14 @@ export const sessionTests: TestDefinition[] = [
     owasp: ['WSTG-SESS-02'],
     cwe: ['CWE-1004'],
     applicability: rule.any(cookieSession, rule.all(auth, rule.includes('assetTypes', 'web-app'))),
+    aliases: ['Missing HttpOnly Flag', 'JavaScript-Accessible Session Cookie'],
     tags: ['session', 'cookies'],
   },
   {
     id: 'SESS-004',
     vulnerabilityName: 'Missing or Weak SameSite Cookie Attribute',
     category: 'session',
+    subcategory: 'Cookie Security',
     priority: 'Medium',
     description:
       'Session cookies are sent on cross-site requests because SameSite is absent or set to None without justification, enabling CSRF and cross-site leaks.',
@@ -71,12 +78,14 @@ export const sessionTests: TestDefinition[] = [
     owasp: ['WSTG-SESS-02'],
     cwe: ['CWE-1275'],
     applicability: rule.any(cookieSession, rule.all(auth, rule.includes('assetTypes', 'web-app'))),
+    aliases: ['Missing SameSite Attribute', 'SameSite=None Without Justification'],
     tags: ['session', 'cookies'],
   },
   {
     id: 'SESS-005',
     vulnerabilityName: 'Predictable Session Identifier',
     category: 'session',
+    subcategory: 'Token Security',
     priority: 'Critical',
     description:
       'Session tokens are sequential, time-based, encoded user data or otherwise insufficiently random, allowing an attacker to guess or derive valid sessions.',
@@ -88,12 +97,14 @@ export const sessionTests: TestDefinition[] = [
     owasp: ['WSTG-SESS-01'],
     cwe: ['CWE-330', 'CWE-6'],
     applicability: auth,
+    aliases: ['Weak Session Token', 'Insufficient Session ID Entropy', 'Guessable Session ID'],
     tags: ['session'],
   },
   {
     id: 'SESS-006',
     vulnerabilityName: 'Session Not Invalidated on Logout',
     category: 'session',
+    subcategory: 'Session Lifecycle',
     priority: 'High',
     description:
       'Logout only clears client-side state; the token remains valid server-side and can be replayed after the user believes they have signed out.',
@@ -105,12 +116,14 @@ export const sessionTests: TestDefinition[] = [
     owasp: ['WSTG-SESS-06'],
     cwe: ['CWE-613'],
     applicability: auth,
+    aliases: ['Improper Logout', 'Session Replay After Logout', 'Missing Server-Side Invalidation'],
     tags: ['session'],
   },
   {
     id: 'SESS-007',
     vulnerabilityName: 'Insufficient Session Timeout',
     category: 'session',
+    subcategory: 'Session Lifecycle',
     priority: 'Medium',
     description:
       'Sessions have no idle or absolute expiry, or the timeout is far longer than the sensitivity of the application warrants.',
@@ -122,12 +135,14 @@ export const sessionTests: TestDefinition[] = [
     owasp: ['WSTG-SESS-07'],
     cwe: ['CWE-613'],
     applicability: auth,
+    aliases: ['Missing Session Expiry', 'Excessive Session Lifetime', 'No Idle Timeout'],
     tags: ['session'],
   },
   {
     id: 'SESS-008',
     vulnerabilityName: 'Cross-Site Request Forgery (CSRF)',
     category: 'session',
+    subcategory: 'Request Forgery',
     priority: 'High',
     description:
       'State-changing requests are authorised solely by ambient credentials, so a third-party site can force an authenticated victim to perform actions.',
@@ -140,12 +155,14 @@ export const sessionTests: TestDefinition[] = [
     owasp: ['WSTG-SESS-05', 'A01:2021'],
     cwe: ['CWE-352'],
     applicability: rule.all(auth, rule.includes('assetTypes', 'web-app')),
+    aliases: ['CSRF', 'XSRF', 'Missing Anti-CSRF Token', 'Sea Surf'],
     tags: ['session', 'csrf'],
   },
   {
     id: 'SESS-009',
     vulnerabilityName: 'Session Hijacking via Token Exposure',
     category: 'session',
+    subcategory: 'Token Security',
     priority: 'High',
     description:
       'Session tokens appear in URLs, logs, Referer headers, browser storage or error messages, allowing capture and reuse from a different client.',
@@ -154,15 +171,17 @@ export const sessionTests: TestDefinition[] = [
       'Replay a captured token from a different IP address, user agent and browser to test binding.',
       'Check whether tokens are written to localStorage where XSS could retrieve them.',
     ],
-    owasp: ['WSTG-SESS-04'],
+    owasp: ['WSTG-SESS-04', 'WSTG-SESS-09'],
     cwe: ['CWE-598', 'CWE-522'],
     applicability: auth,
+    aliases: ['Session Hijacking', 'Token Theft', 'Session Token in URL'],
     tags: ['session'],
   },
   {
     id: 'SESS-010',
     vulnerabilityName: 'JWT Misconfiguration',
     category: 'session',
+    subcategory: 'Token Security',
     priority: 'Critical',
     description:
       'JSON Web Tokens are accepted with alg=none, a weak or guessable HMAC secret, unvalidated signatures, confusable algorithms (RS256→HS256), missing expiry or unchecked claims.',
@@ -175,12 +194,14 @@ export const sessionTests: TestDefinition[] = [
     owasp: ['WSTG-SESS-10', 'API2:2023'],
     cwe: ['CWE-347', 'CWE-345'],
     applicability: rule.includes('authMechanisms', 'jwt'),
+    aliases: ['JWT alg=none', 'JWT Signature Bypass', 'Weak JWT Secret', 'JWT Algorithm Confusion'],
     tags: ['session', 'jwt'],
   },
   {
     id: 'SESS-011',
     vulnerabilityName: 'Insecure Concurrent Session Handling',
     category: 'session',
+    subcategory: 'Session Lifecycle',
     priority: 'Low',
     description:
       'Unlimited simultaneous sessions are permitted with no visibility or revocation, so a stolen session persists undetected alongside the legitimate one.',
@@ -189,15 +210,17 @@ export const sessionTests: TestDefinition[] = [
       'Check for a session management screen and whether remote revocation actually terminates the session.',
       'Verify a password change invalidates other active sessions.',
     ],
-    owasp: ['WSTG-SESS-*'],
+    owasp: ['A07:2021'],
     cwe: ['CWE-613'],
     applicability: auth,
+    aliases: ['Unlimited Concurrent Sessions', 'Missing Session Revocation'],
     tags: ['session'],
   },
   {
     id: 'SESS-012',
     vulnerabilityName: 'Session Variable Overloading (Session Puzzling)',
     category: 'session',
+    subcategory: 'Session Lifecycle',
     priority: 'Medium',
     description:
       'The same session variable is used by multiple flows (e.g. password reset and login), so completing one flow partially can grant state intended for another.',
@@ -209,6 +232,7 @@ export const sessionTests: TestDefinition[] = [
     owasp: ['WSTG-SESS-08'],
     cwe: ['CWE-841'],
     applicability: rule.all(auth, rule.is('hasWorkflowOrTransactions', true)),
+    aliases: ['Session Puzzling', 'Session Variable Overloading'],
     tags: ['session'],
   },
 ];

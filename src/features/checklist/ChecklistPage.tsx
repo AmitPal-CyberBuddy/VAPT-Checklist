@@ -4,17 +4,29 @@ import clsx from 'clsx';
 import { Badge, Button, Card, EmptyState, Input, Select } from '../../ui/primitives';
 import { IconFilter, IconSearch, IconX } from '../../ui/icons';
 import { ChecklistRow } from './ChecklistRow';
-import { CATEGORIES } from '../../data/categories';
+import { CATEGORIES, CATEGORY_BY_ID } from '../../data/categories';
+import type { CategoryId } from '../../domain/types';
+import { SEARCH_INDEX } from '../../data/library';
+import { parseQuery, relevance } from '../../data/searchIndex';
 import { useChecklist, useEngagement } from '../../hooks/useData';
 import { bulkUpdateTestStates } from '../../persistence/repository';
+import { suggestApplicability } from '../../domain/applicability';
 import { PRIORITY_ORDER, PRIORITIES, type ChecklistItem } from '../../domain/types';
 import type { ApplicationContext } from '../../domain/context';
 import { toast } from '../../ui/toast';
 
-type ScopeFilter = 'applicable' | 'excluded' | 'all';
+type ScopeFilter = 'applicable' | 'excluded' | 'all' | 'manual' | 'unconfirmed';
 type StatusFilter = 'all' | 'Not Tested' | 'Tested' | 'N/A' | 'awaiting';
 type ResultFilter = 'all' | 'Vulnerable' | 'Not Vulnerable';
-type GroupBy = 'category' | 'priority' | 'none';
+type GroupBy = 'category' | 'subcategory' | 'priority' | 'none';
+
+const SCOPE_LABELS: Record<ScopeFilter, string> = {
+  applicable: 'In scope',
+  excluded: 'Excluded',
+  all: 'All tests',
+  manual: 'Manually overridden',
+  unconfirmed: 'Unconfirmed (context gaps)',
+};
 
 export default function ChecklistPage() {
   const { engagementId = '' } = useParams();
@@ -31,6 +43,7 @@ export default function ChecklistPage() {
     (params.get('result') as ResultFilter) ?? 'all',
   );
   const [category, setCategory] = useState<string>('all');
+  const [subcategory, setSubcategory] = useState<string>('all');
   const [priority, setPriority] = useState<string>('all');
   const [groupBy, setGroupBy] = useState<GroupBy>('category');
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
@@ -42,27 +55,73 @@ export default function ChecklistPage() {
     if (focusTest) setExpanded((prev) => new Set(prev).add(focusTest));
   }, [focusTest]);
 
+  // Reset the subcategory when the category changes so the pair stays coherent.
+  useEffect(() => {
+    setSubcategory('all');
+  }, [category]);
+
+  const context = engagement?.context ?? {};
+
+  /**
+   * Applicability suggestions are recomputed only when the context changes,
+   * not per keystroke — the "Unconfirmed" filter needs them for every test.
+   */
+  const uncertainIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const { definition } of items ?? []) {
+      if (suggestApplicability(definition, context).uncertain) ids.add(definition.id);
+    }
+    return ids;
+  }, [items, context]);
+
+  const subcategoryOptions: string[] = useMemo(() => {
+    if (category !== 'all') return CATEGORY_BY_ID[category as CategoryId]?.subcategories ?? [];
+    return Array.from(new Set(CATEGORIES.flatMap((c) => c.subcategories))).sort();
+  }, [category]);
+
   const filtered = useMemo(() => {
     if (!items) return [];
-    const q = query.trim().toLowerCase();
-    return items.filter(({ definition: d, state: s }) => {
+    const terms = parseQuery(query);
+    const matched = items.filter(({ definition: d, state: s }) => {
       if (scope === 'applicable' && !s.applicable) return false;
       if (scope === 'excluded' && s.applicable) return false;
-      if (status === 'awaiting' && !(s.applicable && s.status === 'Tested' && !s.result)) return false;
+      if (scope === 'manual' && s.applicabilitySource !== 'manual') return false;
+      if (scope === 'unconfirmed' && !(s.applicable && uncertainIds.has(d.id))) return false;
+      if (status === 'awaiting' && !(s.applicable && s.status === 'Tested' && !s.result))
+        return false;
       if (status !== 'all' && status !== 'awaiting' && s.status !== status) return false;
       if (result !== 'all' && s.result !== result) return false;
       if (category !== 'all' && d.category !== category) return false;
+      if (subcategory !== 'all' && d.subcategory !== subcategory) return false;
       if (priority !== 'all' && d.priority !== priority) return false;
-      if (q) {
-        const haystack = `${d.id} ${d.vulnerabilityName} ${d.description} ${(d.tags ?? []).join(' ')} ${(d.owasp ?? []).join(' ')} ${s.notes}`.toLowerCase();
-        if (!haystack.includes(q)) return false;
+      if (terms.length > 0) {
+        const entry = SEARCH_INDEX.get(d.id);
+        // Notes live in engagement state, so they are matched alongside the index.
+        const notes = s.notes.toLowerCase();
+        if (!terms.every((t) => entry?.haystack.includes(t) || notes.includes(t))) return false;
       }
       return true;
     });
-  }, [items, query, scope, status, result, category, priority]);
+
+    if (terms.length === 0) return matched;
+    return [...matched].sort(
+      (a, b) =>
+        relevance(SEARCH_INDEX.get(b.definition.id), terms) -
+        relevance(SEARCH_INDEX.get(a.definition.id), terms),
+    );
+  }, [items, query, scope, status, result, category, subcategory, priority, uncertainIds]);
 
   const groups = useMemo(() => {
-    if (groupBy === 'none') return [{ key: 'all', label: `${filtered.length} tests`, items: filtered }];
+    const sortItems = (list: ChecklistItem[]) =>
+      [...list].sort(
+        (a, b) =>
+          PRIORITY_ORDER[a.definition.priority] - PRIORITY_ORDER[b.definition.priority] ||
+          a.definition.id.localeCompare(b.definition.id),
+      );
+
+    if (groupBy === 'none') {
+      return [{ key: 'all', label: `${filtered.length} tests`, items: filtered }];
+    }
     if (groupBy === 'priority') {
       return PRIORITIES.map((p) => ({
         key: p,
@@ -70,16 +129,21 @@ export default function ChecklistPage() {
         items: filtered.filter((i) => i.definition.priority === p),
       })).filter((g) => g.items.length > 0);
     }
+    if (groupBy === 'subcategory') {
+      return CATEGORIES.flatMap((c) =>
+        c.subcategories.map((sub) => ({
+          key: `${c.id}/${sub}`,
+          label: `${c.name} · ${sub}`,
+          items: sortItems(
+            filtered.filter((i) => i.definition.category === c.id && i.definition.subcategory === sub),
+          ),
+        })),
+      ).filter((g) => g.items.length > 0);
+    }
     return CATEGORIES.map((c) => ({
       key: c.id,
       label: c.name,
-      items: filtered
-        .filter((i) => i.definition.category === c.id)
-        .sort(
-          (a, b) =>
-            PRIORITY_ORDER[a.definition.priority] - PRIORITY_ORDER[b.definition.priority] ||
-            a.definition.id.localeCompare(b.definition.id),
-        ),
+      items: sortItems(filtered.filter((i) => i.definition.category === c.id)),
     })).filter((g) => g.items.length > 0);
   }, [filtered, groupBy]);
 
@@ -89,6 +153,7 @@ export default function ChecklistPage() {
     (status !== 'all' ? 1 : 0) +
     (result !== 'all' ? 1 : 0) +
     (category !== 'all' ? 1 : 0) +
+    (subcategory !== 'all' ? 1 : 0) +
     (priority !== 'all' ? 1 : 0);
 
   function resetFilters() {
@@ -97,6 +162,7 @@ export default function ChecklistPage() {
     setStatus('all');
     setResult('all');
     setCategory('all');
+    setSubcategory('all');
     setPriority('all');
     setParams({}, { replace: true });
   }
@@ -130,18 +196,28 @@ export default function ChecklistPage() {
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search vulnerability, ID, guidance, notes…"
+              placeholder="Search vulnerability, alias, ID, guidance, notes…"
               className="pl-9"
             />
           </div>
 
-          <Select value={scope} onChange={(e) => setScope(e.target.value as ScopeFilter)} className="w-40">
-            <option value="applicable">In scope</option>
-            <option value="excluded">Excluded</option>
-            <option value="all">All tests</option>
+          <Select
+            value={scope}
+            onChange={(e) => setScope(e.target.value as ScopeFilter)}
+            className="w-48"
+          >
+            {(Object.keys(SCOPE_LABELS) as ScopeFilter[]).map((key) => (
+              <option key={key} value={key}>
+                {SCOPE_LABELS[key]}
+              </option>
+            ))}
           </Select>
 
-          <Select value={status} onChange={(e) => setStatus(e.target.value as StatusFilter)} className="w-40">
+          <Select
+            value={status}
+            onChange={(e) => setStatus(e.target.value as StatusFilter)}
+            className="w-40"
+          >
             <option value="all">Any status</option>
             <option value="Not Tested">Not Tested</option>
             <option value="Tested">Tested</option>
@@ -149,7 +225,11 @@ export default function ChecklistPage() {
             <option value="awaiting">Awaiting result</option>
           </Select>
 
-          <Select value={result} onChange={(e) => setResult(e.target.value as ResultFilter)} className="w-40">
+          <Select
+            value={result}
+            onChange={(e) => setResult(e.target.value as ResultFilter)}
+            className="w-40"
+          >
             <option value="all">Any result</option>
             <option value="Vulnerable">Vulnerable</option>
             <option value="Not Vulnerable">Not Vulnerable</option>
@@ -173,8 +253,26 @@ export default function ChecklistPage() {
             ))}
           </Select>
 
-          <Select value={groupBy} onChange={(e) => setGroupBy(e.target.value as GroupBy)} className="w-40">
+          <Select
+            value={subcategory}
+            onChange={(e) => setSubcategory(e.target.value)}
+            className="w-52"
+          >
+            <option value="all">Any subcategory</option>
+            {subcategoryOptions.map((sub) => (
+              <option key={sub} value={sub}>
+                {sub}
+              </option>
+            ))}
+          </Select>
+
+          <Select
+            value={groupBy}
+            onChange={(e) => setGroupBy(e.target.value as GroupBy)}
+            className="w-44"
+          >
             <option value="category">Group by category</option>
+            <option value="subcategory">Group by subcategory</option>
             <option value="priority">Group by priority</option>
             <option value="none">No grouping</option>
           </Select>
@@ -189,8 +287,17 @@ export default function ChecklistPage() {
         <div className="flex flex-wrap items-center gap-3 border-t border-ink-800 pt-3 text-xs text-ink-500">
           <span className="flex items-center gap-1.5">
             <IconFilter size={13} />
-            Showing <strong className="text-ink-200">{filtered.length}</strong> of {items.length} tests
+            Showing <strong className="text-ink-200">{filtered.length}</strong> of {items.length}{' '}
+            tests
           </span>
+          {uncertainIds.size > 0 && scope !== 'unconfirmed' && (
+            <button
+              className="text-amber-400 hover:underline"
+              onClick={() => setScope('unconfirmed')}
+            >
+              {uncertainIds.size} included only because context is incomplete
+            </button>
+          )}
           <button
             className="text-ink-400 hover:text-brand-400"
             onClick={() =>
@@ -228,7 +335,9 @@ export default function ChecklistPage() {
           </Button>
           <Button
             size="sm"
-            onClick={() => void bulk({ status: 'Tested', result: 'Not Vulnerable' }, 'Marked Not Vulnerable')}
+            onClick={() =>
+              void bulk({ status: 'Tested', result: 'Not Vulnerable' }, 'Marked Not Vulnerable')
+            }
           >
             Tested → Not Vulnerable
           </Button>
@@ -260,7 +369,12 @@ export default function ChecklistPage() {
           >
             Exclude
           </Button>
-          <Button size="sm" variant="ghost" className="ml-auto" onClick={() => setSelected(new Set())}>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="ml-auto"
+            onClick={() => setSelected(new Set())}
+          >
             Clear selection
           </Button>
         </div>
@@ -284,7 +398,7 @@ export default function ChecklistPage() {
             label={group.label}
             items={group.items}
             engagementId={engagementId}
-            context={engagement.context}
+            context={context}
             expanded={expanded}
             selected={selected}
             focusTest={focusTest}
@@ -319,7 +433,9 @@ function GroupPanel({
   onToggleSelect: (id: string) => void;
 }) {
   const done = items.filter(
-    (i) => i.state.applicable && (i.state.status === 'N/A' || (i.state.status === 'Tested' && i.state.result)),
+    (i) =>
+      i.state.applicable &&
+      (i.state.status === 'N/A' || (i.state.status === 'Tested' && i.state.result)),
   ).length;
   const applicable = items.filter((i) => i.state.applicable).length;
   const vulnerable = items.filter((i) => i.state.result === 'Vulnerable').length;
