@@ -68,14 +68,48 @@ export class VaptDatabase extends Dexie {
 
 export const db = new VaptDatabase();
 
-/** True when the browser can persist engagements at all. */
-export async function storageAvailable(): Promise<boolean> {
+export type StorageProblem =
+  | 'blocked'
+  | 'version-mismatch'
+  | 'corrupt'
+  | 'upgrade-blocked'
+  | 'unknown';
+
+export interface StorageStatus {
+  ok: boolean;
+  problem?: StorageProblem;
+  detail?: string;
+}
+
+/**
+ * Whether this browser can persist engagements, and if not, *why*.
+ *
+ * "Storage unavailable" is not an actionable message. A blocked origin, a
+ * database left in a newer schema by another tab, and genuine corruption need
+ * different responses from the tester, so the cause is classified here and the
+ * banner says what to do about it.
+ */
+export async function checkStorage(): Promise<StorageStatus> {
   try {
     await db.open();
-    return true;
-  } catch {
-    return false;
+    return { ok: true };
+  } catch (error) {
+    const name = error instanceof Error ? error.name : '';
+    const detail = error instanceof Error ? error.message : String(error);
+    if (name === 'VersionError') return { ok: false, problem: 'version-mismatch', detail };
+    if (name === 'SecurityError' || name === 'InvalidStateError')
+      return { ok: false, problem: 'blocked', detail };
+    if (name === 'UpgradeError' || name === 'BlockedError')
+      return { ok: false, problem: 'upgrade-blocked', detail };
+    if (name === 'DatabaseClosedError' || /corrupt/i.test(detail))
+      return { ok: false, problem: 'corrupt', detail };
+    return { ok: false, problem: 'unknown', detail };
   }
+}
+
+/** True when the browser can persist engagements at all. */
+export async function storageAvailable(): Promise<boolean> {
+  return (await checkStorage()).ok;
 }
 
 /** Ask the browser not to evict the database under storage pressure. */

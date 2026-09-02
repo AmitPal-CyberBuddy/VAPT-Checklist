@@ -3,8 +3,22 @@ import { NavLink, useLocation } from 'react-router-dom';
 import clsx from 'clsx';
 import { IconAlert, IconBook, IconGrid, IconSettings, IconShield } from '../ui/icons';
 import { InlineAlert } from '../ui/primitives';
-import { requestPersistentStorage, storageAvailable } from '../persistence/db';
+import { checkStorage, requestPersistentStorage, type StorageStatus } from '../persistence/db';
 import { LIBRARY_VERSION, TEST_LIBRARY } from '../data/library';
+
+/** What the tester should actually do, per failure cause. */
+const STORAGE_ADVICE: Record<string, string> = {
+  blocked:
+    'Site data is blocked for this origin — most often private browsing or a cookie/storage setting. Anything recorded now is lost when the tab closes. Allow site data, or use a normal window, then reload.',
+  'version-mismatch':
+    'This database was upgraded by a newer version of the application, probably in another tab. Reload the page to pick up the current version; your engagements are intact.',
+  'upgrade-blocked':
+    'A database upgrade is waiting on another tab that still has the old version open. Close the other tabs for this site and reload.',
+  corrupt:
+    'The local database could not be opened and may be damaged. If you have a JSON backup, reload and import it; otherwise clearing site data for this origin will reset the application.',
+  unknown:
+    'IndexedDB could not be opened. Anything recorded now will be lost when the tab closes. Reload the page, and if it persists, check the browser\'s site-data settings.',
+};
 
 const NAV = [
   { to: '/', label: 'Engagements', icon: IconGrid, end: true },
@@ -14,15 +28,17 @@ const NAV = [
 
 export function AppShell({ children }: { children: ReactNode }) {
   const location = useLocation();
-  const [storageOk, setStorageOk] = useState<boolean | null>(null);
+  const [storage, setStorage] = useState<StorageStatus | null>(null);
 
   useEffect(() => {
     void (async () => {
-      const ok = await storageAvailable();
-      setStorageOk(ok);
-      if (ok) void requestPersistentStorage();
+      const status = await checkStorage();
+      setStorage(status);
+      if (status.ok) void requestPersistentStorage();
     })();
   }, []);
+
+  const storageOk = storage === null ? null : storage.ok;
 
   return (
     <div className="flex min-h-full flex-col">
@@ -111,9 +127,10 @@ export function AppShell({ children }: { children: ReactNode }) {
             title="This browser is not saving your work"
             className="mb-5"
           >
-            IndexedDB is blocked or unavailable — most often private browsing, or a browser setting
-            that blocks site data. Anything you record now will be lost when the tab closes. Enable
-            site data for this origin, or use a normal window, then reload.
+            {STORAGE_ADVICE[storage?.problem ?? 'unknown']}
+            {storage?.detail && (
+              <span className="mt-1 block font-mono text-micro text-ink-400">{storage.detail}</span>
+            )}
           </InlineAlert>
         )}
         {children}

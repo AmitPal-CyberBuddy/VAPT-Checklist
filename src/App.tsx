@@ -1,5 +1,7 @@
 import { HashRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { AppShell } from './app/AppShell';
+import { ErrorBoundary } from './app/ErrorBoundary';
+import { RoutedErrorBoundary } from './app/RoutedErrorBoundary';
 import { Toaster } from './ui/toast';
 import EngagementsPage from './features/engagements/EngagementsPage';
 import NewEngagementPage from './features/engagements/NewEngagementPage';
@@ -25,6 +27,7 @@ export default function App() {
   return (
     <HashRouter>
       <AppShell>
+        <RoutedErrorBoundary>
         <Routes>
           <Route path="/" element={<EngagementsPage />} />
           <Route path="/engagements/new" element={<NewEngagementPage />} />
@@ -40,8 +43,18 @@ export default function App() {
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </RoutedErrorBoundary>
       </AppShell>
       <Toaster />
     </HashRouter>
+  );
+}
+
+/** Root-level guard: catches a failure in the shell itself. */
+export function AppWithBoundary() {
+  return (
+    <ErrorBoundary area="application">
+      <App />
+    </ErrorBoundary>
   );
 }

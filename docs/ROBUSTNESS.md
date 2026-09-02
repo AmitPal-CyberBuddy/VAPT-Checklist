@@ -1,4 +1,4 @@
-# Robustness & Security Pass — Part 1
+# Robustness & Security Pass
 
 Input validation, state integrity, error handling and defensive rendering. No features added, no
 workflow changed, no visual redesign.
@@ -120,4 +120,68 @@ better than handing a client a workbook Excel will not open.
 ## Workflow verified after the changes
 
 Create Engagement → Application Type → Context → Applicable Tests → Status/Result → Notes →
-Dashboard → Persistence, all exercised through the UI. **235 tests pass**; production build clean.
+Dashboard → Persistence, all exercised through the UI.
+
+---
+---
+
+# Part 2 — data integrity, export and production behaviour
+
+Pinned by [`src/audit/production-behaviour.audit.test.tsx`](../src/audit/production-behaviour.audit.test.tsx).
+
+## Important issues found and fixed
+
+### 1. A render failure was a white page — *high*
+
+There was no error boundary. On a static deploy there is no server-side logging and no operator to
+notice: an unhandled render error left a blank page, and a tester mid-assessment had no way to know
+whether their work survived. It always had — every status, result and note is written to IndexedDB
+immediately — but nothing on a blank screen says so.
+
+**Fixed.** `ErrorBoundary` wraps both the shell and the routed screens. It states plainly that the
+assessment is safe, offers *Try again* / *Back to engagements* / *Reload*, and puts the stack behind
+a `<details>` rather than in the tester's face. Because the routed boundary resets on navigation, a
+single broken screen never strands the session — the header and navigation stay usable.
+
+### 2. Background failures vanished — *medium*
+
+A promise rejected outside a component, or an error thrown from a timer or listener, produced a
+console entry nobody was reading. **Fixed:** `installGlobalErrorHandlers()` surfaces both, with a
+ten-second de-duplication window so a repeating failure does not become a wall of toasts.
+
+### 3. "Storage unavailable" was not actionable — *medium*
+
+Every `db.open()` failure produced the same message regardless of cause. **Fixed:** `checkStorage()`
+classifies the failure — blocked origin, version mismatch, upgrade blocked by another tab,
+corruption, unknown — and the banner says what to do about each, with the underlying error shown
+underneath.
+
+## Verified sound — no change needed
+
+Things worth checking that turned out already correct. Recorded so the next audit does not redo them:
+
+| Area | Evidence |
+| --- | --- |
+| **Export fidelity** | Quotes, ampersands, angle brackets, `]]>`, CRLF, tabs, CJK, Arabic, Devanagari, emoji and astral-plane characters all round-trip byte-identical into the workbook |
+| **Illegal XML characters** | `write-excel-file` strips control characters (`\x00`–`\x1f`) itself, so a pasted payload cannot produce a workbook Excel refuses. Every XML part of a generated file passes a strict parser |
+| **Large engagements** | 173 applicable tests each carrying a 1,800-character note: plan 5 ms, write 154 ms, 60 KB. No stalling |
+| **Export failure** | Already surfaced with a retry and a pointer to the JSON backup; now covered by a test that breaks the writer |
+| **Dexie version handling** | A database left at a higher native version by a newer deploy does **not** throw for the older bundle — Dexie adapts. The cached-bundle hazard I expected is not real here |
+| **Console cleanliness** | Zero `console.error` and zero `console.warn` across engagement creation, all four engagement screens and a status change |
+| **GitHub Pages** | Served from `/VAPT-Checklist/`: index 200, every asset 200, `.nojekyll` present, all six deep hash routes 200 on refresh, zero absolute or remote references, zero runtime fetches to a remote origin, no dev plumbing |
+| **Dependencies** | Ten runtime dependencies, `npm audit` clean, nothing outdated. No CDN at runtime |
+| **Navigation data loss** | A note typed and abandoned mid-debounce is flushed both when switching tests and on `pagehide` |
+
+## Remaining limitations
+
+1. **The error boundary cannot catch everything.** Errors thrown inside event handlers and async
+   callbacks bypass React's boundary; they land in the global handler as a toast, which is a weaker
+   experience than the recovery panel.
+2. **No crash telemetry, by design.** A crash leaves a console entry and nothing else. For a
+   local-first tool with no backend that is the correct trade, but it does mean field failures are
+   invisible unless a tester reports them.
+3. **Corruption severe enough to prevent `db.open()` is diagnosed, not repaired.** The banner
+   explains the likely cause and points at import; there is no in-app rebuild.
+4. **Export holds the whole workbook in memory.** Fine at the measured size (60 KB for a fully
+   recorded engagement) but there is no streaming path if the library grows by an order of magnitude.
+5. **Cross-tab behaviour is still last-write-wins** (carried over from Part 1).
