@@ -35,7 +35,7 @@ function TriControl({
   const options: { key: Tri; label: string; active: string; next: boolean | undefined }[] = [
     { key: 'yes', label: 'Yes', active: 'bg-safe-500 text-ink-950 border-safe-400', next: true },
     { key: 'no', label: 'No', active: 'bg-ink-600 text-ink-50 border-ink-500', next: false },
-    { key: 'unknown', label: 'Unknown', active: 'bg-amber-500 text-ink-950 border-amber-400', next: undefined },
+    { key: 'unknown', label: 'Unknown', active: 'bg-warn-500 text-ink-950 border-warn-400', next: undefined },
   ];
   return (
     <div
@@ -52,7 +52,7 @@ function TriControl({
           tabIndex={value === o.key ? 0 : -1}
           onClick={() => onChange(o.next)}
           className={clsx(
-            'rounded-md border border-transparent px-2.5 py-1 text-micro font-medium transition-colors',
+            'rounded-md border border-transparent px-2.5 py-1 text-micro font-medium transition-colors duration-150',
             value === o.key ? o.active : 'text-ink-300 hover:bg-ink-800 hover:text-ink-100',
           )}
         >
@@ -85,7 +85,7 @@ function MultiControl({
             }
             aria-pressed={active}
             className={clsx(
-              'rounded-[--radius-control] border px-2.5 py-1 text-xs transition-colors',
+              'rounded-[--radius-control] border px-2.5 py-1 text-xs transition-colors duration-150',
               active
                 ? 'border-brand-500/60 bg-brand-500/15 text-brand-400'
                 : 'border-ink-600 bg-ink-950/40 text-ink-300 hover:border-ink-500 hover:text-ink-100',

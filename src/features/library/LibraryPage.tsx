@@ -167,7 +167,7 @@ export default function LibraryPage() {
       </Card>
 
       {aliasHits.length > 0 && (
-        <div className="rounded-lg border border-brand-500/25 bg-brand-500/5 px-3 py-2 text-xs text-ink-300">
+        <div className="rounded-[--radius-control] border border-brand-500/25 bg-brand-500/5 px-3 py-2 text-xs text-ink-300">
           Matched on synonyms:{' '}
           {aliasHits.map((hit, index) => (
             <span key={hit.id}>
@@ -208,7 +208,7 @@ export default function LibraryPage() {
             <div key={t.id} className="border-t border-ink-800 first:border-t-0">
               <button
                 onClick={() => setOpen(expanded ? null : t.id)}
-                className="flex w-full items-center gap-3 px-4 py-2 text-left hover:bg-ink-850"
+                className="flex w-full items-center gap-3 px-4 py-2 text-left transition-colors duration-150 hover:bg-ink-850"
               >
                 <IconChevron
                   size={14}
@@ -283,7 +283,7 @@ export default function LibraryPage() {
                     <ol className="space-y-1.5 text-sm text-ink-300">
                       {t.testingGuidance.map((g, i) => (
                         <li key={i} className="flex gap-2">
-                          <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded bg-ink-800 text-micro text-ink-400">
+                          <span className="mt-0.5 flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded bg-ink-800 font-mono text-micro text-brand-400">
                             {i + 1}
                           </span>
                           <span className="leading-relaxed">{g}</span>

@@ -14,8 +14,26 @@ Implementation: [`src/ui/primitives.tsx`](../src/ui/primitives.tsx) (components)
 | **Surface** | `ink-950` app · `ink-900` panel · `ink-850` inset | Three levels, no more |
 | **Text** | `ink-50/100` primary · `ink-300` secondary · `ink-400` tertiary · `ink-500` faintest | `ink-500` is the lightest tone allowed for text |
 | **Line** | `ink-700` panel border · `ink-600` control border | Never used for text |
-| **Radius** | `--radius-control` 0.5rem · `--radius-panel` 0.75rem | Two radii only |
-| **Accent** | `brand-500` action · `vuln-500` vulnerable · `safe-500` not vulnerable | Semantic, never decorative |
+| **Radius** | `--radius-control` 0.5rem · `--radius-panel` 0.75rem | Two radii; `kbd` chips use 0.25rem |
+| **Accent** | `brand-500` action/highest-information · `vuln-500` vulnerable/danger · `safe-500` not vulnerable/success · `warn-500` warning · `high-500`/`medium-400` the severities between critical and low | Semantic, never decorative |
+| **Type** | Inter Variable (body) · JetBrains Mono (IDs, numbers-as-data, notes, keyhints) | Self-hosted via `@fontsource*` — no runtime network dependency |
+
+### Surfaces & motion
+
+The background is a flat colour with a hairline 30 px technical grid at ~3 % contrast — an
+instrument-like texture, not an illustration. Panels cast no shadow; instead of elevation they
+carry a **1 px top keyline** (`inset 0 1px 0` at ~4 %), the same cue consoles use, which keeps
+dark surfaces crisp at a glance.
+
+Semantic **rails** (a 2 px `inset` strip at the left edge) mark state on the scan edge: a
+vulnerable row in the workspace list, a high-value card on the dashboard, a semantic `Stat`, a
+toast. Rails always accompany the glyph and text label — never colour alone.
+
+Motion is one scale — `--motion-fast` 120 ms (hover/press, route crossfade) · `--motion-base`
+160 ms (panels opening in place, toasts) · `--motion-slow` 240 ms — with a single
+`--ease-standard` curve. Buttons sink 1 px on press; new content fades ~140 ms; toasts rise from
+where they dock. Nothing loops, nothing bounces, and everything is disabled under
+`prefers-reduced-motion`.
 
 ### Type scale
 
@@ -37,9 +55,8 @@ in a long session.
 The 4px scale, restricted to `1 (4) · 2 (8) · 3 (12) · 4 (16) · 5 (20) · 6 (24)`, plus `0.5`/`1.5`
 for badge-level inset. Half-steps above `2` are not used.
 
-The background is a flat colour. There are no gradients, no hero sections, no decorative
-illustrations and no shadows beyond what a border already conveys. Motion is limited to a 140 ms
-fade on newly mounted content and is disabled entirely under `prefers-reduced-motion`.
+There are no colour gradients, no hero sections, no decorative illustrations and no elevation
+shadows — surfaces are defined by borders, hairline keylines and rails (see *Surfaces & motion*).
 
 ---
 

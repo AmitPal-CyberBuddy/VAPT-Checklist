@@ -124,7 +124,7 @@ export default function ExportPage() {
               return (
                 <div
                   key={sheet.key}
-                  className="flex items-start justify-between gap-4 rounded-[--radius-control] border border-ink-700 bg-ink-850 px-3 py-2"
+                  className="panel-inset flex items-start justify-between gap-4 px-3 py-2"
                 >
                   <div className="min-w-0">
                     <p className="flex items-center gap-2 text-sm text-ink-100">

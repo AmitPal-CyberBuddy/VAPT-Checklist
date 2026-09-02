@@ -37,15 +37,15 @@ export const toast = {
     useToastStore.getState().push('info', message, detail),
 };
 
-const TONES: Record<ToastTone, { cls: string; Icon: typeof IconCheck }> = {
-  success: { cls: 'border-safe-500/40 text-safe-400', Icon: IconCheck },
-  error: { cls: 'border-vuln-500/40 text-vuln-400', Icon: IconAlert },
-  info: { cls: 'border-brand-500/40 text-brand-400', Icon: IconInfo },
+const TONES: Record<ToastTone, { cls: string; rail: string; Icon: typeof IconCheck }> = {
+  success: { cls: 'border-safe-500/40 text-safe-400', rail: 'rail-safe', Icon: IconCheck },
+  error: { cls: 'border-vuln-500/40 text-vuln-400', rail: 'rail-vuln', Icon: IconAlert },
+  info: { cls: 'border-brand-500/40 text-brand-400', rail: 'rail-brand', Icon: IconInfo },
 };
 
 function ToastItem({ item }: { item: Toast }) {
   const dismiss = useToastStore((s) => s.dismiss);
-  const { cls, Icon } = TONES[item.tone];
+  const { cls, rail, Icon } = TONES[item.tone];
 
   useEffect(() => {
     const timer = setTimeout(() => dismiss(item.id), 5000);
@@ -54,7 +54,11 @@ function ToastItem({ item }: { item: Toast }) {
 
   return (
     <div
-      className={clsx('panel animate-in flex w-80 max-w-full items-start gap-3 border p-3', cls)}
+      className={clsx(
+        'panel animate-toast flex w-80 max-w-full items-start gap-3 border p-3 pl-3.5',
+        cls,
+        rail,
+      )}
     >
       <Icon size={16} aria-hidden="true" className="mt-0.5 shrink-0" />
       <div className="min-w-0 flex-1">
@@ -63,7 +67,7 @@ function ToastItem({ item }: { item: Toast }) {
       </div>
       <button
         onClick={() => dismiss(item.id)}
-        className="shrink-0 rounded text-ink-400 hover:text-ink-100"
+        className="shrink-0 rounded text-ink-400 transition-colors hover:text-ink-100"
         aria-label="Dismiss notification"
       >
         <IconX size={14} />

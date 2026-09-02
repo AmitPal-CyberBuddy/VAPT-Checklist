@@ -60,10 +60,10 @@ function RowStatusControl({
           }
         }}
         className={clsx(
-          'h-7 cursor-pointer rounded-[--radius-control] border bg-ink-950/60 py-0 pr-6 pl-2',
+          'select-chevron h-7 cursor-pointer rounded-[--radius-control] border bg-ink-950/60 py-0 pr-6 pl-2',
           'text-micro text-ink-100 transition-colors hover:border-ink-500',
-          'focus:border-brand-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50',
-          awaitingChoice ? 'border-amber-400' : 'border-ink-600',
+          'focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/45 disabled:cursor-not-allowed disabled:opacity-50',
+          awaitingChoice ? 'border-warn-400' : 'border-ink-600',
         )}
       >
         {TEST_STATUSES.map((status) => (
@@ -78,8 +78,8 @@ function RowStatusControl({
           role="group"
           aria-label={`Result for ${d.vulnerabilityName}`}
           className={clsx(
-            'flex gap-1 rounded-[--radius-control]',
-            awaitingChoice && 'ring-2 ring-amber-400',
+            'animate-in flex gap-1 rounded-[--radius-control]',
+            awaitingChoice && 'ring-2 ring-warn-400',
           )}
         >
           {RESULT_OPTIONS.map((option) => {
@@ -148,8 +148,12 @@ function TestListRowInner({
     <li
       data-test-id={d.id}
       className={clsx(
-        'group border-l-2 pr-2 pl-1.5 transition-colors',
-        active ? 'border-l-brand-500 bg-brand-500/10' : 'border-l-transparent hover:bg-ink-850',
+        'group border-l-2 pr-2 pl-1.5 transition-colors duration-150',
+        active
+          ? 'border-l-brand-500 bg-brand-500/10'
+          : s.result === 'Vulnerable'
+            ? 'border-l-vuln-500/70 hover:bg-ink-850'
+            : 'border-l-transparent hover:bg-ink-850',
         !s.applicable && 'opacity-60',
       )}
     >
@@ -203,7 +207,7 @@ function TestListRowInner({
             <span className="font-mono">{d.id}</span>
             <span className="truncate">{categoryLabel}</span>
             {unconfirmed && s.applicable && (
-              <span className="text-amber-400" title="Applicable only because context facts are unknown">
+              <span className="text-warn-400" title="Applicable only because context facts are unknown">
                 Unconfirmed
               </span>
             )}

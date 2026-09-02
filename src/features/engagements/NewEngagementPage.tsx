@@ -167,7 +167,7 @@ export default function NewEngagementPage() {
 
       {/* Step 1 — basic information -------------------------------------- */}
       {step === 1 && (
-        <Card className="space-y-4">
+        <Card className="animate-in space-y-4">
           <SectionHeading
             title="Basic information"
             description="Three fields to get started. Everything else is optional and editable later."
@@ -290,7 +290,7 @@ export default function NewEngagementPage() {
 
       {/* Step 2 — application type ----------------------------------------- */}
       {step === 2 && (
-        <div className="space-y-4">
+        <div className="animate-in space-y-4">
           <Card className="space-y-3">
             <SectionHeading
               title="What kind of assessment is this?"
@@ -323,7 +323,7 @@ export default function NewEngagementPage() {
 
       {/* Step 3 — context --------------------------------------------------- */}
       {step === 3 && (
-        <div className="space-y-5">
+        <div className="animate-in space-y-5">
           <Card className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <p className="text-sm font-medium text-ink-100">
@@ -361,7 +361,7 @@ export default function NewEngagementPage() {
                 {preview.uncertain.length > 0 && (
                   <>
                     {' · '}
-                    <span className="text-amber-300">
+                    <span className="text-warn-300">
                       {preview.uncertain.length} unconfirmed
                     </span>
                   </>
@@ -382,7 +382,7 @@ export default function NewEngagementPage() {
 
       {/* Step 4 — review -------------------------------------------------- */}
       {step === 4 && (
-        <div className="space-y-5">
+        <div className="animate-in space-y-5">
           <div className="grid gap-3 sm:grid-cols-5">
             {(['Critical', 'High', 'Medium', 'Low'] as Priority[]).map((p) => (
               <Card key={p} className="py-3">
@@ -460,7 +460,7 @@ export default function NewEngagementPage() {
                         </td>
                         <td className="px-3 py-1.5 text-xs text-ink-500">
                           {suggestion.uncertain ? (
-                            <span className="text-amber-400">Context incomplete</span>
+                            <span className="text-warn-400">Context incomplete</span>
                           ) : (
                             suggestion.conditions
                               .filter((c) => c.outcome === 'met')
