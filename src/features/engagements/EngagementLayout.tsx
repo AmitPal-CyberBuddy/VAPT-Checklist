@@ -8,6 +8,7 @@ import { toast } from '../../ui/toast';
 import { EmptyState, LinkButton } from '../../ui/primitives';
 import { IconAlert } from '../../ui/icons';
 import { FACT_BY_KEY } from '../../domain/context';
+import { safeExternalUrl } from '../../domain/untrusted';
 import type { EngagementStatus } from '../../domain/types';
 
 const TABS = [
@@ -53,6 +54,7 @@ export default function EngagementLayout() {
   }
 
   const c = metrics.counts;
+  const safeUrl = safeExternalUrl(engagement.applicationUrl);
   const typeOptions = FACT_BY_KEY.assetTypes.options ?? [];
   const applicationType = ((engagement.context.assetTypes as string[] | undefined) ?? [])
     .map((v) => typeOptions.find((o) => o.value === v)?.label ?? v)
@@ -74,16 +76,21 @@ export default function EngagementLayout() {
               {engagement.name}
             </h1>
             <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-micro text-ink-500">
-              {engagement.applicationUrl && (
-                <a
-                  href={engagement.applicationUrl}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  className="font-mono text-brand-400/90 hover:text-brand-400"
-                >
-                  {engagement.applicationUrl}
-                </a>
-              )}
+              {engagement.applicationUrl &&
+                (safeUrl ? (
+                  <a
+                    href={safeUrl}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    className="max-w-full truncate font-mono text-brand-400/90 hover:text-brand-400"
+                  >
+                    {engagement.applicationUrl}
+                  </a>
+                ) : (
+                  <span className="max-w-full truncate font-mono" title="Not a linkable http(s) URL">
+                    {engagement.applicationUrl}
+                  </span>
+                ))}
               {applicationType && <span>{applicationType}</span>}
               {engagement.scope.length > 0 && (
                 <span className="truncate font-mono">{engagement.scope.join(' · ')}</span>

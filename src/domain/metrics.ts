@@ -72,9 +72,6 @@ function accumulate(counts: CoverageCounts, state: TestState): void {
   }
   counts.applicable += 1;
   switch (state.status) {
-    case 'Not Tested':
-      counts.notTested += 1;
-      break;
     case 'N/A':
       counts.na += 1;
       break;
@@ -94,6 +91,11 @@ function accumulate(counts: CoverageCounts, state: TestState): void {
         counts.notTested += 1;
       }
       break;
+    // 'Not Tested' and anything unrecognised (a row corrupted on disk, or one
+    // written by a future build) count as Not Tested, so the identities hold
+    // for whatever is actually in the database.
+    default:
+      counts.notTested += 1;
   }
 }
 

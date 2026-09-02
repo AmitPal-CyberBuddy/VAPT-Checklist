@@ -18,6 +18,7 @@ import { collectFindings, highValueTests } from '../../domain/metrics';
 import { contextCompleteness } from '../context/ContextForm';
 import { FACT_BY_KEY } from '../../domain/context';
 import { suggestApplicability } from '../../domain/applicability';
+import { safeExternalUrl } from '../../domain/untrusted';
 import type { Priority } from '../../domain/types';
 
 function applicationTypeLabel(values: string[] | undefined): string {
@@ -55,6 +56,7 @@ export default function DashboardPage() {
   const unconfirmed = items.filter(
     (i) => i.state.applicable && suggestApplicability(i.definition, engagement.context).uncertain,
   );
+  const safeUrl = safeExternalUrl(engagement.applicationUrl);
   const findingsByPriority = (['Critical', 'High', 'Medium', 'Low'] as Priority[]).filter(
     (p) => metrics.findingsByPriority[p] > 0,
   );
@@ -75,19 +77,24 @@ export default function DashboardPage() {
             <div className="min-w-0">
               <dt className="text-micro tracking-wider text-ink-400 uppercase">Application URL</dt>
               <dd className="mt-0.5 truncate font-mono text-xs text-ink-200">
-                {engagement.applicationUrl ? (
+                {!engagement.applicationUrl ? (
+                  <span className="text-ink-400">Not recorded</span>
+                ) : safeUrl ? (
                   <a
-                    href={engagement.applicationUrl}
+                    href={safeUrl}
                     target="_blank"
                     rel="noreferrer noopener"
-                    className="inline-flex items-center gap-1 hover:text-brand-400"
+                    className="inline-flex max-w-full items-center gap-1 truncate hover:text-brand-400"
                   >
                     {engagement.applicationUrl}
                     <IconExternal size={11} aria-hidden="true" />
                     <span className="sr-only">(opens in a new tab)</span>
                   </a>
                 ) : (
-                  <span className="text-ink-400">Not recorded</span>
+                  // Unsupported scheme (javascript:, data:…) — shown, never linked.
+                  <span className="break-all" title="Not a linkable http(s) URL">
+                    {engagement.applicationUrl}
+                  </span>
                 )}
               </dd>
             </div>
@@ -103,7 +110,7 @@ export default function DashboardPage() {
               {engagement.clientName && <span>Client: {engagement.clientName}</span>}
               {engagement.testerName && <span>Tester: {engagement.testerName}</span>}
               {engagement.scope.length > 0 && (
-                <span className="truncate font-mono">
+                <span className="min-w-0 truncate font-mono">
                   Also in scope: {engagement.scope.join(' · ')}
                 </span>
               )}
@@ -154,7 +161,11 @@ export default function DashboardPage() {
           <Stat
             label="Total applicable"
             value={c.applicable}
-            hint={`${c.excluded} Not Applicable`}
+            hint={
+              unconfirmed.length > 0
+                ? `${c.excluded} Not Applicable · ${unconfirmed.length} unconfirmed`
+                : `${c.excluded} Not Applicable`
+            }
             tone="brand"
           />
           <Stat label="Tested" value={c.tested} glyph="●" />
@@ -300,7 +311,7 @@ export default function DashboardPage() {
                       <span className="font-mono">{definition.id}</span>
                     </span>
                     {state.notes && (
-                      <span className="mt-1 line-clamp-2 block text-xs text-ink-400">
+                      <span className="mt-1 line-clamp-2 block text-xs break-words text-ink-400">
                         {state.notes}
                       </span>
                     )}

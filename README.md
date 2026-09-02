@@ -327,6 +327,7 @@ Clearing site data deletes your engagements, so take a backup before you do.
 - [`docs/DATA-MODEL.md`](docs/DATA-MODEL.md) — entities, invariants, metrics, export model
 - [`docs/TEST-LIBRARY.md`](docs/TEST-LIBRARY.md) — knowledge base conventions, taxonomy, authoring guide
 - [`docs/DESIGN-SYSTEM.md`](docs/DESIGN-SYSTEM.md) — visual language, vocabulary, responsive and accessibility rules
+- [`docs/AUDIT.md`](docs/AUDIT.md) — end-to-end product audit: what was tested, what was found, what was fixed
 - [`docs/adr/`](docs/adr/) — architecture decision records
 - [`docs/deployment/`](docs/deployment/) — GitHub Pages deployment and workflows
 

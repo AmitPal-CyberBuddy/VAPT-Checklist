@@ -89,6 +89,40 @@ describe('component reuse', () => {
   });
 });
 
+describe('form semantics', () => {
+  it('never wraps a group of controls in a single-control Field', () => {
+    // A <label> names its first labellable descendant, so a Field around chips
+    // gives the first chip the entire field's text as its accessible name.
+    const offenders: string[] = [];
+    for (const file of screens) {
+      for (const match of file.text.matchAll(/<Field(?![A-Za-z])[\s\S]*?<\/Field>/g)) {
+        const buttons = (match[0].match(/<button/g) ?? []).length;
+        if (buttons > 1) offenders.push(`${file.path}: Field wrapping ${buttons} buttons`);
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+});
+
+describe('overflow safety', () => {
+  it('wraps or truncates every element that renders free-form tester text', () => {
+    // Notes hold payloads: long unbroken tokens that will overflow a flex child
+    // unless the container says otherwise.
+    const offenders: string[] = [];
+    for (const file of screens) {
+      const lines = file.text.split('\n');
+      lines.forEach((line, i) => {
+        if (!/\{(?:state|s|engagement)\.(?:notes|applicationUrl)\}/.test(line)) return;
+        const context = lines.slice(Math.max(0, i - 4), i + 1).join(' ');
+        if (!/break-words|break-all|truncate|<Textarea/.test(context)) {
+          offenders.push(`${file.path}:${i + 1} ${line.trim().slice(0, 60)}`);
+        }
+      });
+    }
+    expect(offenders).toEqual([]);
+  });
+});
+
 describe('vocabulary', () => {
   const BANNED = [
     ['Pending', /\bPending\b/],

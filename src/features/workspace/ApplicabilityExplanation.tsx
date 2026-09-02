@@ -56,7 +56,7 @@ export function ApplicabilityExplanation({
                 <span className={clsx('w-3 shrink-0 font-mono', mark.cls)}>{mark.glyph}</span>
                 <span className="text-ink-200">{condition.label}</span>
                 {!compact && (
-                  <span className="truncate text-ink-500">— {condition.detail}</span>
+                  <span className="min-w-0 truncate text-ink-500">— {condition.detail}</span>
                 )}
               </li>
             );

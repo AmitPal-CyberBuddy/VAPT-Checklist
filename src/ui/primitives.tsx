@@ -352,6 +352,14 @@ export function SectionHeading({
 
 /* ------------------------------------------------------------------ Inputs */
 
+/**
+ * A labelled single form control.
+ *
+ * The wrapping `<label>` implicitly labels the FIRST labellable descendant, so
+ * this must never wrap a group of controls: the first one would inherit the
+ * label, the hint and every sibling's text as its accessible name. Use
+ * `FieldGroup` for anything with more than one control.
+ */
 export function Field({
   label,
   hint,
@@ -390,6 +398,32 @@ export function Field({
         </span>
       )}
     </label>
+  );
+}
+
+/**
+ * A labelled *group* of controls — chips, toggles, segmented choices.
+ * `fieldset`/`legend` names the group without hijacking the first child.
+ */
+export function FieldGroup({
+  label,
+  hint,
+  children,
+  className,
+}: {
+  label: string;
+  hint?: ReactNode;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <fieldset className={clsx('block min-w-0 border-0 p-0', className)}>
+      <legend className="mb-1.5 block text-xs font-medium tracking-wide text-ink-300 uppercase">
+        {label}
+      </legend>
+      {children}
+      {hint && <p className="mt-1 text-xs text-ink-400">{hint}</p>}
+    </fieldset>
   );
 }
 

@@ -238,9 +238,9 @@ export const CONTEXT_FACTS: FactDefinition[] = [
     ],
   },
   yesNo('handlesPii', 'data', 'Handles personal data (PII)', undefined, true),
-  yesNo('handlesPayments', 'data', 'Handles payments or card data'),
+  yesNo('handlesPayments', 'data', 'Handles payments or card data', undefined, true),
   yesNo('handlesHealthData', 'data', 'Handles health or other regulated data'),
-  yesNo('hasMultiTenancy', 'data', 'Multi-tenant', 'Multiple customers/organisations share the deployment.'),
+  yesNo('hasMultiTenancy', 'data', 'Multi-tenant', 'Multiple customers/organisations share the deployment.', true),
   yesNo(
     'hasUserOwnedResources',
     'data',
@@ -251,23 +251,23 @@ export const CONTEXT_FACTS: FactDefinition[] = [
 
   // -------------------------------------------------------------- features
   yesNo('hasFileUpload', 'features', 'File upload', undefined, true),
-  yesNo('hasFileDownload', 'features', 'File download / document retrieval'),
+  yesNo('hasFileDownload', 'features', 'File download / document retrieval', undefined, true),
   yesNo('hasUserGeneratedContent', 'features', 'User generated content shown to others', 'Comments, profiles, messaging.'),
   yesNo('hasSearch', 'features', 'Search or filtering functionality'),
-  yesNo('hasDataExport', 'features', 'Data export (CSV / XLSX / PDF)'),
+  yesNo('hasDataExport', 'features', 'Data export (CSV / XLSX / PDF)', undefined, true),
   yesNo('hasEmailNotifications', 'features', 'Sends email / SMS notifications'),
-  yesNo('hasWorkflowOrTransactions', 'features', 'Multi-step workflows or transactions', 'Checkout, approvals, wizards.'),
+  yesNo('hasWorkflowOrTransactions', 'features', 'Multi-step workflows or transactions', 'Checkout, approvals, wizards.', true),
   yesNo('hasCouponsOrPricing', 'features', 'Pricing, discounts, coupons or quantities'),
 
   // ----------------------------------------------------------- integration
   yesNo('acceptsUrlsFromUsers', 'integration', 'Accepts URLs / hostnames from users', 'Webhooks, imports, avatar-by-URL, PDF renderers.'),
-  yesNo('callsExternalServices', 'integration', 'Makes server-side calls to other services'),
+  yesNo('callsExternalServices', 'integration', 'Makes server-side calls to other services', undefined, true),
   yesNo('parsesXml', 'integration', 'Parses XML, SVG, DOCX or XLSX input'),
   yesNo('usesSerialization', 'integration', 'Accepts serialized objects', 'Java/PHP/.NET/Python serialized blobs, YAML, pickle.'),
   yesNo('usesTemplating', 'integration', 'Renders server-side templates with user data'),
-  yesNo('usesWebsockets', 'integration', 'Uses WebSockets or SSE'),
+  yesNo('usesWebsockets', 'integration', 'Uses WebSockets or SSE', undefined, true),
   yesNo('usesCrossOriginRequests', 'integration', 'Browser calls a different origin', 'CORS is in play.'),
-  yesNo('usesThirdPartyScripts', 'integration', 'Loads third-party scripts / tag managers'),
+  yesNo('usesThirdPartyScripts', 'integration', 'Loads third-party scripts / tag managers', undefined, true),
 
   // -------------------------------------------------------- infrastructure
   {
@@ -275,6 +275,7 @@ export const CONTEXT_FACTS: FactDefinition[] = [
     label: 'Hosting model',
     type: 'single',
     section: 'infrastructure',
+    core: true,
     options: [
       { value: 'cloud', label: 'Public cloud (AWS / Azure / GCP)' },
       { value: 'on-prem', label: 'On premises' },
@@ -283,8 +284,11 @@ export const CONTEXT_FACTS: FactDefinition[] = [
       { value: 'unknown', label: 'Unknown' },
     ],
   },
-  yesNo('usesContainers', 'infrastructure', 'Containers / Kubernetes in scope'),
-  yesNo('usesCdnOrProxy', 'infrastructure', 'Behind a CDN, WAF or reverse proxy'),
+  {
+    ...yesNo('usesContainers', 'infrastructure', 'Containers / Kubernetes in scope', undefined, true),
+    dependsOn: { fact: 'hosting', equals: 'cloud' },
+  },
+  yesNo('usesCdnOrProxy', 'infrastructure', 'Behind a CDN, WAF or reverse proxy', undefined, true),
   yesNo('hasSubdomains', 'infrastructure', 'Multiple subdomains in scope'),
 
   // ------------------------------------------------------------ engagement

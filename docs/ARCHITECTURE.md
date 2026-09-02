@@ -177,7 +177,14 @@ Tests cover the parts where correctness actually matters:
 | `domain/workflow.test.ts` | Progress rule, high-value ranking, conditional context, status/result |
 | `export/excel.test.ts` | Workbook composition and cell shape |
 | `app/App.smoke.test.tsx` | The app mounts, routes resolve, live data renders, landmarks and accessible names exist, non-colour status indicators, roving tabindex, modal focus trap, narrow-viewport flow |
-| `ui/designSystem.test.ts` | Design-language contract: type scale, semantic colour, radii, component reuse, vocabulary, accessible names |
+| `ui/designSystem.test.ts` | Design-language contract: type scale, semantic colour, radii, component reuse, vocabulary, accessible names, overflow safety |
+| `audit/integrity.audit.test.ts` | State machine, applicability profiles, isolation, persistence, export parity, corrupted data |
+| `audit/workflow.audit.test.tsx` | The engagement workflow through the UI, dashboard arithmetic, filter combinations |
+| `audit/production.audit.test.ts` | Deployment artefact (relative assets, no CDN, no dev plumbing) and untrusted-input handling |
+
+Untrusted input is handled in one place: `src/domain/untrusted.ts` gates URLs into `href`
+(`javascript:` and friends are shown, never linked) and neutralises spreadsheet formula characters
+in tester-entered cells. See [`AUDIT.md`](AUDIT.md).
 
 Notable guarantees asserted: no Critical test is excluded on unknown facts alone; a described target
 narrows the checklist but never loses a whole category; every context fact drives a rule (or is

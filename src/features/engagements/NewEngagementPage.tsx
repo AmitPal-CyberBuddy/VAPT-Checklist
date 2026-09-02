@@ -5,6 +5,7 @@ import {
   Button,
   Card,
   Field,
+  FieldGroup,
   Input,
   PageHeader,
   PriorityBadge,
@@ -175,7 +176,7 @@ export default function NewEngagementPage() {
             </Field>
           </div>
 
-          <Field
+          <FieldGroup
             label="Application type"
             hint="Drives which whole families of tests apply — GraphQL, mobile, SOAP, and so on."
           >
@@ -200,7 +201,7 @@ export default function NewEngagementPage() {
                 );
               })}
             </div>
-          </Field>
+          </FieldGroup>
 
           <button
             type="button"
@@ -310,7 +311,15 @@ export default function NewEngagementPage() {
               <IconShield size={18} className="text-brand-400" />
               <span className="text-ink-200">
                 <strong className="text-ink-50">{preview.applicable.length}</strong> of{' '}
-                {TEST_LIBRARY.length} tests currently applicable
+                {TEST_LIBRARY.length} tests applicable
+                {preview.uncertain.length > 0 && (
+                  <>
+                    {' · '}
+                    <span className="text-amber-300">
+                      {preview.uncertain.length} unconfirmed
+                    </span>
+                  </>
+                )}
               </span>
             </div>
             <div className="flex gap-2">

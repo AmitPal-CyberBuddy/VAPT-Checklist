@@ -72,7 +72,7 @@ function MultiControl({
   onChange: (v: string[]) => void;
 }) {
   return (
-    <div className="flex flex-wrap gap-1.5">
+    <div role="group" aria-label={fact.label} className="flex flex-wrap gap-1.5">
       {fact.options?.map((o) => {
         const active = value.includes(o.value);
         return (

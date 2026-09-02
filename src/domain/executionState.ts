@@ -20,6 +20,7 @@
  * example `status = N/A` with `result = Vulnerable` is unrepresentable.
  */
 
+import { TEST_STATUSES } from './types';
 import type { TestResult, TestState, TestStatus } from './types';
 
 export interface StateTransition {
@@ -47,6 +48,9 @@ export class InvalidTestStateError extends Error {
 /** Returns issues that block a state from being considered complete/valid. */
 export function validateState(state: Pick<TestState, 'status' | 'result'>): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
+  if (!TEST_STATUSES.includes(state.status)) {
+    issues.push({ field: 'status', message: `Unknown status "${String(state.status)}".` });
+  }
   if (state.status === 'Tested' && !state.result) {
     issues.push({ field: 'result', message: 'A result is required when status is Tested.' });
   }

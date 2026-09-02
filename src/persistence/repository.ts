@@ -180,8 +180,9 @@ export async function bulkUpdateTestStates(
 }
 
 /**
- * Repairs rows written by an earlier build that allowed `Tested` with no
- * result. Idempotent, cheap, and run when an engagement is opened.
+ * Repairs rows that cannot have been written by this build — `Tested` with no
+ * result from an earlier version, or a status corrupted on disk. Idempotent,
+ * cheap, and run when an engagement is opened.
  */
 export async function repairIntegrity(engagementId: string): Promise<number> {
   const broken = (await listStates(engagementId)).filter(isInconsistent);

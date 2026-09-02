@@ -52,7 +52,7 @@ function ImportPreview({ inspection }: { inspection: BackupInspection }) {
       </div>
       <ul className="space-y-1 rounded-[--radius-control] border border-ink-700 p-3 text-xs text-ink-300">
         {inspection.names.map((name) => (
-          <li key={name} className="truncate">
+          <li key={name} className="truncate break-words">
             {name}
           </li>
         ))}
