@@ -87,7 +87,10 @@ export default function NewEngagementPage() {
     };
   }, [resolvedContext]);
 
-  const completeness = contextCompleteness(context, applicationType ?? undefined);
+  // Matches the questions actually rendered, which the "show all" toggle changes.
+  const completeness = contextCompleteness(context, applicationType ?? undefined, {
+    coreOnly: !showAllFacts,
+  });
   const canContinue = name.trim().length > 0;
   const canReachContext = canContinue && typeUsable;
 
@@ -324,7 +327,8 @@ export default function NewEngagementPage() {
           <Card className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <p className="text-sm font-medium text-ink-100">
-                {completeness.answered} of {completeness.total} questions answered
+                {completeness.answered} of {completeness.total}{' '}
+                {showAllFacts ? 'questions' : 'key questions'} answered
               </p>
               <p className="mt-0.5 text-xs text-ink-500">
                 Follow-up questions appear only when they are relevant. Anything left unknown keeps
@@ -379,7 +383,7 @@ export default function NewEngagementPage() {
       {/* Step 4 — review -------------------------------------------------- */}
       {step === 4 && (
         <div className="space-y-5">
-          <div className="grid gap-3 sm:grid-cols-4">
+          <div className="grid gap-3 sm:grid-cols-5">
             {(['Critical', 'High', 'Medium', 'Low'] as Priority[]).map((p) => (
               <Card key={p} className="py-3">
                 <p className="text-micro tracking-wider text-ink-400 uppercase">{p}</p>
@@ -388,12 +392,22 @@ export default function NewEngagementPage() {
                 </p>
               </Card>
             ))}
+            <Card className="border-brand-500/30 py-3">
+              <p className="text-micro tracking-wider text-ink-400 uppercase">Total applicable</p>
+              <p className="mt-1 text-2xl font-semibold tabular-nums text-brand-400">
+                {preview.applicable.length}
+              </p>
+            </Card>
           </div>
 
           <Card className="space-y-3">
             <SectionHeading
               title="Generated checklist"
-              description={`${preview.applicable.length} applicable · ${preview.excluded.length} Not Applicable by context · ${preview.uncertain.length} kept because facts are unknown`}
+              description={
+                `${preview.applicable.length} of ${TEST_LIBRARY.length} tests applicable · ` +
+                `${preview.excluded.length} ruled out by the context you recorded · ` +
+                `${preview.uncertain.length} of the applicable ones are unconfirmed`
+              }
               actions={
                 <Button size="sm" variant="subtle" onClick={() => setStep(3)}>
                   Adjust context

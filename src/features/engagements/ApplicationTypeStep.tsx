@@ -60,10 +60,11 @@ export function ApplicationTypePicker({
                   'No tests for this domain'
                 ) : (
                   <>
-                    <strong className="text-ink-200">{coverage.specific.length}</strong>{' '}
-                    {type.id === 'web-app' ? 'web' : 'domain'} tests
-                    {coverage.shared.length > 0 && ` · ${coverage.shared.length} shared HTTP`}
-                    {` · ${coverage.universal} apply to any target`}
+                    <strong className="text-ink-200">{coverage.specific.length}</strong> tests
+                    specific to this domain
+                    <span className="mt-0.5 block">
+                      {coverage.startingChecklist} in the starting checklist
+                    </span>
                   </>
                 )}
               </span>
@@ -120,6 +121,34 @@ export function ApplicationTypeDetail({ type }: { type: ApplicationTypeId }) {
             {categoryName(category)} · {count}
           </Badge>
         ))}
+      </div>
+
+      <div className="border-t border-ink-800 pt-3">
+        <p className="mb-1.5 text-micro tracking-wider text-ink-400 uppercase">
+          Where the starting checklist comes from
+        </p>
+        <dl className="space-y-1 text-xs">
+          {[
+            ['Specific to this domain', coverage.specific.length],
+            ['Shared HTTP-layer tests', coverage.shared.length],
+            ['Apply to any target', coverage.universal],
+            ['Awaiting a context answer', coverage.pendingContext],
+          ]
+            .filter(([, count]) => (count as number) > 0)
+            .map(([label, count]) => (
+              <div key={label as string} className="flex justify-between gap-4">
+                <dt className="text-ink-300">{label}</dt>
+                <dd className="tabular-nums text-ink-200">{count as number}</dd>
+              </div>
+            ))}
+          <div className="flex justify-between gap-4 border-t border-ink-800 pt-1 font-medium">
+            <dt className="text-ink-100">Starting checklist</dt>
+            <dd className="tabular-nums text-ink-50">{coverage.startingChecklist}</dd>
+          </div>
+        </dl>
+        <p className="mt-1.5 text-micro text-ink-400">
+          Answering the context questions removes what does not apply.
+        </p>
       </div>
 
       {definition.limitations && (

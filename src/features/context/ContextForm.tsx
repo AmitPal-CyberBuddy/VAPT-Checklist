@@ -207,16 +207,26 @@ export function ContextForm({
   );
 }
 
-/** Completeness counts only the questions this domain actually asks. */
+/**
+ * Completeness counts exactly the questions currently on screen.
+ *
+ * It previously counted every question the domain could ask (40 for a web app)
+ * while the default view rendered only the core set (21), so the wizard read
+ * "3 of 40 answered" above 21 visible questions. The denominator must be what
+ * the tester can see and act on.
+ */
 export function contextCompleteness(
   context: ApplicationContext,
   applicationType?: ApplicationTypeId,
+  options: { coreOnly?: boolean } = {},
 ): {
   answered: number;
   total: number;
   ratio: number;
 } {
-  const asked = CONTEXT_FACTS.filter((f) => isFactVisible(f, context, applicationType));
+  const asked = CONTEXT_FACTS.filter(
+    (f) => (!options.coreOnly || f.core) && isFactVisible(f, context, applicationType),
+  );
   const answered = asked.filter((f) => {
     const v = context[f.key];
     return v !== undefined && v !== '' && !(Array.isArray(v) && v.length === 0);

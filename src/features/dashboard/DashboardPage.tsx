@@ -181,8 +181,8 @@ export default function DashboardPage() {
             value={c.applicable}
             hint={
               unconfirmed.length > 0
-                ? `${c.excluded} Not Applicable · ${unconfirmed.length} unconfirmed`
-                : `${c.excluded} Not Applicable`
+                ? `of which ${unconfirmed.length} unconfirmed · ${c.excluded} Not Applicable`
+                : `${c.excluded} Not Applicable of ${c.total}`
             }
             tone="brand"
           />

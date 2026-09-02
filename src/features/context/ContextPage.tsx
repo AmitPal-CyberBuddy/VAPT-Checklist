@@ -39,6 +39,7 @@ export default function ContextPage() {
     [draft, engagement],
   );
 
+  // This screen always renders the full question set for the domain.
   const completeness = contextCompleteness(draft, engagement?.applicationType);
 
   function setFact(key: ContextFactKey, value: boolean | string | string[] | undefined) {
