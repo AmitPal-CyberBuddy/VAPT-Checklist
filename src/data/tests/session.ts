@@ -1,0 +1,214 @@
+import type { TestDefinition } from '../../domain/types';
+import { rule } from '../../domain/applicability';
+
+const auth = rule.is('hasAuthentication', true);
+const cookieSession = rule.includes('authMechanisms', 'session-cookie');
+
+export const sessionTests: TestDefinition[] = [
+  {
+    id: 'SESS-001',
+    vulnerabilityName: 'Session Fixation',
+    category: 'session',
+    priority: 'High',
+    description:
+      'The session identifier issued before authentication is retained afterwards, so an attacker who plants a known session ID gains an authenticated session.',
+    testingGuidance: [
+      'Record the session cookie before login and compare it with the value after successful authentication.',
+      'Attempt to set a chosen session identifier (cookie, URL parameter) and authenticate with it.',
+      'Confirm the session is also rotated on privilege change (e.g. step-up authentication).',
+    ],
+    owasp: ['WSTG-SESS-03'],
+    cwe: ['CWE-384'],
+    applicability: auth,
+    tags: ['session'],
+  },
+  {
+    id: 'SESS-002',
+    vulnerabilityName: 'Missing Secure Attribute on Session Cookie',
+    category: 'session',
+    priority: 'Medium',
+    description:
+      'Session cookies lack the Secure flag and may therefore be transmitted over plaintext HTTP, exposing them to interception.',
+    testingGuidance: [
+      'Inspect Set-Cookie for session and authentication cookies.',
+      'Confirm Secure is present on every cookie carrying identity or state.',
+      'Test whether the cookie is actually sent on an http:// request to an in-scope host.',
+    ],
+    owasp: ['WSTG-SESS-02'],
+    cwe: ['CWE-614'],
+    applicability: rule.any(cookieSession, rule.all(auth, rule.includes('assetTypes', 'web-app'))),
+    tags: ['session', 'cookies'],
+  },
+  {
+    id: 'SESS-003',
+    vulnerabilityName: 'Missing HttpOnly Attribute on Session Cookie',
+    category: 'session',
+    priority: 'Medium',
+    description:
+      'Session cookies are readable by JavaScript, so any XSS becomes a direct session theft.',
+    testingGuidance: [
+      'Check Set-Cookie headers for HttpOnly on all identity cookies.',
+      'Read document.cookie in the browser console to confirm exposure.',
+      'Note any deliberate exceptions and whether they are justified.',
+    ],
+    owasp: ['WSTG-SESS-02'],
+    cwe: ['CWE-1004'],
+    applicability: rule.any(cookieSession, rule.all(auth, rule.includes('assetTypes', 'web-app'))),
+    tags: ['session', 'cookies'],
+  },
+  {
+    id: 'SESS-004',
+    vulnerabilityName: 'Missing or Weak SameSite Cookie Attribute',
+    category: 'session',
+    priority: 'Medium',
+    description:
+      'Session cookies are sent on cross-site requests because SameSite is absent or set to None without justification, enabling CSRF and cross-site leaks.',
+    testingGuidance: [
+      'Review SameSite values on all session and CSRF cookies.',
+      'Where SameSite=None is used, confirm it is required and paired with Secure.',
+      'Test an actual cross-site POST to verify whether the cookie is attached.',
+    ],
+    owasp: ['WSTG-SESS-02'],
+    cwe: ['CWE-1275'],
+    applicability: rule.any(cookieSession, rule.all(auth, rule.includes('assetTypes', 'web-app'))),
+    tags: ['session', 'cookies'],
+  },
+  {
+    id: 'SESS-005',
+    vulnerabilityName: 'Predictable Session Identifier',
+    category: 'session',
+    priority: 'Critical',
+    description:
+      'Session tokens are sequential, time-based, encoded user data or otherwise insufficiently random, allowing an attacker to guess or derive valid sessions.',
+    testingGuidance: [
+      'Collect a large sample of tokens and analyse entropy and structure.',
+      'Attempt to decode tokens (base64, hex) for embedded usernames, timestamps or counters.',
+      'Test whether tokens issued close in time are correlated.',
+    ],
+    owasp: ['WSTG-SESS-01'],
+    cwe: ['CWE-330', 'CWE-6'],
+    applicability: auth,
+    tags: ['session'],
+  },
+  {
+    id: 'SESS-006',
+    vulnerabilityName: 'Session Not Invalidated on Logout',
+    category: 'session',
+    priority: 'High',
+    description:
+      'Logout only clears client-side state; the token remains valid server-side and can be replayed after the user believes they have signed out.',
+    testingGuidance: [
+      'Capture an authenticated request, log out, then replay the request with the old token.',
+      'Test logout across all channels (web, API, mobile) and after password change.',
+      'Confirm server-side invalidation rather than cookie deletion only.',
+    ],
+    owasp: ['WSTG-SESS-06'],
+    cwe: ['CWE-613'],
+    applicability: auth,
+    tags: ['session'],
+  },
+  {
+    id: 'SESS-007',
+    vulnerabilityName: 'Insufficient Session Timeout',
+    category: 'session',
+    priority: 'Medium',
+    description:
+      'Sessions have no idle or absolute expiry, or the timeout is far longer than the sensitivity of the application warrants.',
+    testingGuidance: [
+      'Leave a session idle beyond the documented timeout and replay a request.',
+      'Test absolute lifetime by keeping a session active over a long period.',
+      'Compare token expiry claims (JWT exp) with actual server enforcement.',
+    ],
+    owasp: ['WSTG-SESS-07'],
+    cwe: ['CWE-613'],
+    applicability: auth,
+    tags: ['session'],
+  },
+  {
+    id: 'SESS-008',
+    vulnerabilityName: 'Cross-Site Request Forgery (CSRF)',
+    category: 'session',
+    priority: 'High',
+    description:
+      'State-changing requests are authorised solely by ambient credentials, so a third-party site can force an authenticated victim to perform actions.',
+    testingGuidance: [
+      'Identify state-changing endpoints and remove or alter the anti-CSRF token; check whether the request still succeeds.',
+      'Test token binding: reuse another user\'s token, an empty token and a deleted parameter.',
+      'Check JSON/API endpoints for reliance on Content-Type or custom headers only, and test simple-request bypasses.',
+      'Confirm SameSite settings do not mask a missing server-side control.',
+    ],
+    owasp: ['WSTG-SESS-05', 'A01:2021'],
+    cwe: ['CWE-352'],
+    applicability: rule.all(auth, rule.includes('assetTypes', 'web-app')),
+    tags: ['session', 'csrf'],
+  },
+  {
+    id: 'SESS-009',
+    vulnerabilityName: 'Session Hijacking via Token Exposure',
+    category: 'session',
+    priority: 'High',
+    description:
+      'Session tokens appear in URLs, logs, Referer headers, browser storage or error messages, allowing capture and reuse from a different client.',
+    testingGuidance: [
+      'Search URLs, redirects, logs and third-party requests for session identifiers.',
+      'Replay a captured token from a different IP address, user agent and browser to test binding.',
+      'Check whether tokens are written to localStorage where XSS could retrieve them.',
+    ],
+    owasp: ['WSTG-SESS-04'],
+    cwe: ['CWE-598', 'CWE-522'],
+    applicability: auth,
+    tags: ['session'],
+  },
+  {
+    id: 'SESS-010',
+    vulnerabilityName: 'JWT Misconfiguration',
+    category: 'session',
+    priority: 'Critical',
+    description:
+      'JSON Web Tokens are accepted with alg=none, a weak or guessable HMAC secret, unvalidated signatures, confusable algorithms (RS256→HS256), missing expiry or unchecked claims.',
+    testingGuidance: [
+      'Decode the token; modify the payload without re-signing and check whether it is accepted.',
+      'Test alg=none, algorithm confusion using the public key as an HMAC secret, and jwk/jku/kid header injection.',
+      'Attempt offline brute force of the HMAC secret against a captured token.',
+      'Verify exp, nbf, iss, aud and revocation are enforced server-side.',
+    ],
+    owasp: ['WSTG-SESS-10', 'API2:2023'],
+    cwe: ['CWE-347', 'CWE-345'],
+    applicability: rule.includes('authMechanisms', 'jwt'),
+    tags: ['session', 'jwt'],
+  },
+  {
+    id: 'SESS-011',
+    vulnerabilityName: 'Insecure Concurrent Session Handling',
+    category: 'session',
+    priority: 'Low',
+    description:
+      'Unlimited simultaneous sessions are permitted with no visibility or revocation, so a stolen session persists undetected alongside the legitimate one.',
+    testingGuidance: [
+      'Log in from multiple clients simultaneously and confirm all sessions remain valid.',
+      'Check for a session management screen and whether remote revocation actually terminates the session.',
+      'Verify a password change invalidates other active sessions.',
+    ],
+    owasp: ['WSTG-SESS-*'],
+    cwe: ['CWE-613'],
+    applicability: auth,
+    tags: ['session'],
+  },
+  {
+    id: 'SESS-012',
+    vulnerabilityName: 'Session Variable Overloading (Session Puzzling)',
+    category: 'session',
+    priority: 'Medium',
+    description:
+      'The same session variable is used by multiple flows (e.g. password reset and login), so completing one flow partially can grant state intended for another.',
+    testingGuidance: [
+      'Start a secondary flow (registration, password reset) and then request authenticated resources.',
+      'Interleave flows and observe whether privileges or identity leak between them.',
+      'Focus on flows that set identity attributes before authentication completes.',
+    ],
+    owasp: ['WSTG-SESS-08'],
+    cwe: ['CWE-841'],
+    applicability: rule.all(auth, rule.is('hasWorkflowOrTransactions', true)),
+    tags: ['session'],
+  },
+];

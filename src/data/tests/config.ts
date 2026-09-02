@@ -1,0 +1,317 @@
+import type { TestDefinition } from '../../domain/types';
+import { rule } from '../../domain/applicability';
+
+const web = rule.includes('assetTypes', 'web-app', 'rest-api', 'graphql-api', 'soap-api');
+const browser = rule.includes('assetTypes', 'web-app');
+
+export const configTests: TestDefinition[] = [
+  {
+    id: 'CONF-001',
+    vulnerabilityName: 'Missing Security Headers',
+    category: 'config',
+    priority: 'Medium',
+    description:
+      'Responses omit protective headers such as X-Content-Type-Options, X-Frame-Options/frame-ancestors, Referrer-Policy and Permissions-Policy, weakening browser-side defence in depth.',
+    testingGuidance: [
+      'Capture headers for HTML, JSON and error responses across the application.',
+      'Check for X-Content-Type-Options: nosniff, Referrer-Policy, Permissions-Policy and frame protection.',
+      'Confirm headers are present on authenticated pages and not only on the landing page.',
+    ],
+    owasp: ['WSTG-CONF-12', 'A05:2021'],
+    cwe: ['CWE-693'],
+    applicability: browser,
+    tags: ['headers', 'hardening'],
+  },
+  {
+    id: 'CONF-002',
+    vulnerabilityName: 'Directory Listing Enabled',
+    category: 'config',
+    priority: 'Medium',
+    description:
+      'The web server returns an index of directory contents when no default document exists, exposing file names, backups and application structure.',
+    testingGuidance: [
+      'Request known directories without a trailing document (e.g. /assets/, /uploads/, /backup/).',
+      'Check alternate hosts and CDN origins, which often lack the hardening applied to the main host.',
+      'Record any listed file that discloses sensitive content.',
+    ],
+    owasp: ['WSTG-CONF-04'],
+    cwe: ['CWE-548'],
+    applicability: web,
+    tags: ['hardening'],
+  },
+  {
+    id: 'CONF-003',
+    vulnerabilityName: 'Exposed Administrative Interface',
+    category: 'config',
+    priority: 'High',
+    description:
+      'Administrative consoles, management panels or framework dashboards are reachable from the same network exposure as normal users, often without additional access restriction.',
+    testingGuidance: [
+      'Probe for admin paths (/admin, /manager/html, /actuator, /console, /phpmyadmin, /wp-admin) and non-standard ports.',
+      'Determine whether access is restricted by network controls, authentication or nothing at all.',
+      'Attempt default credentials where the panel is identified (with client approval).',
+    ],
+    owasp: ['WSTG-CONF-05'],
+    cwe: ['CWE-1188'],
+    applicability: web,
+    tags: ['hardening'],
+  },
+  {
+    id: 'CONF-004',
+    vulnerabilityName: 'Insecure HTTP Methods Enabled',
+    category: 'config',
+    priority: 'Medium',
+    description:
+      'Dangerous verbs such as PUT, DELETE, TRACE, CONNECT or arbitrary methods are accepted, enabling file placement, cross-site tracing or authorisation bypass via verb tampering.',
+    testingGuidance: [
+      'Send OPTIONS and observe the Allow header; then test each method directly rather than trusting it.',
+      'Attempt PUT of a benign file and TRACE for cross-site tracing.',
+      'Test whether access control differs between GET, POST and an override header (X-HTTP-Method-Override).',
+    ],
+    owasp: ['WSTG-CONF-06'],
+    cwe: ['CWE-650'],
+    applicability: web,
+    tags: ['hardening'],
+  },
+  {
+    id: 'CONF-005',
+    vulnerabilityName: 'Vulnerable and Outdated Components',
+    category: 'config',
+    priority: 'High',
+    description:
+      'The application runs server software, frameworks or JavaScript libraries with publicly known vulnerabilities, or versions that are past end of support.',
+    testingGuidance: [
+      'Inventory server, framework and client library versions from headers, banners and JS bundles.',
+      'Map each version to known CVEs and end-of-life dates.',
+      'Where safe and authorised, validate exploitability rather than reporting version numbers alone.',
+    ],
+    owasp: ['A06:2021', 'WSTG-CONF-01'],
+    cwe: ['CWE-1104', 'CWE-1035'],
+    applicability: rule.always(),
+    tags: ['components'],
+  },
+  {
+    id: 'CONF-006',
+    vulnerabilityName: 'Cross-Domain Policy Misconfiguration',
+    category: 'config',
+    priority: 'Medium',
+    description:
+      'Legacy cross-domain policy files (crossdomain.xml, clientaccesspolicy.xml) grant wildcard access, allowing third-party rich clients to read authenticated responses.',
+    testingGuidance: [
+      'Request /crossdomain.xml and /clientaccesspolicy.xml on every in-scope host.',
+      'Look for allow-access-from domain="*" or overly broad domains.',
+      'Assess whether the affected host serves authenticated content.',
+    ],
+    owasp: ['WSTG-CONF-08'],
+    cwe: ['CWE-942'],
+    applicability: browser,
+    tags: ['hardening'],
+  },
+  {
+    id: 'CONF-007',
+    vulnerabilityName: 'Debug and Diagnostic Endpoints Exposed',
+    category: 'config',
+    priority: 'High',
+    description:
+      'Debug modes, profilers, health/metrics endpoints or management actuators are enabled in a reachable environment, exposing configuration, memory dumps or remote control.',
+    testingGuidance: [
+      'Probe for /actuator/*, /debug, /trace, /metrics, /server-status, /phpinfo.php, /__debug__.',
+      'Toggle common debug parameters (?debug=true, ?XDEBUG_SESSION_START) and observe response differences.',
+      'Assess the sensitivity of anything returned (env vars, heap dumps, thread dumps).',
+    ],
+    owasp: ['WSTG-CONF-02', 'A05:2021'],
+    cwe: ['CWE-489'],
+    applicability: web,
+    tags: ['hardening'],
+  },
+  {
+    id: 'CONF-008',
+    vulnerabilityName: 'Weak or Missing Content Security Policy',
+    category: 'config',
+    priority: 'Medium',
+    description:
+      'CSP is absent, or is weakened by unsafe-inline, unsafe-eval, wildcard sources or exploitable JSONP endpoints in allowed origins, removing a key XSS mitigation.',
+    testingGuidance: [
+      'Extract the Content-Security-Policy header/meta tag and evaluate each directive.',
+      'Check for unsafe-inline, unsafe-eval, data:, * and allow-listed hosts that host bypass gadgets.',
+      'Verify the policy is enforced rather than report-only.',
+    ],
+    owasp: ['WSTG-CONF-12'],
+    cwe: ['CWE-693'],
+    applicability: browser,
+    tags: ['headers'],
+  },
+  {
+    id: 'CONF-009',
+    vulnerabilityName: 'Improper Caching of Sensitive Responses',
+    category: 'config',
+    priority: 'Medium',
+    description:
+      'Authenticated pages or API responses lack no-store cache directives, so sensitive data persists in browser cache, shared proxies or CDN nodes.',
+    testingGuidance: [
+      'Review Cache-Control, Pragma and Expires on authenticated responses.',
+      'After logout, use browser back/history and cached page inspection to retrieve sensitive content.',
+      'Where a CDN is present, test for cache deception with path confusion (e.g. /account/x.css).',
+    ],
+    owasp: ['WSTG-ATHN-06'],
+    cwe: ['CWE-525'],
+    applicability: rule.is('hasAuthentication', true),
+    tags: ['caching'],
+  },
+  {
+    id: 'CONF-010',
+    vulnerabilityName: 'Insufficient Logging and Monitoring of Security Events',
+    category: 'config',
+    priority: 'Medium',
+    description:
+      'Authentication failures, access control violations and high-risk actions are not logged or alerted on, allowing attacks to proceed undetected.',
+    testingGuidance: [
+      'Ask for evidence that failed logins, privilege violations and admin actions are recorded.',
+      'Generate controlled security events and confirm whether they are captured and attributable.',
+      'Check that logs do not themselves contain credentials or full tokens.',
+    ],
+    owasp: ['A09:2021', 'WSTG-ATHN-*'],
+    cwe: ['CWE-778'],
+    applicability: rule.any(rule.is('testingApproach', 'grey-box'), rule.is('testingApproach', 'white-box')),
+    tags: ['monitoring'],
+  },
+  {
+    id: 'CONF-011',
+    vulnerabilityName: 'Insecure Default Platform Configuration',
+    category: 'config',
+    priority: 'Medium',
+    description:
+      'Sample applications, default virtual hosts, default accounts or shipped example content remain deployed, providing unnecessary and often vulnerable functionality.',
+    testingGuidance: [
+      'Check for framework sample apps (/examples, /docs, /test, Tomcat examples, IIS default site).',
+      'Verify default accounts and demo data are removed from the tested environment.',
+      'Review any client-supplied hardening baseline against observed configuration.',
+    ],
+    owasp: ['WSTG-CONF-01', 'A05:2021'],
+    cwe: ['CWE-1188'],
+    applicability: web,
+    tags: ['hardening'],
+  },
+  {
+    id: 'CONF-012',
+    vulnerabilityName: 'Missing Subresource Integrity for Third-Party Scripts',
+    category: 'config',
+    priority: 'Low',
+    description:
+      'Externally hosted scripts are loaded without integrity attributes, so a compromise of the third party or its CDN results in arbitrary script execution in the application origin.',
+    testingGuidance: [
+      'List all script/link tags loading cross-origin resources.',
+      'Check for integrity and crossorigin attributes on each.',
+      'Assess the sensitivity of pages that load unpinned third-party code (login, payment).',
+    ],
+    owasp: ['A08:2021'],
+    cwe: ['CWE-353'],
+    applicability: rule.all(browser, rule.is('usesThirdPartyScripts', true)),
+    tags: ['supply-chain'],
+  },
+];
+
+export const transportTests: TestDefinition[] = [
+  {
+    id: 'TLS-001',
+    vulnerabilityName: 'Weak TLS Configuration',
+    category: 'transport',
+    priority: 'Medium',
+    description:
+      'The server supports deprecated protocol versions (SSLv3, TLS 1.0/1.1), weak ciphers, or insecure renegotiation, allowing downgrade or cryptographic attacks on data in transit.',
+    testingGuidance: [
+      'Enumerate supported protocols, cipher suites and key exchange with a TLS scanner.',
+      'Flag SSLv2/3, TLS 1.0/1.1, RC4, 3DES, export ciphers, anonymous suites and keys under 2048 bits.',
+      'Verify secure renegotiation and check for known issues (BEAST, POODLE, Heartbleed) where applicable.',
+    ],
+    owasp: ['WSTG-CRYP-01'],
+    cwe: ['CWE-326', 'CWE-327'],
+    applicability: rule.is('internetFacing', true),
+    tags: ['tls'],
+  },
+  {
+    id: 'TLS-002',
+    vulnerabilityName: 'Invalid or Untrusted TLS Certificate',
+    category: 'transport',
+    priority: 'Medium',
+    description:
+      'The certificate is expired, self-signed, mismatched to the hostname, or signed with a weak algorithm, undermining server authentication and training users to bypass warnings.',
+    testingGuidance: [
+      'Validate the certificate chain, expiry, subject/SAN coverage and signature algorithm.',
+      'Test all in-scope hostnames including alternate and API subdomains.',
+      'Confirm intermediate certificates are served correctly.',
+    ],
+    owasp: ['WSTG-CRYP-01'],
+    cwe: ['CWE-295'],
+    applicability: rule.is('internetFacing', true),
+    tags: ['tls'],
+  },
+  {
+    id: 'TLS-003',
+    vulnerabilityName: 'Missing HTTP Strict Transport Security',
+    category: 'transport',
+    priority: 'Medium',
+    description:
+      'Without HSTS the browser will attempt plaintext connections, exposing users to SSL stripping on the first or subsequent requests.',
+    testingGuidance: [
+      'Check for Strict-Transport-Security on HTTPS responses and evaluate max-age, includeSubDomains and preload.',
+      'Confirm the header is not sent over plain HTTP (it is ignored there).',
+      'Verify subdomains are also covered where in scope.',
+    ],
+    owasp: ['WSTG-CONF-07'],
+    cwe: ['CWE-319'],
+    applicability: rule.all(rule.includes('assetTypes', 'web-app'), rule.is('internetFacing', true)),
+    tags: ['tls', 'headers'],
+  },
+  {
+    id: 'TLS-004',
+    vulnerabilityName: 'Cleartext Transmission of Sensitive Data',
+    category: 'transport',
+    priority: 'High',
+    description:
+      'Credentials, tokens or personal data traverse an unencrypted channel, or the application is reachable over plain HTTP without redirect, allowing interception.',
+    testingGuidance: [
+      'Attempt to load every in-scope host over http:// and confirm a 301/308 redirect to https://.',
+      'Submit the login form over HTTP and observe whether credentials are accepted.',
+      'Inspect all client-initiated traffic (including background API and telemetry calls) for plaintext endpoints.',
+    ],
+    owasp: ['WSTG-ATHN-01', 'A02:2021'],
+    cwe: ['CWE-319'],
+    applicability: rule.always(),
+    tags: ['tls'],
+  },
+  {
+    id: 'TLS-005',
+    vulnerabilityName: 'Mixed Content Loading',
+    category: 'transport',
+    priority: 'Low',
+    description:
+      'An HTTPS page loads scripts, styles, images or frames over HTTP, allowing an on-path attacker to tamper with page content or downgrade protection.',
+    testingGuidance: [
+      'Load each major page and review the browser console for mixed content warnings.',
+      'Grep responses for hardcoded http:// resource references.',
+      'Distinguish active (script/iframe) from passive (image) mixed content when rating severity.',
+    ],
+    owasp: ['WSTG-CRYP-03'],
+    cwe: ['CWE-311'],
+    applicability: rule.includes('assetTypes', 'web-app'),
+    tags: ['tls'],
+  },
+  {
+    id: 'TLS-006',
+    vulnerabilityName: 'Sensitive Data Exposed in TLS-Adjacent Channels',
+    category: 'transport',
+    priority: 'Low',
+    description:
+      'Sensitive values leak outside the encrypted payload — via SNI-visible hostnames, unencrypted DNS, Referer headers to third parties or unprotected WebSocket upgrades.',
+    testingGuidance: [
+      'Check that WebSocket connections use wss:// and inherit authentication.',
+      'Review Referrer-Policy and confirm sensitive URLs are not leaked to external origins.',
+      'Confirm no sensitive API traffic bypasses TLS (e.g. legacy endpoints, mobile SDK calls).',
+    ],
+    owasp: ['WSTG-CRYP-03'],
+    cwe: ['CWE-319'],
+    applicability: rule.any(rule.is('usesWebsockets', true), rule.is('usesThirdPartyScripts', true)),
+    tags: ['tls'],
+  },
+];

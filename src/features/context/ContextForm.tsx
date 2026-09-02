@@ -1,0 +1,188 @@
+import clsx from 'clsx';
+import {
+  CONTEXT_FACTS,
+  CONTEXT_SECTIONS,
+  type ApplicationContext,
+  type ContextFactKey,
+  type FactDefinition,
+} from '../../domain/context';
+import { Card, SectionHeading, Select } from '../../ui/primitives';
+
+/**
+ * Renders the Application Context form directly from the schema, so adding a
+ * fact in src/domain/context.ts is enough to expose it everywhere.
+ * Every fact is tri-state: Yes / No / Unknown (unknown = keep the test in).
+ */
+
+type Tri = 'yes' | 'no' | 'unknown';
+
+function triOf(value: unknown): Tri {
+  if (value === true) return 'yes';
+  if (value === false) return 'no';
+  return 'unknown';
+}
+
+function TriControl({
+  value,
+  onChange,
+}: {
+  value: Tri;
+  onChange: (v: boolean | undefined) => void;
+}) {
+  const options: { key: Tri; label: string; active: string; next: boolean | undefined }[] = [
+    { key: 'yes', label: 'Yes', active: 'bg-emerald-500/90 text-ink-950 border-emerald-400', next: true },
+    { key: 'no', label: 'No', active: 'bg-ink-500 text-ink-50 border-ink-400', next: false },
+    { key: 'unknown', label: 'Unknown', active: 'bg-amber-500/80 text-ink-950 border-amber-400', next: undefined },
+  ];
+  return (
+    <div className="inline-flex rounded-lg border border-ink-600 bg-ink-900/70 p-0.5">
+      {options.map((o) => (
+        <button
+          key={o.key}
+          type="button"
+          onClick={() => onChange(o.next)}
+          className={clsx(
+            'rounded-md border border-transparent px-2.5 py-1 text-[11px] font-medium transition-colors',
+            value === o.key ? o.active : 'text-ink-400 hover:bg-ink-800 hover:text-ink-100',
+          )}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function MultiControl({
+  fact,
+  value,
+  onChange,
+}: {
+  fact: FactDefinition;
+  value: string[];
+  onChange: (v: string[]) => void;
+}) {
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {fact.options?.map((o) => {
+        const active = value.includes(o.value);
+        return (
+          <button
+            key={o.value}
+            type="button"
+            onClick={() =>
+              onChange(active ? value.filter((v) => v !== o.value) : [...value, o.value])
+            }
+            className={clsx(
+              'rounded-lg border px-2.5 py-1 text-xs transition-colors',
+              active
+                ? 'border-brand-500/60 bg-brand-500/15 text-brand-400'
+                : 'border-ink-600 bg-ink-900/60 text-ink-300 hover:border-ink-500 hover:text-ink-100',
+            )}
+          >
+            {o.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+export function FactRow({
+  fact,
+  context,
+  onChange,
+}: {
+  fact: FactDefinition;
+  context: ApplicationContext;
+  onChange: (key: ContextFactKey, value: boolean | string | string[] | undefined) => void;
+}) {
+  const value = context[fact.key];
+  const unknown =
+    value === undefined || (Array.isArray(value) && value.length === 0) || value === '';
+
+  return (
+    <div
+      className={clsx(
+        'flex flex-col gap-2 rounded-lg border px-3 py-2.5 transition-colors sm:flex-row sm:items-center sm:justify-between',
+        unknown ? 'border-ink-800 bg-ink-900/30' : 'border-ink-700 bg-ink-900/60',
+      )}
+    >
+      <div className="min-w-0 sm:pr-6">
+        <p className="text-sm text-ink-100">{fact.label}</p>
+        {fact.hint && <p className="mt-0.5 text-xs text-ink-500">{fact.hint}</p>}
+      </div>
+      <div className="shrink-0">
+        {fact.type === 'boolean' && (
+          <TriControl value={triOf(value)} onChange={(v) => onChange(fact.key, v)} />
+        )}
+        {fact.type === 'single' && (
+          <Select
+            value={(value as string) ?? ''}
+            onChange={(e) => onChange(fact.key, e.target.value || undefined)}
+            className="w-full sm:w-64"
+          >
+            <option value="">Unknown</option>
+            {fact.options?.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </Select>
+        )}
+        {fact.type === 'multi' && (
+          <MultiControl
+            fact={fact}
+            value={(value as string[]) ?? []}
+            onChange={(v) => onChange(fact.key, v.length ? v : undefined)}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+export function ContextForm({
+  context,
+  onChange,
+  coreOnly = false,
+}: {
+  context: ApplicationContext;
+  onChange: (key: ContextFactKey, value: boolean | string | string[] | undefined) => void;
+  coreOnly?: boolean;
+}) {
+  const sections = CONTEXT_SECTIONS.map((section) => ({
+    section,
+    facts: CONTEXT_FACTS.filter(
+      (f) => f.section === section.id && (!coreOnly || f.core),
+    ),
+  })).filter((s) => s.facts.length > 0);
+
+  return (
+    <div className="space-y-5">
+      {sections.map(({ section, facts }) => (
+        <Card key={section.id} className="space-y-3">
+          <SectionHeading title={section.title} description={section.description} />
+          <div className="space-y-2">
+            {facts.map((fact) => (
+              <FactRow key={fact.key} fact={fact} context={context} onChange={onChange} />
+            ))}
+          </div>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+export function contextCompleteness(context: ApplicationContext): {
+  answered: number;
+  total: number;
+  ratio: number;
+} {
+  const total = CONTEXT_FACTS.length;
+  const answered = CONTEXT_FACTS.filter((f) => {
+    const v = context[f.key];
+    return v !== undefined && v !== '' && !(Array.isArray(v) && v.length === 0);
+  }).length;
+  return { answered, total, ratio: total === 0 ? 0 : answered / total };
+}

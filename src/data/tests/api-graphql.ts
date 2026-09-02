@@ -1,0 +1,335 @@
+import type { TestDefinition } from '../../domain/types';
+import { rule } from '../../domain/applicability';
+
+const anyApi = rule.includes('assetTypes', 'rest-api', 'graphql-api', 'soap-api');
+const restLike = rule.includes('assetTypes', 'rest-api', 'graphql-api');
+const graphql = rule.includes('assetTypes', 'graphql-api');
+
+export const apiTests: TestDefinition[] = [
+  {
+    id: 'API-001',
+    vulnerabilityName: 'Missing Authentication on API Endpoints',
+    category: 'api',
+    priority: 'Critical',
+    description:
+      'One or more API operations are reachable without credentials, either by design oversight or because authentication is applied at the gateway but not on all routes.',
+    testingGuidance: [
+      'Enumerate all endpoints from the schema, client code and traffic, then call each with no credentials.',
+      'Test unauthenticated access to internal, health, batch and legacy endpoints.',
+      'Check alternate hosts/ports that expose the same API without the gateway.',
+    ],
+    owasp: ['API2:2023'],
+    cwe: ['CWE-306'],
+    applicability: anyApi,
+    tags: ['api'],
+  },
+  {
+    id: 'API-002',
+    vulnerabilityName: 'Excessive Data Exposure in API Responses',
+    category: 'api',
+    priority: 'High',
+    description:
+      'Endpoints return complete objects and rely on the client to display only part of them, leaking fields such as password hashes, internal IDs, tokens, roles or other users\' data.',
+    testingGuidance: [
+      'Compare raw API responses against what the UI displays.',
+      'Look for hidden fields: internal flags, PII, audit data, other users\' records inside collections.',
+      'Test list/search endpoints where filtering happens client-side.',
+    ],
+    owasp: ['API3:2023'],
+    cwe: ['CWE-213'],
+    applicability: anyApi,
+    tags: ['api', 'disclosure'],
+  },
+  {
+    id: 'API-003',
+    vulnerabilityName: 'Unrestricted Resource Consumption on API',
+    category: 'api',
+    priority: 'High',
+    description:
+      'The API lacks per-client rate limits, payload size limits or pagination ceilings, permitting abuse, cost inflation and denial of service.',
+    testingGuidance: [
+      'Measure the request rate accepted per token, per IP and unauthenticated.',
+      'Request very large page sizes (limit=100000) and deeply nested expansions.',
+      'Test expensive operations (report generation, export, search) for concurrency limits.',
+    ],
+    owasp: ['API4:2023'],
+    cwe: ['CWE-770'],
+    applicability: anyApi,
+    tags: ['api', 'dos'],
+  },
+  {
+    id: 'API-004',
+    vulnerabilityName: 'HTTP Verb Tampering and Method Confusion',
+    category: 'api',
+    priority: 'Medium',
+    description:
+      'Authorisation or routing differs by HTTP method, so an unexpected verb (or an override header) reaches the handler without the intended checks.',
+    testingGuidance: [
+      'Replay protected requests with GET, POST, PUT, PATCH, DELETE and HEAD.',
+      'Test X-HTTP-Method-Override and _method parameters.',
+      'Check whether the framework silently maps unknown verbs to a default handler.',
+    ],
+    owasp: ['API5:2023'],
+    cwe: ['CWE-650'],
+    applicability: anyApi,
+    tags: ['api'],
+  },
+  {
+    id: 'API-005',
+    vulnerabilityName: 'Deprecated or Shadow API Versions Exposed',
+    category: 'api',
+    priority: 'High',
+    description:
+      'Older or undocumented API versions remain deployed with weaker controls, unpatched code or debug behaviour.',
+    testingGuidance: [
+      'Substitute version segments (/v1, /v2, /beta, /internal, /legacy) in known paths.',
+      'Compare authorisation and validation behaviour between versions.',
+      'Look for staging/dev hostnames serving the same API.',
+    ],
+    owasp: ['API9:2023'],
+    cwe: ['CWE-1059'],
+    applicability: anyApi,
+    tags: ['api'],
+  },
+  {
+    id: 'API-006',
+    vulnerabilityName: 'Insecure API Key Handling',
+    category: 'api',
+    priority: 'High',
+    description:
+      'API keys are embedded in clients, transmitted in URLs, never rotated, unscoped, or serve as the only authorisation control.',
+    testingGuidance: [
+      'Extract keys from front-end and mobile clients and test their privilege level.',
+      'Check whether keys are scoped per environment, per client and per permission.',
+      'Test whether a key alone (without user context) can access user data.',
+    ],
+    owasp: ['API2:2023'],
+    cwe: ['CWE-798', 'CWE-522'],
+    applicability: rule.includes('authMechanisms', 'api-key'),
+    tags: ['api'],
+  },
+  {
+    id: 'API-007',
+    vulnerabilityName: 'Missing Request Schema Validation',
+    category: 'api',
+    priority: 'Medium',
+    description:
+      'The API accepts unexpected fields, types and structures, causing type confusion, logic errors or injection into downstream systems.',
+    testingGuidance: [
+      'Send wrong types (string where int expected), nulls, deeply nested objects and unexpected additional fields.',
+      'Test array/object substitution for scalar parameters.',
+      'Observe whether validation errors leak internal structure.',
+    ],
+    owasp: ['API8:2023'],
+    cwe: ['CWE-20'],
+    applicability: anyApi,
+    tags: ['api'],
+  },
+  {
+    id: 'API-008',
+    vulnerabilityName: 'Content-Type Confusion',
+    category: 'api',
+    priority: 'Medium',
+    description:
+      'The API parses request bodies based on loose or attacker-controlled content types, enabling XML processing on a JSON endpoint, CSRF via simple content types or parser mismatches.',
+    testingGuidance: [
+      'Resubmit JSON requests as application/xml, text/plain and form-urlencoded and observe parsing.',
+      'Check whether text/plain bodies are accepted (enabling cross-site simple requests).',
+      'Test multipart handling on endpoints not expecting it.',
+    ],
+    owasp: ['API8:2023'],
+    cwe: ['CWE-436'],
+    applicability: restLike,
+    tags: ['api'],
+  },
+  {
+    id: 'API-009',
+    vulnerabilityName: 'Unrestricted Access to Sensitive Business Flows',
+    category: 'api',
+    priority: 'High',
+    description:
+      'Business-critical flows are exposed via API without abuse protection, allowing automated purchasing, booking, reservation or messaging at scale.',
+    testingGuidance: [
+      'Identify flows with real-world value and script them end to end.',
+      'Measure how many complete executions succeed before any control triggers.',
+      'Check for device/behaviour based protections and whether they are enforced server-side.',
+    ],
+    owasp: ['API6:2023'],
+    cwe: ['CWE-799'],
+    applicability: rule.all(anyApi, rule.is('hasWorkflowOrTransactions', true)),
+    tags: ['api', 'business-logic'],
+  },
+  {
+    id: 'API-010',
+    vulnerabilityName: 'SOAP / WSDL Interface Weakness',
+    category: 'api',
+    priority: 'High',
+    description:
+      'SOAP services expose their WSDL publicly, accept unsigned or unencrypted messages, or are vulnerable to XML-layer attacks and operation-level authorisation gaps.',
+    testingGuidance: [
+      'Retrieve the WSDL and enumerate all operations, including those not used by the client.',
+      'Invoke administrative operations directly and test WS-Security enforcement.',
+      'Test XML attacks (XXE, XML bombs, signature wrapping) against the endpoint.',
+    ],
+    owasp: ['WSTG-*'],
+    cwe: ['CWE-285', 'CWE-611'],
+    applicability: rule.includes('assetTypes', 'soap-api'),
+    tags: ['api', 'soap'],
+  },
+  {
+    id: 'API-011',
+    vulnerabilityName: 'Unsafe Consumption of Third-Party APIs',
+    category: 'api',
+    priority: 'Medium',
+    description:
+      'Data received from upstream services is trusted implicitly — no validation, no TLS verification, blind redirect following — allowing a compromised or spoofed partner to attack the application.',
+    testingGuidance: [
+      'Identify server-side integrations and how responses are parsed and stored.',
+      'Where a callback/webhook exists, submit hostile payloads as the third party.',
+      'Check whether redirects from upstream services are followed into internal networks.',
+    ],
+    owasp: ['API10:2023'],
+    cwe: ['CWE-1104'],
+    applicability: rule.is('callsExternalServices', true),
+    tags: ['api'],
+  },
+  {
+    id: 'API-012',
+    vulnerabilityName: 'Webhook Signature and Replay Weakness',
+    category: 'api',
+    priority: 'Medium',
+    description:
+      'Inbound webhooks are accepted without signature verification, timestamp checking or replay protection, allowing forged events to drive business state.',
+    testingGuidance: [
+      'Send a webhook payload with no signature, an invalid signature and a valid-but-old signature.',
+      'Replay a previously captured legitimate event and observe duplicate processing.',
+      'Check whether the endpoint is discoverable and rate limited.',
+    ],
+    owasp: ['API10:2023'],
+    cwe: ['CWE-345'],
+    applicability: rule.all(rule.is('callsExternalServices', true), anyApi),
+    tags: ['api'],
+  },
+];
+
+export const graphqlTests: TestDefinition[] = [
+  {
+    id: 'GQL-001',
+    vulnerabilityName: 'GraphQL Introspection Enabled in Production',
+    category: 'graphql',
+    priority: 'Medium',
+    description:
+      'The full schema — including internal types, deprecated fields and administrative mutations — can be downloaded by any client.',
+    testingGuidance: [
+      'Send a standard __schema introspection query and check for a full response.',
+      'If disabled, attempt field suggestion mining and known-name guessing.',
+      'Review the schema for sensitive or internal-only operations.',
+    ],
+    owasp: ['API9:2023'],
+    cwe: ['CWE-200'],
+    applicability: graphql,
+    tags: ['graphql'],
+  },
+  {
+    id: 'GQL-002',
+    vulnerabilityName: 'GraphQL Query Depth and Complexity Denial of Service',
+    category: 'graphql',
+    priority: 'High',
+    description:
+      'The server executes arbitrarily deep, recursive or wide queries with no cost limits, allowing a single request to exhaust resources.',
+    testingGuidance: [
+      'Build a deeply nested query using circular relationships and measure response time.',
+      'Test large pagination arguments and multiple heavy fields in one query.',
+      'Check for depth limiting, complexity scoring, timeouts and pagination caps.',
+    ],
+    owasp: ['API4:2023'],
+    cwe: ['CWE-770'],
+    applicability: graphql,
+    tags: ['graphql', 'dos'],
+  },
+  {
+    id: 'GQL-003',
+    vulnerabilityName: 'GraphQL Batching and Alias-Based Brute Force',
+    category: 'graphql',
+    priority: 'High',
+    description:
+      'Query batching and field aliasing let an attacker perform thousands of operations in a single HTTP request, defeating rate limiting on login, OTP and lookup operations.',
+    testingGuidance: [
+      'Submit an array of operations in one request and confirm all are executed.',
+      'Use aliases to repeat a mutation (e.g. login) many times in one query.',
+      'Check whether rate limiting counts operations or HTTP requests.',
+    ],
+    owasp: ['API4:2023'],
+    cwe: ['CWE-307'],
+    applicability: graphql,
+    tags: ['graphql'],
+  },
+  {
+    id: 'GQL-004',
+    vulnerabilityName: 'Missing Field-Level Authorization in GraphQL',
+    category: 'graphql',
+    priority: 'Critical',
+    description:
+      'Authorisation is enforced at the query entry point but not on individual fields or nested resolvers, so sensitive data is reachable through alternate traversal paths.',
+    testingGuidance: [
+      'Traverse to sensitive types through unusual relationship paths rather than the direct query.',
+      'Request privileged fields as a low-privileged user on every type that exposes them.',
+      'Test mutations that accept nested objects for authorisation on the nested entities.',
+    ],
+    owasp: ['API5:2023', 'API1:2023'],
+    cwe: ['CWE-285'],
+    applicability: graphql,
+    tags: ['graphql'],
+  },
+  {
+    id: 'GQL-005',
+    vulnerabilityName: 'Injection via GraphQL Resolvers',
+    category: 'graphql',
+    priority: 'Critical',
+    description:
+      'Arguments passed to resolvers reach databases, ORMs or system calls without sanitisation, producing SQL/NoSQL/command injection behind the GraphQL layer.',
+    testingGuidance: [
+      'Fuzz every argument (including filters, sort fields and JSON scalars) with injection payloads.',
+      'Test filter/where arguments that map directly to query builders.',
+      'Use blind techniques since GraphQL often normalises errors.',
+    ],
+    owasp: ['A03:2021'],
+    cwe: ['CWE-89', 'CWE-943'],
+    applicability: graphql,
+    tags: ['graphql', 'injection'],
+  },
+  {
+    id: 'GQL-006',
+    vulnerabilityName: 'Information Disclosure via GraphQL Errors',
+    category: 'graphql',
+    priority: 'Medium',
+    description:
+      'Error responses include stack traces, resolver paths, database messages or field suggestions that reveal schema and implementation details.',
+    testingGuidance: [
+      'Send malformed queries and misspelled field names; observe "Did you mean" suggestions.',
+      'Trigger resolver exceptions and inspect the extensions block for traces.',
+      'Confirm production error masking is enabled.',
+    ],
+    owasp: ['API9:2023'],
+    cwe: ['CWE-209'],
+    applicability: graphql,
+    tags: ['graphql', 'disclosure'],
+  },
+  {
+    id: 'GQL-007',
+    vulnerabilityName: 'GraphQL Cross-Site Request Forgery',
+    category: 'graphql',
+    priority: 'Medium',
+    description:
+      'The endpoint accepts mutations over GET or form-encoded POST with cookie authentication, making cross-site forgery possible without CORS restrictions applying.',
+    testingGuidance: [
+      'Attempt a mutation via GET query string and via application/x-www-form-urlencoded.',
+      'Check for CSRF token requirements and SameSite protection on the session cookie.',
+      'Build a proof of concept form posting to the endpoint.',
+    ],
+    owasp: ['A01:2021'],
+    cwe: ['CWE-352'],
+    applicability: graphql,
+    tags: ['graphql', 'csrf'],
+  },
+];

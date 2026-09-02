@@ -1,0 +1,136 @@
+@import 'tailwindcss';
+
+/**
+ * VAPT Checklist — Design tokens
+ * -------------------------------------------------------------------------
+ * A single dark, high-contrast theme tuned for long analytical sessions.
+ * Semantic tokens (status/result/priority) are defined once here and reused
+ * by the UI primitives so colour always means the same thing.
+ */
+@theme {
+  --color-ink-950: #070b14;
+  --color-ink-900: #0b1120;
+  --color-ink-850: #0f172a;
+  --color-ink-800: #131c31;
+  --color-ink-700: #1e293b;
+  --color-ink-600: #334155;
+  --color-ink-500: #475569;
+  --color-ink-400: #64748b;
+  --color-ink-300: #94a3b8;
+  --color-ink-200: #cbd5e1;
+  --color-ink-100: #e2e8f0;
+
+  --color-brand-400: #38bdf8;
+  --color-brand-500: #0ea5e9;
+  --color-brand-600: #0284c7;
+
+  --color-crit-500: #f43f5e;
+  --color-high-500: #fb923c;
+  --color-med-500: #facc15;
+  --color-low-500: #38bdf8;
+
+  --color-vuln-500: #f43f5e;
+  --color-safe-500: #34d399;
+  --color-na-500: #94a3b8;
+
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: ui-monospace, 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    background:
+      radial-gradient(1200px 600px at 15% -10%, rgba(14, 165, 233, 0.10), transparent 60%),
+      radial-gradient(900px 500px at 100% 0%, rgba(52, 211, 153, 0.06), transparent 55%),
+      var(--color-ink-950);
+    color: var(--color-ink-100);
+    font-family: var(--font-sans);
+    font-feature-settings: 'cv11', 'ss01';
+    -webkit-font-smoothing: antialiased;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-ink-600) transparent;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-ink-700);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-ink-600);
+    background-clip: content-box;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-brand-400);
+    outline-offset: 2px;
+  }
+
+  input,
+  textarea,
+  select {
+    font-family: inherit;
+  }
+}
+
+@layer utilities {
+  .panel {
+    background-color: color-mix(in oklab, var(--color-ink-900) 88%, transparent);
+    border: 1px solid var(--color-ink-700);
+    border-radius: 0.875rem;
+    backdrop-filter: blur(6px);
+  }
+
+  .panel-muted {
+    background-color: color-mix(in oklab, var(--color-ink-850) 70%, transparent);
+    border: 1px solid var(--color-ink-700);
+    border-radius: 0.75rem;
+  }
+
+  .hairline {
+    border-color: var(--color-ink-700);
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .animate-in {
+    animation: fade-in 160ms ease-out;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media print {
+  body {
+    background: #fff;
+    color: #000;
+  }
+  .no-print {
+    display: none !important;
+  }
+}
