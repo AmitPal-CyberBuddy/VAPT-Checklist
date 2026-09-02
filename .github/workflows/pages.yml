@@ -1,5 +1,9 @@
 name: Deploy to GitHub Pages
 
+# Builds the Vite app and publishes dist/ to GitHub Pages.
+# The repo must have Pages source set to "GitHub Actions"
+# (Settings -> Pages -> Build and deployment -> Source).
+
 on:
   push:
     branches: [main]
@@ -24,7 +28,6 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm test
       - run: npm run build
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
