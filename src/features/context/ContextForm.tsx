@@ -2,6 +2,7 @@ import clsx from 'clsx';
 import {
   CONTEXT_FACTS,
   CONTEXT_SECTIONS,
+  isFactVisible,
   type ApplicationContext,
   type ContextFactKey,
   type FactDefinition,
@@ -166,10 +167,11 @@ export function ContextForm({
   onChange: (key: ContextFactKey, value: boolean | string | string[] | undefined) => void;
   coreOnly?: boolean;
 }) {
+  // Conditional questions: a fact whose parent is answered "no" is not asked.
   const sections = CONTEXT_SECTIONS.map((section) => ({
     section,
     facts: CONTEXT_FACTS.filter(
-      (f) => f.section === section.id && (!coreOnly || f.core),
+      (f) => f.section === section.id && (!coreOnly || f.core) && isFactVisible(f, context),
     ),
   })).filter((s) => s.facts.length > 0);
 

@@ -53,8 +53,41 @@ tracker · a client collaboration portal · a Burp Suite replacement · a scanne
 | **Result** | `Vulnerable` / `Not Vulnerable` — required only when status is `Tested` | Per engagement per test |
 | **Notes** | Free text observations | Per engagement per test |
 
+### Progress
+
+```text
+Completed = Tested + N/A
+Progress  = Completed / Total Applicable Tests
+```
+
+One formula, defined once in `src/domain/metrics.ts`, used by the engagement list, the dashboard,
+every category and priority bar, and the Excel export.
+
 Global test definitions and engagement state are never mixed. See
 [`docs/DATA-MODEL.md`](docs/DATA-MODEL.md).
+
+### The working loop
+
+```text
+Open test → read guidance → test → status → result → optional note → next test
+```
+
+All of it happens on one screen. The **Testing Workspace** is a two-pane view: the filtered test
+list on the left, the full test on the right — description, guidance, applicability, references,
+status, result and notes — with keyboard shortcuts so you never reach for the mouse between tests:
+
+| Key | Action |
+| --- | --- |
+| `j` / `k` (or ↑ / ↓) | Previous / next test |
+| `1` `2` `3` | Not Tested · Tested · N/A |
+| `v` / `b` | Vulnerable · Not Vulnerable |
+| `e` | Jump to the notes field |
+| `⏎` | Next test that is still Not Tested |
+| `/` | Focus search |
+
+Selecting **Tested** highlights the result control until you record Vulnerable or Not Vulnerable.
+Selecting **N/A** asks nothing, but offers one-click reasons ("Feature not present", "Out of agreed
+scope") so the report stays defensible without forcing anyone to type.
 
 ### Execution state model
 
@@ -138,8 +171,32 @@ unknown keeps the test in scope with an **Unconfirmed** badge — never silently
 test is ever excluded on unknown facts alone, and the tester can override any decision from the
 checklist row (the override is preserved when the context later changes).
 
-The context form shows how many tests each question decides, so you can see which answers actually
-move the checklist.
+The context form shows how many tests each question decides, and follow-up questions only appear
+when they are relevant — asking "does it have MFA?" after you said there is no authentication is
+noise. Hidden questions stay *unrecorded*, which the engine treats as unknown, so shortening setup
+never quietly narrows the checklist.
+
+### High-value tests
+
+The dashboard leads with what to test next on **this** application — deliberately not a severity
+sort. The score combines priority, how strongly the recorded context points at the test,
+category exploitability, whether that category already produced a finding, and whether you pulled
+the test into scope yourself:
+
+```text
+HIGH-VALUE TESTS
+
+IDOR / Broken Object Level Authorization (BOLA)   Critical
+Application has authentication + Users own individual records      Not Tested
+
+Broken Function Level Authorization (BFLA)        Critical
+Asset types: REST API · related finding in category                Not Tested
+
+Unrestricted File Upload                          Critical
+File upload                                                        Not Tested
+```
+
+Each row opens straight into the workspace at that test.
 
 ---
 

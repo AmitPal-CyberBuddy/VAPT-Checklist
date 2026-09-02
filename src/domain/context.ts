@@ -31,6 +31,13 @@ export interface FactDefinition {
   /** Facts flagged as core are asked in the quick engagement wizard. */
   core?: boolean;
   /**
+   * Only ask this question when the parent fact holds. Keeps setup short:
+   * "Does it have MFA?" is noise once you have said there is no authentication.
+   * A hidden question stays unrecorded, which the engine treats as unknown —
+   * so hiding never silently narrows the checklist.
+   */
+  dependsOn?: { fact: ContextFactKey; equals: boolean | string };
+  /**
    * Recorded for the report only — never referenced by an applicability rule.
    * Everything else must drive at least one test, which the unit tests enforce
    * in both directions so the context form cannot fill up with dead questions.
@@ -193,6 +200,7 @@ export const CONTEXT_FACTS: FactDefinition[] = [
   yesNo('hasAuthentication', 'auth', 'Application has authentication', 'Any login or identity boundary exists.', true),
   {
     key: 'authMechanisms',
+    dependsOn: { fact: 'hasAuthentication', equals: true },
     label: 'Authentication / session mechanisms',
     type: 'multi',
     section: 'auth',
@@ -207,12 +215,12 @@ export const CONTEXT_FACTS: FactDefinition[] = [
       { value: 'mtls', label: 'Mutual TLS / certificates' },
     ],
   },
-  yesNo('hasMfa', 'auth', 'Multi-factor authentication', 'OTP, TOTP, push, WebAuthn, etc.'),
-  yesNo('hasSelfRegistration', 'auth', 'Self-service registration'),
-  yesNo('hasPasswordReset', 'auth', 'Password reset / account recovery'),
-  yesNo('hasMultipleRoles', 'auth', 'Multiple roles or privilege levels', 'Admin vs user, RBAC, permissions.', true),
-  yesNo('hasAdminInterface', 'auth', 'Administrative interface'),
-  yesNo('hasSso', 'auth', 'Single sign-on / federated identity'),
+  { ...yesNo('hasMfa', 'auth', 'Multi-factor authentication', 'OTP, TOTP, push, WebAuthn, etc.'), dependsOn: { fact: 'hasAuthentication', equals: true } },
+  { ...yesNo('hasSelfRegistration', 'auth', 'Self-service registration'), dependsOn: { fact: 'hasAuthentication', equals: true } },
+  { ...yesNo('hasPasswordReset', 'auth', 'Password reset / account recovery'), dependsOn: { fact: 'hasAuthentication', equals: true } },
+  { ...yesNo('hasMultipleRoles', 'auth', 'Multiple roles or privilege levels', 'Admin vs user, RBAC, permissions.', true), dependsOn: { fact: 'hasAuthentication', equals: true } },
+  { ...yesNo('hasAdminInterface', 'auth', 'Administrative interface'), dependsOn: { fact: 'hasAuthentication', equals: true } },
+  { ...yesNo('hasSso', 'auth', 'Single sign-on / federated identity'), dependsOn: { fact: 'hasAuthentication', equals: true } },
 
   // ------------------------------------------------------------------ data
   {
@@ -321,6 +329,29 @@ export const FACT_BY_KEY: Record<string, FactDefinition> = Object.fromEntries(
 );
 
 /** Human readable rendering of a stored fact value, used by UI + export. */
+/**
+ * Should this question be asked given what has been answered so far?
+ * A dependency only hides the child when the parent is explicitly false/other —
+ * an unanswered parent keeps the child visible.
+ */
+export function isFactVisible(fact: FactDefinition, context: ApplicationContext): boolean {
+  if (!fact.dependsOn) return true;
+  const parent = context[fact.dependsOn.fact];
+  if (parent === undefined || parent === '') return true;
+  if (Array.isArray(parent)) return parent.includes(String(fact.dependsOn.equals));
+  return parent === fact.dependsOn.equals;
+}
+
+/** Facts worth asking, in schema order, honouring conditional visibility. */
+export function visibleFacts(
+  context: ApplicationContext,
+  options: { coreOnly?: boolean } = {},
+): FactDefinition[] {
+  return CONTEXT_FACTS.filter(
+    (f) => (!options.coreOnly || f.core) && isFactVisible(f, context),
+  );
+}
+
 export function formatFactValue(key: ContextFactKey, value: FactValue): string {
   const def = FACT_BY_KEY[key];
   if (value === undefined || value === null || (Array.isArray(value) && value.length === 0)) {

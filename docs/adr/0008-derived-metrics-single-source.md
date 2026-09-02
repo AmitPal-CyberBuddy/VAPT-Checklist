@@ -1,6 +1,6 @@
 # ADR 0008 — All metrics derived in one module
 
-**Status:** Accepted
+**Status:** Accepted — the completion formula was later revised by [ADR 0012](0012-progress-rule-and-workspace.md)
 
 ## Context
 
@@ -20,7 +20,7 @@ per-priority groups, findings by priority, outstanding by priority, override cou
 queues. Components and the export render those values; they never count.
 
 ```text
-completion = (na + vulnerable + notVulnerable) / applicable
+completion = (tested + na) / applicable      // see ADR 0012
 ```
 
 ## Consequences

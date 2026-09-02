@@ -16,3 +16,4 @@ Consequences. Status is `Accepted` unless noted.
 | [0009](0009-canonical-names-aliases-and-taxonomy.md) | Canonical vulnerability names with aliases, two-level taxonomy |
 | [0010](0010-derived-references.md) | References derived from validated standards codes |
 | [0011](0011-search-index-and-explained-applicability.md) | Prebuilt search index and explained applicability |
+| [0012](0012-progress-rule-and-workspace.md) | One progress formula, and a two-pane testing workspace |

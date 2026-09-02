@@ -15,23 +15,28 @@ import { IconChevron, IconShield } from '../../ui/icons';
 import { ContextForm, contextCompleteness } from '../context/ContextForm';
 import { TEST_LIBRARY } from '../../data/library';
 import { suggestApplicability } from '../../domain/applicability';
+import { FACT_BY_KEY, type ApplicationContext, type ContextFactKey } from '../../domain/context';
 import { PRIORITY_ORDER, type Priority } from '../../domain/types';
-import type { ApplicationContext, ContextFactKey } from '../../domain/context';
 import { createEngagement } from '../../persistence/repository';
 import { toast } from '../../ui/toast';
 
 const STEPS = [
-  { id: 1, title: 'Engagement', hint: 'Who and what is being assessed' },
-  { id: 2, title: 'Application context', hint: 'Facts that determine applicability' },
+  { id: 1, title: 'Basic information', hint: 'Name, URL and application type' },
+  { id: 2, title: 'Application context', hint: 'What decides which tests apply' },
   { id: 3, title: 'Review checklist', hint: 'Confirm the generated scope' },
 ];
+
+const APPLICATION_TYPES = FACT_BY_KEY.assetTypes.options ?? [];
 
 export default function NewEngagementPage() {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
+  const [showOptional, setShowOptional] = useState(false);
+  const [showAllFacts, setShowAllFacts] = useState(false);
 
   const [name, setName] = useState('');
+  const [applicationUrl, setApplicationUrl] = useState('');
   const [clientName, setClientName] = useState('');
   const [testerName, setTesterName] = useState('');
   const [scopeText, setScopeText] = useState('');
@@ -39,7 +44,8 @@ export default function NewEngagementPage() {
   const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10));
   const [endDate, setEndDate] = useState('');
   const [context, setContext] = useState<ApplicationContext>({});
-  const [showAllFacts, setShowAllFacts] = useState(false);
+
+  const applicationTypes = (context.assetTypes as string[] | undefined) ?? [];
 
   const setFact = (key: ContextFactKey, value: boolean | string | string[] | undefined) =>
     setContext((c) => {
@@ -49,17 +55,24 @@ export default function NewEngagementPage() {
       return next;
     });
 
+  function toggleApplicationType(value: string) {
+    const next = applicationTypes.includes(value)
+      ? applicationTypes.filter((v) => v !== value)
+      : [...applicationTypes, value];
+    setFact('assetTypes', next.length ? next : undefined);
+  }
+
   const preview = useMemo(() => {
-    const included = TEST_LIBRARY.map((definition) => ({
+    const evaluated = TEST_LIBRARY.map((definition) => ({
       definition,
       suggestion: suggestApplicability(definition, context),
     }));
-    const applicable = included.filter((i) => i.suggestion.applicable);
+    const applicable = evaluated.filter((i) => i.suggestion.applicable);
     const byPriority = { Critical: 0, High: 0, Medium: 0, Low: 0 } as Record<Priority, number>;
     for (const i of applicable) byPriority[i.definition.priority] += 1;
     return {
       applicable,
-      excluded: included.filter((i) => !i.suggestion.applicable),
+      excluded: evaluated.filter((i) => !i.suggestion.applicable),
       uncertain: applicable.filter((i) => i.suggestion.uncertain),
       byPriority,
     };
@@ -74,6 +87,7 @@ export default function NewEngagementPage() {
     try {
       const engagement = await createEngagement({
         name,
+        applicationUrl,
         clientName,
         testerName,
         description,
@@ -136,11 +150,12 @@ export default function NewEngagementPage() {
         ))}
       </ol>
 
+      {/* Step 1 — basic information -------------------------------------- */}
       {step === 1 && (
         <Card className="space-y-4">
           <SectionHeading
-            title="Engagement details"
-            description="Only the engagement name is required — everything else can be filled in later."
+            title="Basic information"
+            description="Three fields to get started. Everything else is optional and editable later."
           />
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Engagement name" required>
@@ -151,46 +166,108 @@ export default function NewEngagementPage() {
                 placeholder="ABC Web Application — Q3 Assessment"
               />
             </Field>
-            <Field label="Client / organisation">
+            <Field label="Application URL" hint="The primary target this assessment covers.">
               <Input
-                value={clientName}
-                onChange={(e) => setClientName(e.target.value)}
-                placeholder="ABC Ltd"
+                type="url"
+                value={applicationUrl}
+                onChange={(e) => setApplicationUrl(e.target.value)}
+                placeholder="https://app.example.com"
+                className="font-mono text-xs"
               />
             </Field>
-            <Field label="Tester">
-              <Input
-                value={testerName}
-                onChange={(e) => setTesterName(e.target.value)}
-                placeholder="Your name"
-              />
-            </Field>
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Start date">
-                <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+          </div>
+
+          <Field
+            label="Application type"
+            hint="Drives which whole families of tests apply — GraphQL, mobile, SOAP, and so on."
+          >
+            <div className="flex flex-wrap gap-1.5">
+              {APPLICATION_TYPES.map((option) => {
+                const active = applicationTypes.includes(option.value);
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => toggleApplicationType(option.value)}
+                    className={clsx(
+                      'rounded-lg border px-3 py-1.5 text-xs transition-colors',
+                      active
+                        ? 'border-brand-500/60 bg-brand-500/15 text-brand-400'
+                        : 'border-ink-600 bg-ink-900/60 text-ink-300 hover:border-ink-500 hover:text-ink-100',
+                    )}
+                  >
+                    {option.label}
+                  </button>
+                );
+              })}
+            </div>
+          </Field>
+
+          <button
+            type="button"
+            onClick={() => setShowOptional((v) => !v)}
+            className="text-xs text-ink-400 hover:text-brand-400"
+          >
+            {showOptional ? '− Hide' : '+ Add'} client, tester, dates and scope notes
+          </button>
+
+          {showOptional && (
+            <div className="animate-in space-y-4 border-t border-ink-800 pt-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label="Client / organisation">
+                  <Input
+                    value={clientName}
+                    onChange={(e) => setClientName(e.target.value)}
+                    placeholder="ABC Ltd"
+                  />
+                </Field>
+                <Field label="Tester">
+                  <Input
+                    value={testerName}
+                    onChange={(e) => setTesterName(e.target.value)}
+                    placeholder="Your name"
+                  />
+                </Field>
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Start date">
+                    <Input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                    />
+                  </Field>
+                  <Field label="End date">
+                    <Input
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                    />
+                  </Field>
+                </div>
+              </div>
+              <Field
+                label="Additional in-scope targets"
+                hint="One per line — extra hosts, API base paths, package names."
+              >
+                <Textarea
+                  rows={3}
+                  value={scopeText}
+                  onChange={(e) => setScopeText(e.target.value)}
+                  placeholder={'api.example.com/v2\ncom.example.android'}
+                  className="font-mono text-xs"
+                />
               </Field>
-              <Field label="End date">
-                <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+              <Field label="Notes / rules of engagement">
+                <Textarea
+                  rows={3}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Testing window, restrictions, credentials provided, contacts…"
+                />
               </Field>
             </div>
-          </div>
-          <Field label="Scope" hint="One target per line — hosts, URLs, API base paths, package names.">
-            <Textarea
-              rows={4}
-              value={scopeText}
-              onChange={(e) => setScopeText(e.target.value)}
-              placeholder={'https://app.example.com\napi.example.com/v2\ncom.example.android'}
-              className="font-mono text-xs"
-            />
-          </Field>
-          <Field label="Notes / rules of engagement">
-            <Textarea
-              rows={3}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Testing window, restrictions, credentials provided, contacts…"
-            />
-          </Field>
+          )}
+
           <div className="flex justify-end">
             <Button
               variant="primary"
@@ -204,15 +281,17 @@ export default function NewEngagementPage() {
         </Card>
       )}
 
+      {/* Step 2 — context ------------------------------------------------- */}
       {step === 2 && (
         <div className="space-y-5">
           <Card className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <p className="text-sm font-medium text-ink-100">
-                {completeness.answered} of {completeness.total} facts recorded
+                {completeness.answered} of {completeness.total} questions answered
               </p>
               <p className="mt-0.5 text-xs text-ink-500">
-                Unknown facts keep their tests in scope — the checklist errs toward inclusion.
+                Follow-up questions appear only when they are relevant. Anything left unknown keeps
+                its tests in scope.
               </p>
             </div>
             <div className="flex items-center gap-4">
@@ -220,7 +299,7 @@ export default function NewEngagementPage() {
                 <ProgressBar value={completeness.ratio} />
               </div>
               <Button size="sm" variant="subtle" onClick={() => setShowAllFacts((v) => !v)}>
-                {showAllFacts ? 'Show key questions only' : 'Show all questions'}
+                {showAllFacts ? 'Key questions only' : 'Show all questions'}
               </Button>
             </div>
           </Card>
@@ -247,6 +326,7 @@ export default function NewEngagementPage() {
         </div>
       )}
 
+      {/* Step 3 — review -------------------------------------------------- */}
       {step === 3 && (
         <div className="space-y-5">
           <div className="grid gap-3 sm:grid-cols-4">

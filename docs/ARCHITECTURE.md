@@ -14,7 +14,7 @@
 
 ```text
 ┌──────────────────────────────────────────────────────────────────┐
-│ features/            Screens: engagements, context, checklist,   │
+│ features/            Screens: engagements, context, workspace,   │
 │                      dashboard, export, library, settings        │
 ├──────────────────────────────────────────────────────────────────┤
 │ ui/                  Design system: primitives, icons, toasts    │
@@ -47,8 +47,9 @@
                              │
         ┌────────────────────┼────────────────────┐
         ▼                    ▼                    ▼
-   computeMetrics()     Checklist UI        Excel export
-   (dashboard)          (filters/edit)      (deliverable)
+   computeMetrics()     Workspace UI        Excel export
+   highValueTests()     (filters/edit)      (deliverable)
+   (dashboard)
 ```
 
 Dashboard numbers, checklist filters and the exported workbook are all derived from the same
@@ -58,7 +59,7 @@ the dashboard.
 ## 4. Data flow for a single edit
 
 ```text
-User clicks "Tested"
+Tester presses "2" (or clicks Tested) in the workspace
    └─► updateTestState(engagementId, testId, { status: 'Tested' })      persistence/repository
          └─► applyTransition(current, change)                            domain/executionState
                • enforces: Tested ⇒ result required
@@ -66,7 +67,9 @@ User clicks "Tested"
                • stamps updatedAt / testedAt
          └─► db.testStates.put(next)  +  engagement.updatedAt            IndexedDB
                └─► dexie-react-hooks re-runs useLiveQuery
-                     └─► checklist row, header counters, dashboard, export all refresh
+                     └─► list row, detail pane, header counters, dashboard
+                         statistics, progress, findings, high-value queue and
+                         the next export all refresh from that one write
 ```
 
 There is exactly one write path. UI components never construct a `TestState` themselves.

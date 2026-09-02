@@ -26,6 +26,7 @@ const now = () => new Date().toISOString();
 export interface EngagementDraft {
   name: string;
   clientName?: string;
+  applicationUrl?: string;
   scope?: string[];
   description?: string;
   testerName?: string;
@@ -54,6 +55,7 @@ export async function createEngagement(draft: EngagementDraft): Promise<Engageme
     id: nanoid(12),
     name: draft.name.trim(),
     clientName: draft.clientName?.trim() || undefined,
+    applicationUrl: draft.applicationUrl?.trim() || undefined,
     scope: (draft.scope ?? []).map((s) => s.trim()).filter(Boolean),
     description: draft.description?.trim() || undefined,
     testerName: draft.testerName?.trim() || undefined,
@@ -103,6 +105,7 @@ export async function duplicateEngagement(id: string, newName: string): Promise<
   return createEngagement({
     name: newName,
     clientName: source.clientName,
+    applicationUrl: source.applicationUrl,
     scope: source.scope,
     description: source.description,
     testerName: source.testerName,

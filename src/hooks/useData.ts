@@ -38,7 +38,8 @@ export function useEngagementSummaries() {
         for (const s of states) {
           if (!s.applicable) continue;
           applicable += 1;
-          if (s.status === 'N/A' || (s.status === 'Tested' && s.result)) resolved += 1;
+          // Completed = Tested + N/A (same rule as domain/metrics.ts).
+          if (s.status === 'N/A' || s.status === 'Tested') resolved += 1;
           if (s.status === 'Tested' && s.result === 'Vulnerable') vulnerable += 1;
         }
         return {

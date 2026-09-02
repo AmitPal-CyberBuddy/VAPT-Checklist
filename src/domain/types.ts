@@ -124,7 +124,14 @@ export interface Engagement {
   id: string;
   name: string;
   clientName?: string;
-  /** In-scope targets: hosts, URLs, package names, API base paths. */
+  /**
+   * Primary application URL / base target. Part of engagement identity because
+   * it heads the dashboard and the exported report. The application TYPE is not
+   * duplicated here — it lives once in `context.assetTypes`, where the
+   * applicability engine reads it.
+   */
+  applicationUrl?: string;
+  /** Additional in-scope targets: hosts, URLs, package names, API base paths. */
   scope: string[];
   description?: string;
   testerName?: string;

@@ -9,6 +9,8 @@ import { isFinding, isIncomplete, isResolved } from './executionState';
 import type { CategoryId, ChecklistItem, Priority, TestDefinition, TestState } from './types';
 import { PRIORITIES, PRIORITY_ORDER } from './types';
 import { CATEGORIES } from '../data/categories';
+import { suggestApplicability } from './applicability';
+import type { ApplicationContext } from './context';
 
 export interface CoverageCounts {
   total: number;
@@ -32,7 +34,12 @@ export interface GroupMetrics<K extends string = string> {
 
 export interface EngagementMetrics {
   counts: CoverageCounts;
-  /** (tested-with-result + N/A) / applicable, 0..1 */
+  /**
+   * Progress = Completed / Total Applicable, where Completed = Tested + N/A.
+   * This single definition is used by every screen and by the Excel export.
+   * `counts.awaitingResult` separately flags Tested rows with no result yet —
+   * a data-quality signal, not a different progress number.
+   */
   completion: number;
   /** vulnerable / (vulnerable + not vulnerable), 0..1 */
   vulnerableRate: number;
@@ -83,10 +90,14 @@ function accumulate(counts: CoverageCounts, state: TestState): void {
   }
 }
 
+/** Completed = Tested + N/A. The one progress formula in the product. */
+export function completedOf(counts: CoverageCounts): number {
+  return counts.tested + counts.na;
+}
+
 function completionOf(counts: CoverageCounts): number {
   if (counts.applicable === 0) return 0;
-  const done = counts.na + counts.vulnerable + counts.notVulnerable;
-  return done / counts.applicable;
+  return completedOf(counts) / counts.applicable;
 }
 
 export function computeMetrics(items: ChecklistItem[]): EngagementMetrics {
@@ -157,7 +168,115 @@ export function collectFindings(items: ChecklistItem[]): ChecklistItem[] {
     );
 }
 
-/** Highest value work remaining: applicable, not tested, ordered by priority. */
+/* ---------------------------------------------------------------- high value */
+
+/**
+ * High-value tests: what this tester should do next on *this* application.
+ *
+ * Deliberately not "sort by severity". Severity is the starting point, then the
+ * score reflects how strongly the engagement context points at the test, how
+ * exploitable the category tends to be, and what has already been found:
+ *
+ *   priority weight          Critical 100 · High 70 · Medium 40 · Low 15
+ *   + confirmed context      +10 per explicitly recorded condition (max +30)
+ *   - unconfirmed            −30 when the test is only in scope because facts
+ *                            are unknown (the context does not point at it)
+ *   + exploitability         +0..20 by category (authz/injection high,
+ *                            recon/privacy low)
+ *   + corroborating finding  +15 when the same category already has a finding
+ *   + tester intent          +12 when the tester manually pulled it into scope
+ *   - baseline               −8 for tests that apply to every engagement
+ */
+const CATEGORY_EXPLOITABILITY: Partial<Record<CategoryId, number>> = {
+  authorization: 20,
+  'input-validation': 20,
+  authentication: 18,
+  api: 16,
+  'file-handling': 16,
+  session: 14,
+  graphql: 12,
+  'business-logic': 12,
+  cryptography: 10,
+  cloud: 10,
+  'client-side': 8,
+  mobile: 8,
+  config: 6,
+  transport: 4,
+  disclosure: 4,
+  availability: 4,
+  privacy: 2,
+  recon: 0,
+};
+
+const PRIORITY_WEIGHT: Record<Priority, number> = {
+  Critical: 100,
+  High: 70,
+  Medium: 40,
+  Low: 15,
+};
+
+export interface HighValueTest {
+  item: ChecklistItem;
+  score: number;
+  /** Short "why this one" line, e.g. "API + Multiple user roles". */
+  rationale: string;
+  /** True when it is in scope only because the context is incomplete. */
+  uncertain: boolean;
+}
+
+export function highValueTests(
+  items: ChecklistItem[],
+  context: ApplicationContext,
+  limit = 6,
+): HighValueTest[] {
+  const findingCategories = new Set(
+    items.filter((i) => isFinding(i.state)).map((i) => i.definition.category),
+  );
+
+  const scored: HighValueTest[] = [];
+
+  for (const item of items) {
+    const { definition, state } = item;
+    if (!state.applicable || state.status !== 'Not Tested') continue;
+
+    const suggestion = suggestApplicability(definition, context);
+    const met = suggestion.conditions.filter((c) => c.outcome === 'met');
+
+    let score = PRIORITY_WEIGHT[definition.priority];
+    score += Math.min(met.length * 10, 30);
+    if (suggestion.uncertain) score -= 30;
+    score += CATEGORY_EXPLOITABILITY[definition.category] ?? 5;
+    if (findingCategories.has(definition.category)) score += 15;
+    if (state.applicabilitySource === 'manual') score += 12;
+    if (definition.applicability.kind === 'always') score -= 8;
+
+    const reasons: string[] = [];
+    if (met.length > 0) reasons.push(met.slice(0, 2).map((c) => c.label).join(' + '));
+    if (findingCategories.has(definition.category)) reasons.push('related finding in category');
+    if (state.applicabilitySource === 'manual') reasons.push('added by you');
+    if (reasons.length === 0) {
+      reasons.push(suggestion.uncertain ? 'context incomplete' : 'baseline coverage');
+    }
+
+    scored.push({
+      item,
+      score,
+      rationale: reasons.join(' · '),
+      uncertain: suggestion.uncertain,
+    });
+  }
+
+  return scored
+    .sort(
+      (a, b) =>
+        b.score - a.score ||
+        PRIORITY_ORDER[a.item.definition.priority] - PRIORITY_ORDER[b.item.definition.priority] ||
+        a.item.definition.id.localeCompare(b.item.definition.id),
+    )
+    .slice(0, limit);
+}
+
+/** Plain outstanding queue: applicable, not tested, ordered by priority. */
 export function nextUpQueue(items: ChecklistItem[], limit = 8): ChecklistItem[] {
   return items
     .filter((i) => i.state.applicable && i.state.status === 'Not Tested')

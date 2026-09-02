@@ -116,10 +116,22 @@ describe('metrics', () => {
     expect(m.counts.vulnerable).toBe(1);
   });
 
-  it('does not count Tested-without-result as complete', () => {
+  it('follows the product rule Completed = Tested + N/A', () => {
+    const items = [
+      item('AUTH-001', (s) => applyTransition(s, { status: 'Tested', result: 'Vulnerable' })),
+      item('AUTH-003', (s) => applyTransition(s, { status: 'N/A' })),
+      item('AUTH-004', (s) => s),
+    ];
+    const m = computeMetrics(items);
+    expect(m.counts.tested + m.counts.na).toBe(2);
+    expect(m.completion).toBeCloseTo(2 / 3);
+  });
+
+  it('still flags Tested rows with no result as a data-quality issue', () => {
     const items = [item('AUTH-001', (s) => applyTransition(s, { status: 'Tested' }))];
     const m = computeMetrics(items);
-    expect(m.completion).toBe(0);
+    // Counted as completed (status is Tested) but surfaced for follow-up.
+    expect(m.completion).toBe(1);
     expect(m.counts.awaitingResult).toBe(1);
   });
 });

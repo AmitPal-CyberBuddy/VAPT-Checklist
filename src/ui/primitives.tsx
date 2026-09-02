@@ -3,6 +3,7 @@
  * Small, dependency-free components so every screen looks and behaves the same.
  */
 import clsx from 'clsx';
+import { forwardRef } from 'react';
 import type {
   ButtonHTMLAttributes,
   InputHTMLAttributes,
@@ -205,9 +206,17 @@ export function Input({ className, ...rest }: InputHTMLAttributes<HTMLInputEleme
   return <input className={clsx(CONTROL, className)} {...rest} />;
 }
 
-export function Textarea({ className, ...rest }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  return <textarea className={clsx(CONTROL, 'resize-y leading-relaxed', className)} {...rest} />;
-}
+export const Textarea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes<HTMLTextAreaElement>>(
+  function Textarea({ className, ...rest }, ref) {
+    return (
+      <textarea
+        ref={ref}
+        className={clsx(CONTROL, 'resize-y leading-relaxed', className)}
+        {...rest}
+      />
+    );
+  },
+);
 
 export function Select({ className, children, ...rest }: SelectHTMLAttributes<HTMLSelectElement>) {
   return (

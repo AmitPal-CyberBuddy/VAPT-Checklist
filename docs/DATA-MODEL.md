@@ -61,7 +61,8 @@ Full conventions: [`TEST-LIBRARY.md`](TEST-LIBRARY.md).
 | Field | Notes |
 | --- | --- |
 | `id`, `name`, `clientName`, `testerName` | Identity |
-| `scope: string[]` | Hosts, URLs, package names |
+| `applicationUrl` | Primary target, shown on the dashboard and in the report |
+| `scope: string[]` | Additional hosts, URLs, package names |
 | `startDate`, `endDate`, `description` | Engagement admin |
 | `status` | `Active \| Completed \| Archived` |
 | `context: ApplicationContext` | The recorded facts |
@@ -163,6 +164,10 @@ Applicable because:
 
 `src/domain/metrics.ts` — the only place numbers are produced.
 
+The application **type** is deliberately *not* an engagement field: it lives once in
+`context.assetTypes`, where the applicability engine reads it, and the dashboard renders it from
+there. Duplicating it would create two copies that can disagree.
+
 ```text
 counts.total        = every library test seeded for the engagement
 counts.applicable   = applicable === true
@@ -174,12 +179,35 @@ counts.vulnerable   = applicable && Tested && Vulnerable
 counts.notVulnerable= applicable && Tested && Not Vulnerable
 counts.awaitingResult = applicable && Tested && result === null
 
-completion      = (na + vulnerable + notVulnerable) / applicable
+completed       = tested + na                  ← the product's progress rule
+completion      = completed / applicable
 vulnerableRate  = vulnerable / (vulnerable + notVulnerable)
 ```
 
+`awaitingResult` (Tested with no result yet) is a **data-quality signal**, not a second progress
+number: the workspace highlights it, the dashboard banners it and the export reports it, but there
+is only ever one definition of progress.
+
 Also derived: per-category and per-priority groups, findings by priority, outstanding by priority,
-manual-override count, last activity timestamp, the **Next up** queue and the findings list.
+manual-override count, last activity timestamp, the findings list and the **high-value queue**.
+
+### High-value ranking
+
+`highValueTests(items, context, limit)` answers "what should I test next on *this* application?".
+Candidates are applicable tests still `Not Tested`; severity is only the starting point:
+
+| Signal | Effect |
+| --- | --- |
+| Priority | Critical 100 · High 70 · Medium 40 · Low 15 |
+| Confirmed context conditions | +10 each, capped at +30 |
+| In scope only because facts are unknown | −30 |
+| Category exploitability | +0…+20 (authz/injection high, recon/privacy low) |
+| Category already has a finding | +15 |
+| Tester manually pulled it into scope | +12 |
+| Baseline test (applies to everything) | −8 |
+
+Each result carries a `rationale` string built from the conditions that matched, so the dashboard
+can say *why* a test is near the top.
 
 ## 6. Persistence schema (IndexedDB v1)
 

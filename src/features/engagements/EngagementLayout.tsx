@@ -3,11 +3,12 @@ import clsx from 'clsx';
 import { Badge, Card, ProgressBar, Select } from '../../ui/primitives';
 import { useChecklist, useEngagement, useMetrics } from '../../hooks/useData';
 import { setEngagementStatus } from '../../persistence/repository';
+import { FACT_BY_KEY } from '../../domain/context';
 import type { EngagementStatus } from '../../domain/types';
 
 const TABS = [
   { to: '', label: 'Dashboard', end: true },
-  { to: 'checklist', label: 'Checklist', end: false },
+  { to: 'workspace', label: 'Testing Workspace', end: false },
   { to: 'context', label: 'Application Context', end: false },
   { to: 'export', label: 'Export', end: false },
 ];
@@ -26,6 +27,10 @@ export default function EngagementLayout() {
   }
 
   const c = metrics.counts;
+  const typeOptions = FACT_BY_KEY.assetTypes.options ?? [];
+  const applicationType = ((engagement.context.assetTypes as string[] | undefined) ?? [])
+    .map((v) => typeOptions.find((o) => o.value === v)?.label ?? v)
+    .join(' · ');
 
   return (
     <div className="space-y-5">
@@ -42,11 +47,22 @@ export default function EngagementLayout() {
             <h1 className="mt-1 truncate text-xl font-semibold tracking-tight text-ink-50">
               {engagement.name}
             </h1>
-            {engagement.scope.length > 0 && (
-              <p className="mt-1 truncate font-mono text-[11px] text-ink-500">
-                {engagement.scope.join(' · ')}
-              </p>
-            )}
+            <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-ink-500">
+              {engagement.applicationUrl && (
+                <a
+                  href={engagement.applicationUrl}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="font-mono text-brand-400/90 hover:text-brand-400"
+                >
+                  {engagement.applicationUrl}
+                </a>
+              )}
+              {applicationType && <span>{applicationType}</span>}
+              {engagement.scope.length > 0 && (
+                <span className="truncate font-mono">{engagement.scope.join(' · ')}</span>
+              )}
+            </p>
           </div>
 
           <div className="flex items-center gap-4">
@@ -62,7 +78,7 @@ export default function EngagementLayout() {
                 tone={metrics.completion === 1 ? 'safe' : 'brand'}
               />
               <p className="mt-1.5 text-[11px] text-ink-500">
-                {c.na + c.vulnerable + c.notVulnerable} of {c.applicable} applicable resolved
+                {c.tested + c.na} of {c.applicable} applicable completed
               </p>
             </div>
             <Select

@@ -132,16 +132,16 @@ export default function EngagementsPage() {
                 </Badge>
               </div>
 
-              {engagement.scope.length > 0 && (
+              {(engagement.applicationUrl || engagement.scope.length > 0) && (
                 <p className="truncate font-mono text-[11px] text-ink-500">
-                  {engagement.scope.join(' · ')}
+                  {[engagement.applicationUrl, ...engagement.scope].filter(Boolean).join(' · ')}
                 </p>
               )}
 
               <div>
                 <div className="mb-1.5 flex items-center justify-between text-xs">
                   <span className="text-ink-400">
-                    {resolved} of {applicable} applicable tests resolved
+                    {resolved} of {applicable} applicable tests completed
                   </span>
                   <span className="font-medium tabular-nums text-ink-200">
                     {Math.round(completion * 100)}%

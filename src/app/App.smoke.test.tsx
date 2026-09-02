@@ -66,17 +66,20 @@ describe('application shell', () => {
     expect(within(panel).getByText('Bypass confirmed.')).toBeTruthy();
   });
 
-  it('renders the checklist with status controls', async () => {
+  it('renders the testing workspace with status controls', async () => {
     const engagement = await createEngagement({
-      name: 'Checklist Target',
+      name: 'Workspace Target',
       context: { assetTypes: ['web-app'], hasAuthentication: true },
     });
-    window.location.hash = `#/e/${engagement.id}/checklist`;
+    window.location.hash = `#/e/${engagement.id}/workspace`;
     render(<App />);
 
-    expect(await screen.findByPlaceholderText(/Search vulnerability/)).toBeTruthy();
+    expect(await screen.findByPlaceholderText(/Search name, alias, ID/)).toBeTruthy();
     expect(await screen.findByText('SQL Injection')).toBeTruthy();
     expect((await screen.findAllByText('Not Tested')).length).toBeGreaterThan(0);
+    // Two-pane layout: the first test opens automatically in the detail pane.
+    expect(await screen.findByText('Testing guidance')).toBeTruthy();
+    expect(await screen.findByPlaceholderText(/Endpoints and parameters tested/)).toBeTruthy();
   });
 
   it('renders the bundled test library browser', async () => {
@@ -101,7 +104,7 @@ describe('application shell', () => {
     expect(screen.getByText(/Matched on synonyms/)).toBeTruthy();
   });
 
-  it('explains why a test is in scope on the checklist', async () => {
+  it('explains why a test is in scope in the workspace', async () => {
     const engagement = await createEngagement({
       name: 'Explain Target',
       context: {
@@ -111,11 +114,14 @@ describe('application shell', () => {
         hasMultipleRoles: true,
       },
     });
-    window.location.hash = `#/e/${engagement.id}/checklist?test=AUTHZ-002`;
+    window.location.hash = `#/e/${engagement.id}/workspace?test=AUTHZ-002`;
     render(<App />);
 
+    // Appears twice by design: in the list row and as the detail-pane heading.
     expect(
-      await screen.findByText('IDOR / Broken Object Level Authorization (BOLA)'),
+      await screen.findByRole('heading', {
+        name: 'IDOR / Broken Object Level Authorization (BOLA)',
+      }),
     ).toBeTruthy();
     expect(await screen.findByText('Applicable because:')).toBeTruthy();
     expect(await screen.findByText('Users own individual records or objects')).toBeTruthy();
