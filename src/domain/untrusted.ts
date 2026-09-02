@@ -35,6 +35,35 @@ export function safeExternalUrl(value: string | undefined | null): string | null
   }
 }
 
+/**
+ * Length ceilings for stored text.
+ *
+ * Not arbitrary: an engagement lives in IndexedDB alongside ~184 test states,
+ * and unbounded text is how a local-first application exhausts its quota and
+ * loses an assessment. The notes ceiling also keeps every cell inside Excel's
+ * hard 32,767-character limit, below which a workbook is silently truncated or
+ * rejected.
+ */
+export const TEXT_LIMITS = {
+  engagementName: 200,
+  applicationUrl: 2048,
+  clientName: 120,
+  testerName: 120,
+  scopeEntry: 300,
+  description: 5_000,
+  notes: 20_000,
+} as const;
+
+/** Excel refuses to open a workbook with a longer cell than this. */
+export const EXCEL_CELL_LIMIT = 32_767;
+
+/** Trims and caps a stored string. Returns '' for anything that is not a string. */
+export function clampText(value: unknown, max: number): string {
+  if (typeof value !== 'string') return '';
+  const trimmed = value.trim();
+  return trimmed.length <= max ? trimmed : trimmed.slice(0, max);
+}
+
 /** Characters a spreadsheet may treat as the start of a formula. */
 const FORMULA_START = /^[=+\-@\t\r]/;
 
@@ -45,6 +74,12 @@ const FORMULA_START = /^[=+\-@\t\r]/;
  * deliverable's prose stays exact.
  */
 export function safeSpreadsheetText(value: string | undefined | null): string {
-  const text = value ?? '';
-  return FORMULA_START.test(text) ? `'${text}` : text;
+  let text = typeof value === 'string' ? value : '';
+  if (FORMULA_START.test(text)) text = `'${text}`;
+  if (text.length > EXCEL_CELL_LIMIT) {
+    // Truncating visibly beats handing the client a workbook Excel will not open.
+    const marker = ' […truncated]';
+    text = text.slice(0, EXCEL_CELL_LIMIT - marker.length) + marker;
+  }
+  return text;
 }

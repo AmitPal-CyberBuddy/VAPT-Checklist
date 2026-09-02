@@ -22,7 +22,8 @@ import {
   type ContextFactKey,
 } from '../../domain/context';
 import type { ApplicationTypeId } from '../../domain/applicationType';
-import { COVERAGE_BY_TYPE } from '../../data/typeCoverage';
+import { safeExternalUrl, TEXT_LIMITS } from '../../domain/untrusted';
+import { coverageFor } from '../../data/typeCoverage';
 import { ApplicationTypeDetail, ApplicationTypePicker } from './ApplicationTypeStep';
 import { PRIORITY_ORDER, type Priority } from '../../domain/types';
 import { createEngagement } from '../../persistence/repository';
@@ -53,7 +54,7 @@ export default function NewEngagementPage() {
   const [context, setContext] = useState<ApplicationContext>({});
   const [applicationType, setApplicationType] = useState<ApplicationTypeId | null>(null);
 
-  const coverage = applicationType ? COVERAGE_BY_TYPE[applicationType] : null;
+  const coverage = applicationType ? coverageFor(applicationType) : null;
   const typeUsable = coverage !== null && coverage.support !== 'unsupported';
 
   const setFact = (key: ContextFactKey, value: boolean | string | string[] | undefined) =>
@@ -91,7 +92,7 @@ export default function NewEngagementPage() {
   const canReachContext = canContinue && typeUsable;
 
   async function handleCreate() {
-    if (!canContinue || !applicationType || !typeUsable) return;
+    if (!canContinue || !applicationType || !typeUsable || saving) return;
     setSaving(true);
     try {
       const engagement = await createEngagement({
@@ -169,18 +170,32 @@ export default function NewEngagementPage() {
             description="Three fields to get started. Everything else is optional and editable later."
           />
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Engagement name" required>
+            <Field
+              label="Engagement name"
+              required
+              error={name.length >= TEXT_LIMITS.engagementName ? 'Maximum length reached.' : undefined}
+            >
               <Input
                 autoFocus
                 value={name}
+                maxLength={TEXT_LIMITS.engagementName}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="ABC Web Application — Q3 Assessment"
               />
             </Field>
-            <Field label="Application URL" hint="The primary target this assessment covers.">
+            <Field
+              label="Application URL"
+              hint="The primary target this assessment covers."
+              error={
+                applicationUrl.trim() && !safeExternalUrl(applicationUrl)
+                  ? 'Not a linkable http(s) address — it will be recorded as plain text.'
+                  : undefined
+              }
+            >
               <Input
                 type="url"
                 value={applicationUrl}
+                maxLength={TEXT_LIMITS.applicationUrl}
                 onChange={(e) => setApplicationUrl(e.target.value)}
                 placeholder="https://app.example.com"
                 className="font-mono text-xs"
@@ -202,6 +217,7 @@ export default function NewEngagementPage() {
                 <Field label="Client / organisation">
                   <Input
                     value={clientName}
+                    maxLength={TEXT_LIMITS.clientName}
                     onChange={(e) => setClientName(e.target.value)}
                     placeholder="ABC Ltd"
                   />
@@ -209,6 +225,7 @@ export default function NewEngagementPage() {
                 <Field label="Tester">
                   <Input
                     value={testerName}
+                    maxLength={TEXT_LIMITS.testerName}
                     onChange={(e) => setTesterName(e.target.value)}
                     placeholder="Your name"
                   />
@@ -237,6 +254,7 @@ export default function NewEngagementPage() {
                 <Textarea
                   rows={3}
                   value={scopeText}
+                  maxLength={TEXT_LIMITS.scopeEntry * 50}
                   onChange={(e) => setScopeText(e.target.value)}
                   placeholder={'api.example.com/v2\ncom.example.android'}
                   className="font-mono text-xs"
@@ -246,6 +264,7 @@ export default function NewEngagementPage() {
                 <Textarea
                   rows={3}
                   value={description}
+                  maxLength={TEXT_LIMITS.description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Testing window, restrictions, credentials provided, contacts…"
                 />

@@ -378,10 +378,11 @@ export const FACT_BY_KEY: Record<string, FactDefinition> = Object.fromEntries(
  */
 export function effectiveAssetTypes(
   applicationType: ApplicationTypeId,
-  context: ApplicationContext,
+  context: ApplicationContext | undefined,
 ): string[] {
-  const extra = (context.additionalSurfaces as string[] | undefined) ?? [];
-  return [applicationType, ...extra.filter((s) => s !== applicationType)];
+  const extra = (context?.additionalSurfaces as string[] | undefined) ?? [];
+  const valid = Array.isArray(extra) ? extra.filter((s) => typeof s === 'string') : [];
+  return [applicationType, ...valid.filter((s) => s !== applicationType)];
 }
 
 /**
@@ -391,11 +392,12 @@ export function effectiveAssetTypes(
  */
 export function effectiveContext(engagement: {
   applicationType: ApplicationTypeId;
-  context: ApplicationContext;
+  context: ApplicationContext | undefined;
 }): ApplicationContext {
+  const context = engagement.context ?? {};
   return {
-    ...engagement.context,
-    assetTypes: effectiveAssetTypes(engagement.applicationType, engagement.context),
+    ...context,
+    assetTypes: effectiveAssetTypes(engagement.applicationType, context),
   };
 }
 

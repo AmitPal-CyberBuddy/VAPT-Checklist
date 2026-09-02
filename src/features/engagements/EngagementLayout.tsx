@@ -31,14 +31,21 @@ export default function EngagementLayout() {
   useEffect(() => {
     if (!engagementId || repaired.current === engagementId) return;
     repaired.current = engagementId;
-    void repairIntegrity(engagementId).then((count) => {
-      if (count > 0) {
-        toast.info(
-          `${count} incomplete record${count === 1 ? '' : 's'} reset`,
-          'They were marked Tested without a result and are now Not Tested.',
+    void repairIntegrity(engagementId)
+      .then((count) => {
+        if (count > 0) {
+          toast.info(
+            `${count} incomplete record${count === 1 ? '' : 's'} reset`,
+            'They were marked Tested without a result and are now Not Tested.',
+          );
+        }
+      })
+      .catch((error: unknown) => {
+        toast.error(
+          'Could not check this engagement for damaged records',
+          error instanceof Error ? error.message : String(error),
         );
-      }
-    });
+      });
   }, [engagementId]);
 
   if (engagement === undefined) return <LoadingPanel rows={4} label="Loading engagement" />;
@@ -118,9 +125,15 @@ export default function EngagementLayout() {
             <Select
               aria-label="Engagement status"
               value={engagement.status}
-              onChange={(e) =>
-                void setEngagementStatus(engagement.id, e.target.value as EngagementStatus)
-              }
+              onChange={(e) => {
+                void setEngagementStatus(engagement.id, e.target.value as EngagementStatus).catch(
+                  (error: unknown) =>
+                    toast.error(
+                      'Engagement status not saved',
+                      error instanceof Error ? error.message : String(error),
+                    ),
+                );
+              }}
               className="w-36"
             >
               <option value="Active">Active</option>

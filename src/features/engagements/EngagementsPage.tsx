@@ -231,7 +231,14 @@ export default function EngagementsPage() {
                   size="sm"
                   variant="ghost"
                   className="justify-start text-safe-400"
-                  onClick={() => void setEngagementStatus(engagement.id, 'Completed')}
+                  onClick={() =>
+                    void setEngagementStatus(engagement.id, 'Completed').catch((error: unknown) =>
+                      toast.error(
+                        'Engagement status not saved',
+                        error instanceof Error ? error.message : String(error),
+                      ),
+                    )
+                  }
                 >
                   All applicable tests completed — mark engagement as Completed
                 </Button>

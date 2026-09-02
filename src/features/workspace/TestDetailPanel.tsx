@@ -13,9 +13,10 @@ import { IconAlert, IconChevron, IconExternal } from '../../ui/icons';
 import { categoryName } from '../../data/categories';
 import { resolveReferences } from '../../data/references';
 import { describeRule, suggestApplicability } from '../../domain/applicability';
+import { TEXT_LIMITS } from '../../domain/untrusted';
 import type { ApplicationContext } from '../../domain/context';
 import type { ChecklistItem, TestResult, TestStatus } from '../../domain/types';
-import { updateTestState } from '../../persistence/repository';
+import { recordTestState } from './recordState';
 import { ApplicabilityExplanation } from './ApplicabilityExplanation';
 
 /**
@@ -107,12 +108,17 @@ export function TestDetailPanel({
     setPendingTested(false);
   }, [s.id, s.status]);
 
+  const [noteError, setNoteError] = useState(false);
+
   const flushNotes = useCallback(() => {
     if (timer.current) clearTimeout(timer.current);
     timer.current = null;
     const value = pending.current;
     pending.current = null;
-    if (value !== null) void updateTestState(engagementId, d.id, { notes: value });
+    if (value === null) return;
+    void recordTestState(engagementId, d.id, { notes: value }, 'Note').then((ok) =>
+      setNoteError(!ok),
+    );
   }, [engagementId, d.id]);
 
   // Never lose a half-typed note: flush on unmount, tab hide and page unload.
@@ -140,12 +146,12 @@ export function TestDetailPanel({
       return;
     }
     setPendingTested(false);
-    void updateTestState(engagementId, d.id, { status });
+    void recordTestState(engagementId, d.id, { status }, 'Status');
   }
 
   function chooseResult(result: TestResult) {
     setPendingTested(false);
-    void updateTestState(engagementId, d.id, { status: 'Tested', result });
+    void recordTestState(engagementId, d.id, { status: 'Tested', result }, 'Result');
   }
 
   const suggestion = suggestApplicability(d, context);
@@ -283,11 +289,16 @@ export function TestDetailPanel({
             value={notes}
             onChange={(e) => saveNotes(e.target.value)}
             aria-label={`Notes for ${d.vulnerabilityName}`}
+            maxLength={TEXT_LIMITS.notes}
             placeholder="Endpoints and parameters tested, payloads used, observations, conclusion…"
             className="text-xs"
           />
           <div className="mt-1.5 flex flex-wrap items-center justify-between gap-2 text-micro text-ink-400">
-            <span>Optional · saved automatically</span>
+            <span className={noteError ? 'font-medium text-vuln-400' : undefined}>
+              {noteError
+                ? 'Not saved — this note is only in the editor. Copy it before leaving the page.'
+                : 'Optional · saved automatically'}
+            </span>
             <span>Updated {s.updatedAt.slice(0, 16).replace('T', ' ')}</span>
           </div>
 
@@ -323,10 +334,12 @@ export function TestDetailPanel({
                   { value: 'no', label: 'Not Applicable', tone: 'na' },
                 ]}
                 onChange={(v) =>
-                  void updateTestState(engagementId, d.id, {
-                    applicable: v === 'yes',
-                    applicabilitySource: 'manual',
-                  })
+                  void recordTestState(
+                    engagementId,
+                    d.id,
+                    { applicable: v === 'yes', applicabilitySource: 'manual' },
+                    'Applicability',
+                  )
                 }
               />
             </div>
@@ -342,10 +355,12 @@ export function TestDetailPanel({
                   size="sm"
                   variant="ghost"
                   onClick={() =>
-                    void updateTestState(engagementId, d.id, {
-                      applicable: s.suggestedApplicable,
-                      applicabilitySource: 'auto',
-                    })
+                    void recordTestState(
+                      engagementId,
+                      d.id,
+                      { applicable: s.suggestedApplicable, applicabilitySource: 'auto' },
+                      'Applicability',
+                    )
                   }
                 >
                   Reset to suggestion

@@ -19,12 +19,55 @@ import {
   stateKey,
   type StateTransition,
 } from '../domain/executionState';
-import { TEST_STATUSES, TEST_RESULTS } from '../domain/types';
+import { TEST_STATUSES, TEST_RESULTS, type TestResult } from '../domain/types';
+import { toApplicationTypeId, isApplicationTypeId } from '../domain/applicationType';
+import { clampText, TEXT_LIMITS } from '../domain/untrusted';
 import { effectiveContext, type ApplicationContext } from '../domain/context';
 import type { ApplicationTypeId } from '../domain/applicationType';
 import type { ChecklistItem, Engagement, EngagementStatus, TestState } from '../domain/types';
 
 const now = () => new Date().toISOString();
+
+/* ------------------------------------------------------ read-side hardening */
+
+/**
+ * Coerces a stored row into a shape the rest of the app can rely on.
+ *
+ * Records can predate a schema change, be hand-edited in devtools, or arrive
+ * from a partially-written transaction. Normalising once on read means no
+ * screen has to defend itself — a null `notes` used to take the whole workspace
+ * down with `notes.toLowerCase()`.
+ */
+function normaliseState(state: TestState): TestState {
+  const status = TEST_STATUSES.includes(state.status) ? state.status : 'Not Tested';
+  const result =
+    status === 'Tested' && TEST_RESULTS.includes(state.result as TestResult) ? state.result : null;
+  return {
+    ...state,
+    status,
+    result,
+    applicable: state.applicable !== false,
+    notes: typeof state.notes === 'string' ? state.notes : '',
+    createdAt: typeof state.createdAt === 'string' ? state.createdAt : now(),
+    updatedAt: typeof state.updatedAt === 'string' ? state.updatedAt : now(),
+    applicabilitySource: state.applicabilitySource === 'manual' ? 'manual' : 'auto',
+  };
+}
+
+/** The engagement equivalent: never hand a screen an unusable engagement. */
+export function normaliseEngagement(engagement: Engagement): Engagement {
+  return {
+    ...engagement,
+    applicationType: toApplicationTypeId(engagement.applicationType),
+    name: typeof engagement.name === 'string' ? engagement.name : 'Untitled engagement',
+    scope: Array.isArray(engagement.scope) ? engagement.scope.filter((s) => typeof s === 'string') : [],
+    context:
+      engagement.context && typeof engagement.context === 'object' ? engagement.context : {},
+    status: ['Active', 'Completed', 'Archived'].includes(engagement.status)
+      ? engagement.status
+      : 'Active',
+  };
+}
 
 /* ------------------------------------------------------------------ engagements */
 
@@ -43,12 +86,13 @@ export interface EngagementDraft {
 }
 
 export async function listEngagements(): Promise<Engagement[]> {
-  const all = await db.engagements.toArray();
-  return all.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  const all = (await db.engagements.toArray()).map(normaliseEngagement);
+  return all.sort((a, b) => (b.updatedAt ?? '').localeCompare(a.updatedAt ?? ''));
 }
 
 export async function getEngagement(id: string): Promise<Engagement | undefined> {
-  return db.engagements.get(id);
+  const engagement = await db.engagements.get(id);
+  return engagement ? normaliseEngagement(engagement) : undefined;
 }
 
 /**
@@ -60,13 +104,16 @@ export async function createEngagement(draft: EngagementDraft): Promise<Engageme
   const timestamp = now();
   const engagement: Engagement = {
     id: nanoid(12),
-    name: draft.name.trim(),
-    applicationType: draft.applicationType,
-    clientName: draft.clientName?.trim() || undefined,
-    applicationUrl: draft.applicationUrl?.trim() || undefined,
-    scope: (draft.scope ?? []).map((s) => s.trim()).filter(Boolean),
-    description: draft.description?.trim() || undefined,
-    testerName: draft.testerName?.trim() || undefined,
+    name: clampText(draft.name, TEXT_LIMITS.engagementName),
+    applicationType: toApplicationTypeId(draft.applicationType),
+    clientName: clampText(draft.clientName, TEXT_LIMITS.clientName) || undefined,
+    applicationUrl: clampText(draft.applicationUrl, TEXT_LIMITS.applicationUrl) || undefined,
+    scope: (draft.scope ?? [])
+      .map((entry) => clampText(entry, TEXT_LIMITS.scopeEntry))
+      .filter(Boolean)
+      .slice(0, 50),
+    description: clampText(draft.description, TEXT_LIMITS.description) || undefined,
+    testerName: clampText(draft.testerName, TEXT_LIMITS.testerName) || undefined,
     startDate: draft.startDate || undefined,
     endDate: draft.endDate || undefined,
     status: 'Active',
@@ -127,6 +174,15 @@ export async function duplicateEngagement(id: string, newName: string): Promise<
 /* ------------------------------------------------------------------ test states */
 
 export async function listStates(engagementId: string): Promise<TestState[]> {
+  return (await listRawStates(engagementId)).map(normaliseState);
+}
+
+/**
+ * Rows exactly as stored. Only the repair pass uses this: everything else wants
+ * the normalised view, but repair has to *see* the corruption to rewrite it —
+ * normalising first would hide the problem and leave the bad row on disk.
+ */
+async function listRawStates(engagementId: string): Promise<TestState[]> {
   return db.testStates.where('engagementId').equals(engagementId).toArray();
 }
 
@@ -152,12 +208,19 @@ export async function updateTestState(
   testId: string,
   change: StateTransition,
 ): Promise<TestState | undefined> {
+  if (change.notes !== undefined) {
+    change = { ...change, notes: clampText(change.notes, TEXT_LIMITS.notes) };
+  }
   const key = stateKey(engagementId, testId);
   let updated: TestState | undefined;
   await db.transaction('rw', db.testStates, db.engagements, async () => {
     const current = await db.testStates.get(key);
-    if (!current) return;
-    const next = applyTransition(current, change);
+    if (!current) {
+      throw new Error(
+        `No such test in this engagement: ${testId}. The engagement may need synchronising with the test library.`,
+      );
+    }
+    const next = applyTransition(normaliseState(current), change);
     assertPersistable(next);
     updated = next;
     await db.testStates.put(next);
@@ -192,11 +255,11 @@ export async function bulkUpdateTestStates(
  * cheap, and run when an engagement is opened.
  */
 export async function repairIntegrity(engagementId: string): Promise<number> {
-  const broken = (await listStates(engagementId)).filter(isInconsistent);
+  const broken = (await listRawStates(engagementId)).filter(isInconsistent);
   if (broken.length === 0) return 0;
   const timestamp = now();
   const repaired = broken.map((state) => ({
-    ...state,
+    ...normaliseState(state),
     status: 'Not Tested' as const,
     result: null,
     updatedAt: timestamp,
@@ -456,6 +519,22 @@ export function inspectBackup(data: unknown): BackupInspection {
     if (!['Active', 'Completed', 'Archived'].includes(engagement.status as string)) {
       issues.push(`${where} has an unknown status "${String(engagement.status)}".`);
     }
+    if (engagement.applicationType !== undefined && !isApplicationTypeId(engagement.applicationType)) {
+      // v1 backups predate the field and are migrated; a *wrong* value is not.
+      issues.push(
+        `${where} has an unknown application type "${String(engagement.applicationType)}".`,
+      );
+    }
+    for (const [field, limit] of [
+      ['name', TEXT_LIMITS.engagementName],
+      ['applicationUrl', TEXT_LIMITS.applicationUrl],
+      ['description', TEXT_LIMITS.description],
+    ] as const) {
+      const value = engagement[field];
+      if (typeof value === 'string' && value.length > limit) {
+        issues.push(`${where} has an oversized ${field} (${value.length} characters, max ${limit}).`);
+      }
+    }
     if (typeof engagement.context !== 'object' || engagement.context === null) {
       issues.push(`${where} has a malformed application context.`);
     }
@@ -500,6 +579,10 @@ export function inspectBackup(data: unknown): BackupInspection {
     }
     if (typeof state.notes !== 'string') {
       issues.push(`${where} (${state.testId}) has malformed notes.`);
+    } else if (state.notes.length > TEXT_LIMITS.notes) {
+      issues.push(
+        `${where} (${state.testId}) has oversized notes (${state.notes.length} characters, max ${TEXT_LIMITS.notes}).`,
+      );
     }
     // The imported record must satisfy the same state machine as a local one.
     if (validateState(state as TestState).length > 0) {
@@ -550,20 +633,19 @@ export async function importBackup(data: unknown): Promise<{ engagements: number
     const collides = existing.has(e.id);
     const id = collides ? nanoid(12) : e.id;
     idMap.set(e.id, id);
-    return {
+    return normaliseEngagement({
       ...e,
       id,
       name: collides ? `${e.name} (imported)` : e.name,
-      scope: Array.isArray(e.scope) ? e.scope : [],
       libraryVersion: e.libraryVersion ?? LIBRARY_VERSION,
-    };
+    });
   });
 
   const testStates: TestState[] = file.testStates
     .filter((s) => idMap.has(s.engagementId) && TEST_BY_ID.has(s.testId))
     .map((s) => {
       const engagementId = idMap.get(s.engagementId)!;
-      return { ...s, engagementId, id: stateKey(engagementId, s.testId) };
+      return normaliseState({ ...s, engagementId, id: stateKey(engagementId, s.testId) });
     });
   testStates.forEach(assertPersistable);
 

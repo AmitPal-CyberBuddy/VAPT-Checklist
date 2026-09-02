@@ -140,3 +140,19 @@ export const APPLICATION_TYPE_BY_ID = Object.fromEntries(
 export function applicationTypeLabel(id: ApplicationTypeId | undefined): string {
   return id ? (APPLICATION_TYPE_BY_ID[id]?.label ?? id) : 'Not recorded';
 }
+
+/** The default domain for data that arrives without a usable one. */
+export const FALLBACK_APPLICATION_TYPE: ApplicationTypeId = 'web-app';
+
+export function isApplicationTypeId(value: unknown): value is ApplicationTypeId {
+  return typeof value === 'string' && value in APPLICATION_TYPE_BY_ID;
+}
+
+/**
+ * Coerces a stored value to a known type. A hand-edited database or a crafted
+ * backup must not be able to put the UI into a state where a coverage lookup
+ * returns undefined.
+ */
+export function toApplicationTypeId(value: unknown): ApplicationTypeId {
+  return isApplicationTypeId(value) ? value : FALLBACK_APPLICATION_TYPE;
+}

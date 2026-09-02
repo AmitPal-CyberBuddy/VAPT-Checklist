@@ -351,6 +351,7 @@ Clearing site data deletes your engagements, so take a backup before you do.
 - [`docs/WORKSPACE.md`](docs/WORKSPACE.md) — the testing workspace: the loop, keyboard map, and measured performance
 - [`docs/DESIGN-SYSTEM.md`](docs/DESIGN-SYSTEM.md) — visual language, vocabulary, responsive and accessibility rules
 - [`docs/AUDIT.md`](docs/AUDIT.md) — end-to-end product audit: what was tested, what was found, what was fixed
+- [`docs/ROBUSTNESS.md`](docs/ROBUSTNESS.md) — input validation, state integrity, error handling and defensive rendering
 - [`docs/CONTENT-AUDIT.md`](docs/CONTENT-AUDIT.md) — security content and applicability audit against WSTG / ASVS / OWASP Top 10
 - [`docs/APPLICATION-TYPES.md`](docs/APPLICATION-TYPES.md) — coverage matrix per application type, and the engagement flow built on it
 - [`docs/adr/`](docs/adr/) — architecture decision records

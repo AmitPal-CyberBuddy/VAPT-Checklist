@@ -9,7 +9,7 @@
 
 import type { ApplicabilityRule, TestDefinition } from '../domain/types';
 import type { ApplicationTypeId, SupportLevel } from '../domain/applicationType';
-import { APPLICATION_TYPES } from '../domain/applicationType';
+import { APPLICATION_TYPES, FALLBACK_APPLICATION_TYPE } from '../domain/applicationType';
 import { TEST_LIBRARY } from './library';
 
 /** Does this rule name the asset type explicitly? */
@@ -91,8 +91,11 @@ export const COVERAGE_BY_TYPE = Object.fromEntries(
   APPLICATION_TYPES.map((t) => [t.id, applicationTypeCoverage(t.id)]),
 ) as Record<ApplicationTypeId, TypeCoverage>;
 
-export const supportLevel = (type: ApplicationTypeId): SupportLevel =>
-  COVERAGE_BY_TYPE[type].support;
+/** Safe lookup: a stored value outside the known set falls back rather than crashing. */
+export const coverageFor = (type: ApplicationTypeId): TypeCoverage =>
+  COVERAGE_BY_TYPE[type] ?? COVERAGE_BY_TYPE[FALLBACK_APPLICATION_TYPE];
+
+export const supportLevel = (type: ApplicationTypeId): SupportLevel => coverageFor(type).support;
 
 export const isSupportedForEngagement = (type: ApplicationTypeId): boolean =>
-  COVERAGE_BY_TYPE[type].support !== 'unsupported';
+  coverageFor(type).support !== 'unsupported';

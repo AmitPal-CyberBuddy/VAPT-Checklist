@@ -21,7 +21,8 @@ import { SEARCH_INDEX } from '../../data/library';
 import { parseQuery, relevance } from '../../data/searchIndex';
 import { useChecklist, useEngagement } from '../../hooks/useData';
 import { useIsWide } from '../../hooks/useMediaQuery';
-import { bulkUpdateTestStates, updateTestState } from '../../persistence/repository';
+import type { bulkUpdateTestStates } from '../../persistence/repository';
+import { recordBulk, recordTestState } from './recordState';
 import { suggestApplicability } from '../../domain/applicability';
 import { highValueTests } from '../../domain/metrics';
 import { effectiveContext } from '../../domain/context';
@@ -312,32 +313,32 @@ export default function WorkspacePage() {
           step(-1, true);
           break;
         case '1':
-          if (current) void updateTestState(engagementId, current.definition.id, { status: 'Not Tested' });
+          if (current) void recordTestState(engagementId, current.definition.id, { status: 'Not Tested' }, current.definition.id);
           break;
         case '2':
           if (current?.state.result) {
-            void updateTestState(engagementId, current.definition.id, { status: 'Tested' });
+            void recordTestState(engagementId, current.definition.id, { status: 'Tested' }, current.definition.id);
           } else if (current) {
             toast.info('Choose a result', 'Press v for Vulnerable or b for Not Vulnerable.');
           }
           break;
         case '3':
-          if (current) void updateTestState(engagementId, current.definition.id, { status: 'N/A' });
+          if (current) void recordTestState(engagementId, current.definition.id, { status: 'N/A' }, current.definition.id);
           break;
         case 'v':
           if (current?.state.applicable) {
-            void updateTestState(engagementId, current.definition.id, {
+            void recordTestState(engagementId, current.definition.id, {
               status: 'Tested',
               result: 'Vulnerable',
-            });
+            }, current.definition.id);
           }
           break;
         case 'b':
           if (current?.state.applicable) {
-            void updateTestState(engagementId, current.definition.id, {
+            void recordTestState(engagementId, current.definition.id, {
               status: 'Tested',
               result: 'Not Vulnerable',
-            });
+            }, current.definition.id);
           }
           break;
         case 'e':
@@ -380,14 +381,19 @@ export default function WorkspacePage() {
 
   const recordStatus = useCallback(
     (testId: string, next: 'Not Tested' | 'Tested' | 'N/A') => {
-      void updateTestState(engagementId, testId, { status: next });
+      void recordTestState(engagementId, testId, { status: next }, `Status for ${testId}`);
     },
     [engagementId],
   );
 
   const recordResult = useCallback(
     (testId: string, next: 'Vulnerable' | 'Not Vulnerable') => {
-      void updateTestState(engagementId, testId, { status: 'Tested', result: next });
+      void recordTestState(
+        engagementId,
+        testId,
+        { status: 'Tested', result: next },
+        `Result for ${testId}`,
+      );
     },
     [engagementId],
   );
@@ -403,13 +409,7 @@ export default function WorkspacePage() {
 
   async function bulk(change: Parameters<typeof bulkUpdateTestStates>[2], message: string) {
     const ids = [...selected];
-    try {
-      await bulkUpdateTestStates(engagementId, ids, change);
-      toast.success(message, `${ids.length} test${ids.length === 1 ? '' : 's'} updated.`);
-      setSelected(new Set());
-    } catch (error) {
-      toast.error('Bulk update failed', error instanceof Error ? error.message : String(error));
-    }
+    if (await recordBulk(engagementId, ids, change, message)) setSelected(new Set());
   }
 
   if (!items || !engagement) {

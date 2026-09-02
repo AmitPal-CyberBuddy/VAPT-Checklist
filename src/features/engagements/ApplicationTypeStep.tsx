@@ -2,7 +2,7 @@ import clsx from 'clsx';
 import { Badge, Card, InlineAlert } from '../../ui/primitives';
 import { IconAlert, IconCheck, IconInfo } from '../../ui/icons';
 import { APPLICATION_TYPES, type ApplicationTypeId } from '../../domain/applicationType';
-import { COVERAGE_BY_TYPE } from '../../data/typeCoverage';
+import { coverageFor } from '../../data/typeCoverage';
 import { categoryName } from '../../data/categories';
 
 /**
@@ -30,7 +30,7 @@ export function ApplicationTypePicker({
   return (
     <ul className="grid list-none gap-2 sm:grid-cols-2">
       {APPLICATION_TYPES.map((type) => {
-        const coverage = COVERAGE_BY_TYPE[type.id];
+        const coverage = coverageFor(type.id);
         const badge = SUPPORT_BADGE[coverage.support];
         const selected = value === type.id;
         const unsupported = coverage.support === 'unsupported';
@@ -78,7 +78,7 @@ export function ApplicationTypePicker({
 /** The honest detail for whichever type is selected. */
 export function ApplicationTypeDetail({ type }: { type: ApplicationTypeId }) {
   const definition = APPLICATION_TYPES.find((t) => t.id === type)!;
-  const coverage = COVERAGE_BY_TYPE[type];
+  const coverage = coverageFor(type);
 
   if (coverage.support === 'unsupported') {
     return (
