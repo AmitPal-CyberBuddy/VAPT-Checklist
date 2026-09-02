@@ -204,6 +204,23 @@ export default function DashboardPage() {
         </div>
       </section>
 
+      {c.applicable > 0 && c.notTested === 0 && (
+        <InlineAlert
+          tone="success"
+          icon={<IconCheck size={18} aria-hidden="true" />}
+          title="Checklist completed"
+          action={
+            <LinkButton size="sm" variant="subtle" to={`/e/${engagementId}/export`}>
+              Export assessment
+            </LinkButton>
+          }
+        >
+          All {c.applicable} applicable tests have a recorded status — {c.tested} tested, {c.na}{' '}
+          marked N/A, {c.vulnerable} vulnerable. This records what was assessed; it is not a
+          statement that the application is secure.
+        </InlineAlert>
+      )}
+
       {completeness.ratio < 0.5 && (
         <InlineAlert
           tone="info"

@@ -7,11 +7,13 @@ import {
   Card,
   EmptyState,
   FilterSelect,
+  InlineAlert,
   Input,
+  LinkButton,
   LiveAnnouncement,
   LoadingPanel,
 } from '../../ui/primitives';
-import { IconFilter, IconSearch, IconX } from '../../ui/icons';
+import { IconCheck, IconFilter, IconSearch, IconX } from '../../ui/icons';
 import { TestListRow } from './TestListRow';
 import { TestDetailPanel } from './TestDetailPanel';
 import { CATEGORIES, CATEGORY_BY_ID, categoryName } from '../../data/categories';
@@ -21,6 +23,7 @@ import { useChecklist, useEngagement } from '../../hooks/useData';
 import { useIsWide } from '../../hooks/useMediaQuery';
 import { bulkUpdateTestStates, updateTestState } from '../../persistence/repository';
 import { suggestApplicability } from '../../domain/applicability';
+import { highValueTests } from '../../domain/metrics';
 import { effectiveContext } from '../../domain/context';
 import { PRIORITIES, PRIORITY_ORDER, type CategoryId, type ChecklistItem } from '../../domain/types';
 import { toast } from '../../ui/toast';
@@ -28,7 +31,7 @@ import { toast } from '../../ui/toast';
 type ScopeFilter = 'applicable' | 'notApplicable' | 'all' | 'manual' | 'unconfirmed';
 type StatusFilter = 'all' | 'Not Tested' | 'Tested' | 'N/A';
 type ResultFilter = 'all' | 'Vulnerable' | 'Not Vulnerable';
-type SortBy = 'priority' | 'id' | 'name' | 'status' | 'recent';
+type SortBy = 'highValue' | 'priority' | 'id' | 'name' | 'status' | 'recent';
 
 const SCOPE_LABELS: Record<ScopeFilter, string> = {
   applicable: 'Applicable',
@@ -92,6 +95,19 @@ export default function WorkspacePage() {
     setSubcategory('all');
   }, [category]);
 
+  /**
+   * The engagement's highest-value outstanding tests, from the same ranking the
+   * dashboard uses. Recomputed only when the checklist or the context changes.
+   */
+  const highValue = useMemo(() => {
+    if (!items) return { ids: new Set<string>(), rank: new Map<string, number>() };
+    const ranked = highValueTests(items, context, items.length);
+    return {
+      ids: new Set(ranked.slice(0, 10).map((h) => h.item.definition.id)),
+      rank: new Map(ranked.map((h, index) => [h.item.definition.id, index])),
+    };
+  }, [items, context]);
+
   const unconfirmedIds = useMemo(() => {
     const ids = new Set<string>();
     for (const { definition } of items ?? []) {
@@ -100,10 +116,39 @@ export default function WorkspacePage() {
     return ids;
   }, [items, context]);
 
+  /**
+   * Only offer filters that can actually match. A web engagement has no mobile
+   * tests, so a Mobile Application option would be a dead end.
+   */
+  /**
+   * The pool the category and subcategory options are drawn from: whatever the
+   * current applicability scope shows. A web engagement seeds mobile tests as
+   * Not Applicable, so offering "Mobile Application" under "Applicable" would
+   * be a filter that can only ever return nothing.
+   */
+  const scopePool = useMemo(() => {
+    if (!items) return [];
+    if (scope === 'notApplicable') return items.filter((i) => !i.state.applicable);
+    if (scope === 'all') return items;
+    return items.filter((i) => i.state.applicable);
+  }, [items, scope]);
+
+  const categoryOptions = useMemo(() => {
+    const present = new Set(scopePool.map((i) => i.definition.category));
+    return CATEGORIES.filter((c) => present.has(c.id));
+  }, [scopePool]);
+
   const subcategoryOptions: string[] = useMemo(() => {
-    if (category !== 'all') return CATEGORY_BY_ID[category as CategoryId]?.subcategories ?? [];
-    return Array.from(new Set(CATEGORIES.flatMap((c) => c.subcategories))).sort();
-  }, [category]);
+    const pool =
+      category !== 'all' ? scopePool.filter((i) => i.definition.category === category) : scopePool;
+    const present = new Set(pool.map((i) => i.definition.subcategory));
+    if (category !== 'all') {
+      return (CATEGORY_BY_ID[category as CategoryId]?.subcategories ?? []).filter((sub) =>
+        present.has(sub),
+      );
+    }
+    return [...present].sort();
+  }, [category, scopePool]);
 
   const visible = useMemo(() => {
     if (!items) return [];
@@ -131,6 +176,15 @@ export default function WorkspacePage() {
 
     const sorted = [...matched];
     switch (sortBy) {
+      case 'highValue':
+        sorted.sort(
+          (a, b) =>
+            (highValue.rank.get(a.definition.id) ?? Number.MAX_SAFE_INTEGER) -
+              (highValue.rank.get(b.definition.id) ?? Number.MAX_SAFE_INTEGER) ||
+            PRIORITY_ORDER[a.definition.priority] - PRIORITY_ORDER[b.definition.priority] ||
+            byId(a, b),
+        );
+        break;
       case 'id':
         sorted.sort(byId);
         break;
@@ -166,7 +220,19 @@ export default function WorkspacePage() {
       );
     }
     return sorted;
-  }, [items, query, scope, status, result, category, subcategory, priority, sortBy, unconfirmedIds]);
+  }, [
+    items,
+    query,
+    scope,
+    status,
+    result,
+    category,
+    subcategory,
+    priority,
+    sortBy,
+    unconfirmedIds,
+    highValue,
+  ]);
 
   const activeIndex = visible.findIndex((i) => i.definition.id === activeId);
   const active = activeIndex >= 0 ? visible[activeIndex] : visible[0];
@@ -312,6 +378,29 @@ export default function WorkspacePage() {
     setPriority('all');
   }
 
+  const recordStatus = useCallback(
+    (testId: string, next: 'Not Tested' | 'Tested' | 'N/A') => {
+      void updateTestState(engagementId, testId, { status: next });
+    },
+    [engagementId],
+  );
+
+  const recordResult = useCallback(
+    (testId: string, next: 'Vulnerable' | 'Not Vulnerable') => {
+      void updateTestState(engagementId, testId, { status: 'Tested', result: next });
+    },
+    [engagementId],
+  );
+
+  const toggleSelect = useCallback((testId: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(testId)) next.delete(testId);
+      else next.add(testId);
+      return next;
+    });
+  }, []);
+
   async function bulk(change: Parameters<typeof bulkUpdateTestStates>[2], message: string) {
     const ids = [...selected];
     try {
@@ -333,6 +422,9 @@ export default function WorkspacePage() {
   }
 
   const notTestedShown = visible.filter((i) => i.state.status === 'Not Tested').length;
+  const applicable = items.filter((i) => i.state.applicable);
+  const outstanding = applicable.filter((i) => i.state.status === 'Not Tested').length;
+  const checklistComplete = applicable.length > 0 && outstanding === 0;
   const showList = isWide || mobileView === 'list';
   const showDetail = isWide || mobileView === 'detail';
 
@@ -346,6 +438,24 @@ export default function WorkspacePage() {
             active.state.result ? `, result ${active.state.result}` : ''
           }.`}
         />
+      )}
+
+      {checklistComplete && (
+        <InlineAlert
+          tone="success"
+          icon={<IconCheck size={18} aria-hidden="true" />}
+          title="Checklist completed"
+          action={
+            <LinkButton size="sm" variant="subtle" to={`/e/${engagementId}/export`}>
+              Export assessment
+            </LinkButton>
+          }
+        >
+          Every applicable test has a recorded status —{' '}
+          {applicable.filter((i) => i.state.status === 'Tested').length} tested,{' '}
+          {applicable.filter((i) => i.state.status === 'N/A').length} marked N/A. This records what
+          was assessed; it is not a statement that the application is secure.
+        </InlineAlert>
       )}
 
       {/* Toolbar ----------------------------------------------------------- */}
@@ -392,6 +502,7 @@ export default function WorkspacePage() {
             onChange={(e) => setSortBy(e.target.value as SortBy)}
             className="w-auto min-w-36"
           >
+            <option value="highValue">Sort: High value</option>
             <option value="priority">Sort: Priority</option>
             <option value="status">Sort: Status</option>
             <option value="id">Sort: Test ID</option>
@@ -445,7 +556,7 @@ export default function WorkspacePage() {
             </FilterSelect>
             <FilterSelect label="Category" value={category} onChange={(e) => setCategory(e.target.value)}>
               <option value="all">Any category</option>
-              {CATEGORIES.map((c) => (
+              {categoryOptions.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
                 </option>
@@ -608,15 +719,11 @@ export default function WorkspacePage() {
                     buttonRef={
                       active?.definition.id === item.definition.id ? activeRowRef : undefined
                     }
-                    onOpen={() => open(item.definition.id)}
-                    onToggleSelect={() =>
-                      setSelected((prev) => {
-                        const next = new Set(prev);
-                        if (next.has(item.definition.id)) next.delete(item.definition.id);
-                        else next.add(item.definition.id);
-                        return next;
-                      })
-                    }
+                    highValue={highValue.ids.has(item.definition.id)}
+                    onOpen={open}
+                    onToggleSelect={toggleSelect}
+                    onStatus={recordStatus}
+                    onResult={recordResult}
                   />
                 ))}
               </ul>

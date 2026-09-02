@@ -104,8 +104,13 @@ status, result and notes — with keyboard shortcuts so you never reach for the 
 | `⏎` | Next test that is still Not Tested |
 | `/` | Focus search |
 
+Status and result sit on **every row**, so a checklist can be worked top to bottom without opening a
+single test: marking N/A is one interaction, recording Tested → Vulnerable is two. Opening a test is
+for reading the guidance.
+
 Below 1024px the two panes become a list → detail → back flow rather than a squeezed split, and the
-filters collapse behind a disclosure that shows how many are active.
+filters collapse behind a disclosure that shows how many are active. Details and measurements:
+[`docs/WORKSPACE.md`](docs/WORKSPACE.md).
 
 Selecting **Tested** highlights the result control until you record Vulnerable or Not Vulnerable.
 Selecting **N/A** asks nothing, but offers one-click reasons ("Feature not present", "Out of agreed
@@ -343,6 +348,7 @@ Clearing site data deletes your engagements, so take a backup before you do.
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — layers, data flow, module map
 - [`docs/DATA-MODEL.md`](docs/DATA-MODEL.md) — entities, invariants, metrics, export model
 - [`docs/TEST-LIBRARY.md`](docs/TEST-LIBRARY.md) — knowledge base conventions, taxonomy, authoring guide
+- [`docs/WORKSPACE.md`](docs/WORKSPACE.md) — the testing workspace: the loop, keyboard map, and measured performance
 - [`docs/DESIGN-SYSTEM.md`](docs/DESIGN-SYSTEM.md) — visual language, vocabulary, responsive and accessibility rules
 - [`docs/AUDIT.md`](docs/AUDIT.md) — end-to-end product audit: what was tested, what was found, what was fixed
 - [`docs/CONTENT-AUDIT.md`](docs/CONTENT-AUDIT.md) — security content and applicability audit against WSTG / ASVS / OWASP Top 10
