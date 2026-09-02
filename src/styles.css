@@ -1,0 +1,188 @@
+@import 'tailwindcss';
+
+/**
+ * VAPT Checklist — Design tokens
+ * -------------------------------------------------------------------------
+ * One dark theme, tuned for long analytical sessions.
+ *
+ * Scales are deliberately short so screens cannot drift apart:
+ *   surface   ink-950 (app) → ink-900 (panel) → ink-850 (inset)
+ *   text      ink-50/100 (primary) → ink-300 (secondary) → ink-400 (tertiary)
+ *             ink-500 is the lightest tone used for text and still clears
+ *             WCAG AA (4.5:1) on both the app and panel backgrounds.
+ *   line      ink-700 (panel border) · ink-600 (control border)
+ *   radius    --radius-control (0.5rem) · --radius-panel (0.75rem)
+ *
+ * Semantic colour (priority / status / result) is defined once here and
+ * consumed through the Badge components — never re-invented per screen.
+ */
+@theme {
+  --color-ink-950: #070b14;
+  --color-ink-900: #0b1120;
+  --color-ink-850: #111a2c;
+  --color-ink-800: #162034;
+  --color-ink-700: #22304a;
+  --color-ink-600: #3a465c;
+  --color-ink-500: #71809a;
+  --color-ink-400: #8b9ab0;
+  --color-ink-300: #aab6c8;
+  --color-ink-200: #cbd5e1;
+  --color-ink-100: #e2e8f0;
+  --color-ink-50: #f4f7fb;
+
+  --color-brand-400: #38bdf8;
+  --color-brand-500: #0ea5e9;
+  --color-brand-600: #0284c7;
+
+  --color-vuln-400: #fb7185;
+  --color-vuln-500: #f43f5e;
+  --color-safe-400: #34d399;
+  --color-safe-500: #10b981;
+
+  --radius-control: 0.5rem;
+  --radius-panel: 0.75rem;
+
+  /*
+   * Spacing — the 4px scale, restricted to these steps:
+   *   1 (4)  2 (8)  3 (12)  4 (16)  5 (20)  6 (24)
+   * plus 0.5/1.5 for badge-level inset. Half-steps above 2 are not used.
+   */
+
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: ui-monospace, 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+
+  /*
+   * Type scale — seven steps, nothing between them, nothing below `micro`.
+   *   micro 11px  metadata, badges, keyboard hints
+   *   xs    12px  secondary body, table cells, hints
+   *   sm    14px  body, controls, list rows
+   *   base  16px  detail-view lead
+   *   lg    18px  detail-view title
+   *   xl    20px  page title (mobile)
+   *   2xl   24px  page title, stat values
+   * 11px is the floor: anything smaller stops being readable in a long session.
+   */
+  --text-micro: 0.6875rem;
+  --text-micro--line-height: 1rem;
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    /* Flat surface on purpose: this is a working tool, not a landing page. */
+    background-color: var(--color-ink-950);
+    color: var(--color-ink-100);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-ink-700) transparent;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-ink-700);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-ink-600);
+    background-clip: content-box;
+  }
+
+  /* One focus treatment everywhere, always visible against every surface. */
+  :focus-visible {
+    outline: 2px solid var(--color-brand-400);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  input,
+  textarea,
+  select,
+  button {
+    font-family: inherit;
+  }
+
+  kbd {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+  }
+}
+
+@layer utilities {
+  .panel {
+    background-color: var(--color-ink-900);
+    border: 1px solid var(--color-ink-700);
+    border-radius: var(--radius-panel);
+  }
+
+  .panel-inset {
+    background-color: var(--color-ink-850);
+    border: 1px solid var(--color-ink-700);
+    border-radius: var(--radius-control);
+  }
+
+  .skip-link {
+    position: absolute;
+    left: 0.75rem;
+    top: -3rem;
+    z-index: 100;
+    border-radius: var(--radius-control);
+    background: var(--color-brand-500);
+    padding: 0.5rem 0.875rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--color-ink-950);
+    transition: top 120ms ease-out;
+  }
+  .skip-link:focus {
+    top: 0.75rem;
+  }
+
+  .animate-in {
+    animation: fade-in 140ms ease-out;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Respect the user's motion preference — no exceptions. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media print {
+  body {
+    background: #fff;
+    color: #000;
+  }
+  .no-print {
+    display: none !important;
+  }
+}

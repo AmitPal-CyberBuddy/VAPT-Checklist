@@ -1,0 +1,561 @@
+/**
+ * VAPT Checklist — Excel export model
+ * ---------------------------------------------------------------------------
+ * Generated entirely client-side with `write-excel-file` (bundled, no CDN).
+ *
+ * The workbook is a client deliverable, not a data dump. It is built from the
+ * same ChecklistItem[] + EngagementMetrics the dashboard renders, so the
+ * spreadsheet can never disagree with the screen.
+ *
+ * Sheets
+ *   1. Engagement Summary  identity, dates, statistics, application context
+ *   2. Assessment          every applicable test — the working record
+ *   3. Vulnerable Tests    Status = Tested AND Result = Vulnerable
+ *   4. Not Applicable      excluded tests + why (audit trail, optional)
+ *   5. Coverage            per-category counts and progress (optional)
+ *
+ * Presentation: frozen header rows, autofilter on the data sheets, tuned
+ * column widths, colour-coded priority/result cells.
+ */
+
+import writeXlsxFile, {
+  type CellObject,
+  type Row,
+  type Sheet,
+  type SheetData,
+} from 'write-excel-file/browser';
+import { CATEGORY_BY_ID } from '../data/categories';
+import { LIBRARY_VERSION } from '../data/library';
+import { describeRule, suggestApplicability } from '../domain/applicability';
+import {
+  CONTEXT_FACTS,
+  CONTEXT_SECTIONS,
+  effectiveAssetTypes,
+  effectiveContext,
+  formatFactValue,
+} from '../domain/context';
+import { applicationTypeLabel as applicationTypeName } from '../domain/applicationType';
+import { supportLevel } from '../data/typeCoverage';
+import { collectFindings, completedOf, computeMetrics } from '../domain/metrics';
+import type { ChecklistItem, Engagement, Priority } from '../domain/types';
+import { safeSpreadsheetText } from '../domain/untrusted';
+import { buildFileName } from './fileName';
+import { withAutoFilters } from './xlsxPostProcess';
+
+/* ------------------------------------------------------------------ styling */
+
+const INK = '#0F172A';
+const HEADER_BG = '#0F172A';
+const HEADER_FG = '#FFFFFF';
+const BAND = '#F1F5F9';
+const BORDER = '#CBD5E1';
+const MUTED = '#64748B';
+
+const PRIORITY_BG: Record<Priority, string> = {
+  Critical: '#FEE2E2',
+  High: '#FFEDD5',
+  Medium: '#FEF9C3',
+  Low: '#E0F2FE',
+};
+
+const RESULT_BG: Record<string, string> = {
+  Vulnerable: '#FEE2E2',
+  'Not Vulnerable': '#DCFCE7',
+};
+
+type Cell = CellObject;
+
+const title = (value: string, columnSpan?: number): Cell => ({
+  value,
+  fontWeight: 'bold',
+  fontSize: 14,
+  textColor: INK,
+  columnSpan,
+});
+
+const sectionTitle = (value: string, columnSpan?: number): Cell => ({
+  value,
+  fontWeight: 'bold',
+  fontSize: 11,
+  textColor: INK,
+  backgroundColor: BAND,
+  borderColor: BORDER,
+  columnSpan,
+});
+
+const header = (value: string): Cell => ({
+  value,
+  fontWeight: 'bold',
+  textColor: HEADER_FG,
+  backgroundColor: HEADER_BG,
+  align: 'left',
+  alignVertical: 'center',
+  wrap: true,
+  borderColor: BORDER,
+});
+
+const label = (value: string): Cell => ({
+  value,
+  fontWeight: 'bold',
+  textColor: INK,
+  backgroundColor: BAND,
+  borderColor: BORDER,
+  alignVertical: 'top',
+});
+
+const text = (value: string | undefined, extra: Partial<Cell> = {}): Cell => ({
+  value: value ?? '',
+  type: String,
+  wrap: true,
+  alignVertical: 'top',
+  borderColor: BORDER,
+  ...extra,
+});
+
+const num = (value: number, extra: Partial<Cell> = {}): Cell => ({
+  value,
+  type: Number,
+  borderColor: BORDER,
+  ...extra,
+});
+
+const pct = (value: number, extra: Partial<Cell> = {}): Cell => ({
+  value: Math.round(value * 1000) / 1000,
+  type: Number,
+  format: '0.0%',
+  borderColor: BORDER,
+  ...extra,
+});
+
+const blank: Cell = { value: '', type: String };
+
+const SUPPORT_LABEL = {
+  supported: 'Supported — full coverage for this domain',
+  limited: 'Limited — see the notes below',
+  unsupported: 'Not supported',
+} as const;
+
+/**
+ * Tester-controlled text. Identical to `text()` except that a leading formula
+ * character is neutralised, so a note like `=HYPERLINK(...)` cannot execute
+ * when the client converts the workbook to CSV.
+ */
+const userText = (value: string | undefined, extra: Partial<Cell> = {}): Cell =>
+  text(safeSpreadsheetText(value), extra);
+
+function datetime(iso: string | undefined): string {
+  if (!iso) return '-';
+  return iso.slice(0, 19).replace('T', ' ');
+}
+
+function applicationSurfaceLabel(engagement: Engagement): string {
+  const options = CONTEXT_FACTS.find((f) => f.key === 'assetTypes')?.options ?? [];
+  return effectiveAssetTypes(engagement.applicationType, engagement.context)
+    .map((v) => options.find((o) => o.value === v)?.label ?? v)
+    .join(', ');
+}
+
+/* ------------------------------------------------- sheet 1: Engagement Summary */
+
+function summarySheet(
+  engagement: Engagement,
+  metrics: ReturnType<typeof computeMetrics>,
+): SheetData {
+  const c = metrics.counts;
+  const rows: SheetData = [
+    [title('VAPT Assessment Report', 4)],
+    [text('Generated by VAPT Checklist — all processing performed locally', { textColor: MUTED, columnSpan: 4 })],
+    [],
+    [sectionTitle('Engagement', 4)],
+    [label('Engagement name'), userText(engagement.name, { columnSpan: 3 })],
+    [label('Application URL'), userText(engagement.applicationUrl ?? '-', { columnSpan: 3 })],
+    [
+      label('Application type'),
+      text(applicationTypeName(engagement.applicationType), { columnSpan: 3 }),
+    ],
+    [
+      label('Support level'),
+      text(SUPPORT_LABEL[supportLevel(engagement.applicationType)], { columnSpan: 3 }),
+    ],
+    [label('Surfaces in scope'), text(applicationSurfaceLabel(engagement), { columnSpan: 3 })],
+    [label('Client'), userText(engagement.clientName ?? '-', { columnSpan: 3 })],
+    [label('Tester'), userText(engagement.testerName ?? '-', { columnSpan: 3 })],
+    [label('Engagement status'), text(engagement.status, { columnSpan: 3 })],
+    [
+      label('Assessment period'),
+      text(`${engagement.startDate ?? '-'} to ${engagement.endDate ?? '-'}`, { columnSpan: 3 }),
+    ],
+    [label('Created date'), text(datetime(engagement.createdAt), { columnSpan: 3 })],
+    [label('Last updated'), text(datetime(engagement.updatedAt), { columnSpan: 3 })],
+    [label('Export date'), text(datetime(new Date().toISOString()), { columnSpan: 3 })],
+    [label('Test library version'), text(LIBRARY_VERSION, { columnSpan: 3 })],
+    [label('Additional scope'), userText(engagement.scope.join('\n') || '-', { columnSpan: 3 })],
+    [label('Notes'), userText(engagement.description ?? '-', { columnSpan: 3 })],
+    [],
+    [sectionTitle('Assessment statistics', 4)],
+    [header('Metric'), header('Count'), header('Metric'), header('Count')],
+    [
+      label('Total applicable tests'),
+      num(c.applicable, { fontWeight: 'bold' }),
+      label('Not applicable (excluded)'),
+      num(c.excluded),
+    ],
+    [label('Tested'), num(c.tested), label('Not tested'), num(c.notTested)],
+    [label('N/A'), num(c.na), label('Completed (Tested + N/A)'), num(completedOf(c))],
+    [
+      label('Vulnerable'),
+      num(c.vulnerable, { backgroundColor: c.vulnerable > 0 ? RESULT_BG.Vulnerable : undefined }),
+      label('Not vulnerable'),
+      num(c.notVulnerable, { backgroundColor: RESULT_BG['Not Vulnerable'] }),
+    ],
+    [
+      label('Overall progress'),
+      pct(metrics.completion, { fontWeight: 'bold' }),
+      label('Vulnerable rate'),
+      pct(metrics.vulnerableRate),
+    ],
+    [
+      label('Manual applicability overrides'),
+      num(metrics.manualOverrides),
+      label('Tests in library'),
+      num(c.total),
+    ],
+    [],
+    [sectionTitle('Findings by priority', 4)],
+    [header('Priority'), header('Vulnerable'), header('Not tested'), header('Applicable')],
+  ];
+
+  for (const p of ['Critical', 'High', 'Medium', 'Low'] as Priority[]) {
+    const group = metrics.byPriority.find((g) => g.key === p);
+    rows.push([
+      text(p, { fontWeight: 'bold', backgroundColor: PRIORITY_BG[p] }),
+      num(metrics.findingsByPriority[p]),
+      num(metrics.outstandingByPriority[p]),
+      num(group?.counts.applicable ?? 0),
+    ]);
+  }
+
+  rows.push([], [sectionTitle('Application context', 4)]);
+  rows.push([header('Question'), header('Recorded answer'), header('Notes'), blank]);
+
+  for (const section of CONTEXT_SECTIONS) {
+    const facts = CONTEXT_FACTS.filter((f) => f.section === section.id && !f.derived);
+    if (facts.length === 0) continue;
+    rows.push([text(section.title, { fontWeight: 'bold', backgroundColor: BAND, columnSpan: 4 })]);
+    for (const fact of facts) {
+      const value = engagement.context[fact.key];
+      const unrecorded = value === undefined || (Array.isArray(value) && value.length === 0);
+      rows.push([
+        label(fact.label),
+        text(formatFactValue(fact.key, value), {
+          textColor: unrecorded ? '#B45309' : INK,
+          fontWeight: unrecorded ? undefined : 'bold',
+        }),
+        text(fact.hint ?? '', { textColor: MUTED, columnSpan: 2 }),
+      ]);
+    }
+  }
+
+  return rows;
+}
+
+/* ------------------------------------------------------ sheet 2: Assessment */
+
+const ASSESSMENT_HEADERS = [
+  'Test ID',
+  'Vulnerability Name',
+  'Category',
+  'Subcategory',
+  'Priority',
+  'Status',
+  'Result',
+  'Notes',
+  'Description',
+  'Testing Guidance',
+  'Also Known As',
+  'Applicability',
+  'OWASP / Standard',
+  'CWE',
+  'Last Updated',
+];
+
+function assessmentRow(item: ChecklistItem, engagement: Engagement): Row {
+  const { definition: d, state: s } = item;
+  const suggestion = suggestApplicability(d, engagement.context);
+  return [
+    text(d.id, { fontWeight: 'bold' }),
+    text(d.vulnerabilityName, { fontWeight: 'bold' }),
+    text(CATEGORY_BY_ID[d.category]?.name ?? d.category),
+    text(d.subcategory),
+    text(d.priority, { backgroundColor: PRIORITY_BG[d.priority], align: 'center' }),
+    text(s.status, { align: 'center' }),
+    text(s.result ?? '', {
+      align: 'center',
+      backgroundColor: s.result ? RESULT_BG[s.result] : undefined,
+      fontWeight: s.result === 'Vulnerable' ? 'bold' : undefined,
+    }),
+    userText(s.notes),
+    text(d.description),
+    text(d.testingGuidance.map((g, i) => `${i + 1}. ${g}`).join('\n')),
+    text((d.aliases ?? []).join(', ')),
+    text(
+      s.applicabilitySource === 'manual'
+        ? 'Included by tester (manual override)'
+        : suggestion.summary,
+    ),
+    text((d.owasp ?? []).join(', ')),
+    text((d.cwe ?? []).join(', ')),
+    text(s.status === 'Not Tested' && !s.notes ? '' : datetime(s.updatedAt)),
+  ];
+}
+
+function assessmentSheet(items: ChecklistItem[], engagement: Engagement): SheetData {
+  const applicable = items.filter((i) => i.state.applicable);
+  return [
+    ASSESSMENT_HEADERS.map(header),
+    ...applicable.map((i) => assessmentRow(i, engagement)),
+  ];
+}
+
+/* ------------------------------------------------- sheet 3: Vulnerable Tests */
+
+function vulnerableSheet(items: ChecklistItem[]): SheetData {
+  const findings = collectFindings(items);
+  const headers = [
+    'Test ID',
+    'Vulnerability Name',
+    'Category',
+    'Subcategory',
+    'Priority',
+    'Status',
+    'Result',
+    'Notes / Observation',
+    'Description',
+    'OWASP / Standard',
+    'CWE',
+    'Recorded',
+  ].map(header);
+
+  if (findings.length === 0) {
+    return [
+      headers,
+      [text('No vulnerabilities were recorded for this engagement.', { columnSpan: 12 })],
+    ];
+  }
+
+  return [
+    headers,
+    ...findings.map(({ definition: d, state: s }): Row => [
+      text(d.id, { fontWeight: 'bold' }),
+      text(d.vulnerabilityName, { fontWeight: 'bold' }),
+      text(CATEGORY_BY_ID[d.category]?.name ?? d.category),
+      text(d.subcategory),
+      text(d.priority, { backgroundColor: PRIORITY_BG[d.priority], align: 'center' }),
+      text('Tested', { align: 'center' }),
+      text('Vulnerable', {
+        align: 'center',
+        backgroundColor: RESULT_BG.Vulnerable,
+        fontWeight: 'bold',
+      }),
+      userText(s.notes),
+      text(d.description),
+      text((d.owasp ?? []).join(', ')),
+      text((d.cwe ?? []).join(', ')),
+      text(datetime(s.testedAt ?? s.updatedAt)),
+    ]),
+  ];
+}
+
+/* -------------------------------------------------- sheet 4: Not Applicable */
+
+function notApplicableSheet(engagement: Engagement, items: ChecklistItem[]): SheetData {
+  const excluded = items.filter((i) => !i.state.applicable);
+  const headers = [
+    'Test ID',
+    'Vulnerability Name',
+    'Category',
+    'Subcategory',
+    'Priority',
+    'Excluded By',
+    'Applicability Rule',
+    'Reason',
+  ].map(header);
+
+  if (excluded.length === 0) {
+    return [
+      headers,
+      [text('No tests were excluded — the full library was assessed.', { columnSpan: 8 })],
+    ];
+  }
+
+  return [
+    headers,
+    ...excluded.map(({ definition: d, state: s }): Row => {
+      const suggestion = suggestApplicability(d, effectiveContext(engagement));
+      return [
+        text(d.id),
+        text(d.vulnerabilityName),
+        text(CATEGORY_BY_ID[d.category]?.name ?? d.category),
+        text(d.subcategory),
+        text(d.priority, { backgroundColor: PRIORITY_BG[d.priority], align: 'center' }),
+        text(s.applicabilitySource === 'manual' ? 'Tester (manual)' : 'Context rule (auto)'),
+        text(describeRule(d.applicability)),
+        text(suggestion.reasons.join('; ')),
+      ];
+    }),
+  ];
+}
+
+/* -------------------------------------------------------- sheet 5: Coverage */
+
+function coverageSheet(metrics: ReturnType<typeof computeMetrics>): SheetData {
+  const headers = [
+    'Category',
+    'Applicable',
+    'Not Tested',
+    'Tested',
+    'N/A',
+    'Vulnerable',
+    'Not Vulnerable',
+    'Progress',
+  ].map(header);
+
+  const rows = metrics.byCategory.map((g): Row => [
+    text(g.label, { fontWeight: 'bold' }),
+    num(g.counts.applicable),
+    num(g.counts.notTested),
+    num(g.counts.tested),
+    num(g.counts.na),
+    num(g.counts.vulnerable, {
+      backgroundColor: g.counts.vulnerable > 0 ? RESULT_BG.Vulnerable : undefined,
+    }),
+    num(g.counts.notVulnerable),
+    pct(g.completion),
+  ]);
+
+  const c = metrics.counts;
+  rows.push([
+    text('TOTAL', { fontWeight: 'bold', backgroundColor: BAND }),
+    num(c.applicable, { fontWeight: 'bold', backgroundColor: BAND }),
+    num(c.notTested, { fontWeight: 'bold', backgroundColor: BAND }),
+    num(c.tested, { fontWeight: 'bold', backgroundColor: BAND }),
+    num(c.na, { fontWeight: 'bold', backgroundColor: BAND }),
+    num(c.vulnerable, { fontWeight: 'bold', backgroundColor: BAND }),
+    num(c.notVulnerable, { fontWeight: 'bold', backgroundColor: BAND }),
+    pct(metrics.completion, { fontWeight: 'bold', backgroundColor: BAND }),
+  ]);
+
+  return [headers, ...rows];
+}
+
+/* ------------------------------------------------------------------- entry */
+
+const W = (widths: number[]) => widths.map((width) => ({ width }));
+
+export interface ExportOptions {
+  includeNotApplicable?: boolean;
+  includeCoverage?: boolean;
+  fileName?: string;
+}
+
+interface PlannedSheet {
+  name: string;
+  data: SheetData;
+  columns: { width: number }[];
+  /** Data sheets get a frozen header row and an autofilter. */
+  tabular: boolean;
+  frozenColumns?: number;
+}
+
+export function planWorkbook(
+  engagement: Engagement,
+  items: ChecklistItem[],
+  options: ExportOptions = {},
+): PlannedSheet[] {
+  const { includeNotApplicable = true, includeCoverage = true } = options;
+  const metrics = computeMetrics(items);
+
+  const sheets: PlannedSheet[] = [
+    {
+      name: 'Engagement Summary',
+      data: summarySheet(engagement, metrics),
+      columns: W([32, 26, 30, 22]),
+      tabular: false,
+    },
+    {
+      name: 'Assessment',
+      data: assessmentSheet(items, engagement),
+      columns: W([10, 36, 22, 24, 10, 12, 15, 46, 60, 70, 34, 42, 20, 16, 18]),
+      tabular: true,
+      frozenColumns: 2,
+    },
+    {
+      name: 'Vulnerable Tests',
+      data: vulnerableSheet(items),
+      columns: W([10, 36, 22, 24, 10, 10, 14, 52, 60, 20, 16, 18]),
+      tabular: true,
+      frozenColumns: 2,
+    },
+  ];
+
+  if (includeNotApplicable) {
+    sheets.push({
+      name: 'Not Applicable',
+      data: notApplicableSheet(engagement, items),
+      columns: W([10, 36, 22, 24, 10, 20, 42, 52]),
+      tabular: true,
+    });
+  }
+  if (includeCoverage) {
+    sheets.push({
+      name: 'Coverage',
+      data: coverageSheet(metrics),
+      columns: W([30, 12, 12, 10, 8, 12, 15, 12]),
+      tabular: true,
+    });
+  }
+
+  return sheets;
+}
+
+export async function exportEngagementToExcel(
+  engagement: Engagement,
+  items: ChecklistItem[],
+  options: ExportOptions = {},
+): Promise<string> {
+  const planned = planWorkbook(engagement, items, options);
+  const fileName = options.fileName ?? buildFileName(engagement);
+
+  const workbook: Sheet<Blob>[] = planned.map((sheet) => ({
+    data: sheet.data,
+    sheet: sheet.name,
+    columns: sheet.columns,
+    stickyRowsCount: sheet.tabular ? 1 : 0,
+    stickyColumnsCount: sheet.frozenColumns ?? 0,
+  }));
+
+  const blob = await writeXlsxFile(workbook).toBlob();
+
+  // Autofilter is not part of write-excel-file's API, so it is injected into
+  // the generated sheet XML. Falls back to the untouched workbook on any error.
+  const filtered = await withAutoFilters(
+    blob,
+    planned
+      .filter((s) => s.tabular)
+      .map((s) => ({ sheet: s.name, columns: s.columns.length, rows: s.data.length })),
+  );
+
+  downloadBlob(filtered, fileName);
+  return fileName;
+}
+
+function downloadBlob(blob: Blob, fileName: string): void {
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = fileName;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+}

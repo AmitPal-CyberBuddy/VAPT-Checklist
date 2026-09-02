@@ -1,0 +1,160 @@
+import type { TestDefinition } from '../../domain/types';
+import { rule } from '../../domain/applicability';
+
+const web = rule.includes('assetTypes', 'web-app', 'rest-api', 'graphql-api', 'soap-api');
+
+export const reconTests: TestDefinition[] = [
+  {
+    id: 'INFO-001',
+    vulnerabilityName: 'Public Information Exposure (OSINT)',
+    category: 'recon',
+    subcategory: 'OSINT & Exposure',
+    priority: 'Low',
+    description:
+      'Sensitive information about the target — credentials, internal hostnames, employee data, architecture details — is discoverable through search engines, code sharing sites, paste sites and breach dumps.',
+    testingGuidance: [
+      'Run search engine dorks (site:, filetype:, inurl:) against in-scope domains for exposed documents and endpoints.',
+      'Search GitHub/GitLab, Pastebin and public S3 indexes for the organisation name, internal hostnames and API keys.',
+      'Check breach aggregation sources for corporate credentials tied to in-scope domains.',
+      'Record any data that materially aids an attacker as a finding.',
+    ],
+    owasp: ['WSTG-INFO-01'],
+    cwe: ['CWE-200'],
+    applicability: rule.is('internetFacing', true),
+    aliases: ['Open Source Intelligence Leakage', 'Google Dorking Exposure', 'Public Data Leakage'],
+    tags: ['recon', 'osint'],
+  },
+  {
+    id: 'INFO-002',
+    vulnerabilityName: 'Web Server & Technology Fingerprint Disclosure',
+    category: 'recon',
+    subcategory: 'Technology Fingerprinting',
+    priority: 'Low',
+    description:
+      'Response headers, error pages, cookies and file extensions reveal the exact server, framework and version in use, allowing an attacker to target known vulnerabilities directly.',
+    testingGuidance: [
+      'Inspect Server, X-Powered-By, X-AspNet-Version and framework-specific headers.',
+      'Fingerprint via cookie names (JSESSIONID, PHPSESSID, .AspNet.*), default files and error page styling.',
+      'Compare disclosed versions against public vulnerability databases.',
+    ],
+    owasp: ['WSTG-INFO-02', 'WSTG-INFO-08'],
+    cwe: ['CWE-200'],
+    applicability: web,
+    aliases: ['Server Banner Disclosure', 'Software Version Disclosure', 'Framework Fingerprinting'],
+    tags: ['recon', 'fingerprinting'],
+  },
+  {
+    id: 'INFO-003',
+    vulnerabilityName: 'Exposed Metafiles and Configuration Files',
+    category: 'recon',
+    subcategory: 'Content Discovery',
+    priority: 'Medium',
+    description:
+      'Files such as robots.txt, sitemap.xml, .env, .git/, web.config, appsettings.json or CI configuration are reachable over HTTP and disclose internal paths, secrets or infrastructure detail.',
+    testingGuidance: [
+      'Request common metafiles: /robots.txt, /sitemap.xml, /.well-known/, /crossdomain.xml, /security.txt.',
+      'Probe for version control and config leakage: /.git/HEAD, /.svn/, /.env, /web.config, /appsettings.json, /docker-compose.yml.',
+      'If /.git/ is readable, attempt repository reconstruction to confirm impact.',
+    ],
+    owasp: ['WSTG-INFO-03', 'WSTG-CONF-04'],
+    cwe: ['CWE-538'],
+    applicability: web,
+    aliases: ['Exposed .git Directory', 'Exposed .env File', 'Configuration File Disclosure'],
+    tags: ['recon'],
+  },
+  {
+    id: 'INFO-004',
+    vulnerabilityName: 'Sensitive Data in Client-Side Source and Comments',
+    category: 'recon',
+    subcategory: 'Client-Side Artefacts',
+    priority: 'Medium',
+    description:
+      'HTML comments, JavaScript bundles and source maps contain credentials, API keys, internal endpoints, debug flags or developer notes that assist an attacker.',
+    testingGuidance: [
+      'Review all HTML/JS for comments, TODOs, disabled features and hardcoded endpoints.',
+      'Download .map files and reconstruct original sources where available.',
+      'Grep bundles for key patterns (api_key, secret, password, Bearer, AKIA, private key headers).',
+    ],
+    owasp: ['WSTG-INFO-05'],
+    cwe: ['CWE-615', 'CWE-540'],
+    applicability: web,
+    aliases: ['HTML Comment Disclosure', 'Source Map Exposure', 'Hardcoded Secrets in JavaScript'],
+    tags: ['recon'],
+  },
+  {
+    id: 'INFO-005',
+    vulnerabilityName: 'Unlinked and Hidden Content Discovery',
+    category: 'recon',
+    subcategory: 'Content Discovery',
+    priority: 'Medium',
+    description:
+      'Directories and files that are not linked from the application — old versions, admin tooling, test pages, backups — remain reachable and are often unprotected.',
+    testingGuidance: [
+      'Run content discovery with a curated wordlist plus extensions matching the detected technology.',
+      'Mine JavaScript, sitemaps and archived copies (Wayback) for additional paths.',
+      'Manually verify every interesting hit and note its authentication requirement.',
+    ],
+    owasp: ['WSTG-CONF-04'],
+    cwe: ['CWE-425'],
+    applicability: web,
+    aliases: ['Unlinked Resource Discovery', 'Directory Bruteforcing', 'Hidden File Discovery'],
+    tags: ['recon'],
+  },
+  {
+    id: 'INFO-006',
+    vulnerabilityName: 'Forgotten Subdomains and Stale Hosts',
+    category: 'recon',
+    subcategory: 'Attack Surface Mapping',
+    priority: 'Medium',
+    description:
+      'Subdomains left over from old projects, staging environments or decommissioned services expose weaker or unpatched functionality on the same trust boundary.',
+    testingGuidance: [
+      'Enumerate subdomains passively (certificate transparency, DNS aggregators) and actively (bruteforce).',
+      'Resolve and probe each host, noting non-production banners, default pages and dangling CNAMEs.',
+      'Flag any host outside the agreed scope to the client rather than testing it.',
+    ],
+    owasp: ['WSTG-INFO-04'],
+    cwe: ['CWE-1188'],
+    applicability: rule.all(rule.is('hasSubdomains', true), rule.is('internetFacing', true)),
+    aliases: ['Subdomain Enumeration', 'Stale DNS Records', 'Shadow IT Hosts'],
+    tags: ['recon', 'infrastructure'],
+  },
+  {
+    id: 'INFO-007',
+    vulnerabilityName: 'Exposed API Documentation and Schema',
+    category: 'recon',
+    subcategory: 'Attack Surface Mapping',
+    priority: 'Medium',
+    description:
+      'Swagger/OpenAPI UI, WSDL definitions or GraphQL schemas are publicly reachable, handing an attacker a complete map of the API including administrative operations.',
+    testingGuidance: [
+      'Request /swagger, /swagger-ui.html, /openapi.json, /api-docs, /v2/api-docs, /?wsdl.',
+      'Verify whether the documentation is reachable without authentication and whether it lists privileged endpoints.',
+      'Use the schema to build the endpoint inventory for the rest of the assessment.',
+    ],
+    owasp: ['API9:2023'],
+    cwe: ['CWE-200'],
+    applicability: rule.includes('assetTypes', 'rest-api', 'graphql-api', 'soap-api'),
+    aliases: ['Swagger UI Exposure', 'OpenAPI Specification Disclosure', 'WSDL Exposure'],
+    tags: ['recon', 'api'],
+  },
+  {
+    id: 'INFO-008',
+    vulnerabilityName: 'Undocumented Application Entry Points',
+    category: 'recon',
+    subcategory: 'Attack Surface Mapping',
+    priority: 'Low',
+    description:
+      'Untracked entry points (legacy parameters, alternate hosts, debug query flags, secondary auth flows) are excluded from hardening and monitoring.',
+    testingGuidance: [
+      'Spider the application authenticated and unauthenticated; record every request, parameter and content type.',
+      'Diff parameters observed in JS against those exercised by the UI to find undocumented inputs.',
+      'Produce an entry point inventory that drives the rest of the checklist.',
+    ],
+    owasp: ['WSTG-INFO-06'],
+    cwe: ['CWE-1059'],
+    applicability: web,
+    aliases: ['Hidden Parameter Discovery', 'Unmapped Attack Surface'],
+    tags: ['recon'],
+  },
+];
