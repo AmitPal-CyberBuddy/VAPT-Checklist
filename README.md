@@ -42,6 +42,13 @@ tracker · a client collaboration portal · a Burp Suite replacement · a scanne
 
 ---
 
+## One vocabulary
+
+The same word means the same thing in the app, the export and the docs — **Not Tested / Tested /
+N/A**, **Vulnerable / Not Vulnerable**, **Applicable / Not Applicable**, **Completed**. Status,
+result and priority always render with a glyph and a label as well as a colour, so nothing depends
+on hue alone. See [`docs/DESIGN-SYSTEM.md`](docs/DESIGN-SYSTEM.md).
+
 ## Core concepts
 
 | Concept | Meaning | Lives in |
@@ -96,6 +103,9 @@ status, result and notes — with keyboard shortcuts so you never reach for the 
 | `e` | Jump to the notes field |
 | `⏎` | Next test that is still Not Tested |
 | `/` | Focus search |
+
+Below 1024px the two panes become a list → detail → back flow rather than a squeezed split, and the
+filters collapse behind a disclosure that shows how many are active.
 
 Selecting **Tested** highlights the result control until you record Vulnerable or Not Vulnerable.
 Selecting **N/A** asks nothing, but offers one-click reasons ("Feature not present", "Out of agreed
@@ -316,6 +326,7 @@ Clearing site data deletes your engagements, so take a backup before you do.
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — layers, data flow, module map
 - [`docs/DATA-MODEL.md`](docs/DATA-MODEL.md) — entities, invariants, metrics, export model
 - [`docs/TEST-LIBRARY.md`](docs/TEST-LIBRARY.md) — knowledge base conventions, taxonomy, authoring guide
+- [`docs/DESIGN-SYSTEM.md`](docs/DESIGN-SYSTEM.md) — visual language, vocabulary, responsive and accessibility rules
 - [`docs/adr/`](docs/adr/) — architecture decision records
 - [`docs/deployment/`](docs/deployment/) — GitHub Pages deployment and workflows
 

@@ -1,10 +1,12 @@
 import { useEffect, useRef } from 'react';
 import { NavLink, Outlet, useParams } from 'react-router-dom';
 import clsx from 'clsx';
-import { Badge, Card, ProgressBar, Select } from '../../ui/primitives';
+import { Badge, LoadingPanel, ProgressBar, Select } from '../../ui/primitives';
 import { useChecklist, useEngagement, useMetrics } from '../../hooks/useData';
 import { repairIntegrity, setEngagementStatus } from '../../persistence/repository';
 import { toast } from '../../ui/toast';
+import { EmptyState } from '../../ui/primitives';
+import { IconAlert } from '../../ui/icons';
 import { FACT_BY_KEY } from '../../domain/context';
 import type { EngagementStatus } from '../../domain/types';
 
@@ -38,11 +40,23 @@ export default function EngagementLayout() {
     });
   }, [engagementId]);
 
-  if (engagement === undefined) {
-    return <Card className="text-sm text-ink-400">Loading engagement…</Card>;
-  }
+  if (engagement === undefined) return <LoadingPanel rows={4} label="Loading engagement" />;
   if (engagement === null) {
-    return <Card className="text-sm text-rose-400">Engagement not found in this browser.</Card>;
+    return (
+      <EmptyState
+        icon={<IconAlert size={28} />}
+        title="Engagement not found"
+        description="It is not in this browser's local database. Engagements are stored per browser — if it was created elsewhere, import its JSON backup from Data & Settings."
+        action={
+          <NavLink
+            to="/"
+            className="inline-flex h-9 items-center rounded-[--radius-control] border border-ink-600 bg-ink-800 px-3.5 text-sm text-ink-100 hover:bg-ink-700"
+          >
+            Back to engagements
+          </NavLink>
+        }
+      />
+    );
   }
 
   const c = metrics.counts;
@@ -60,7 +74,7 @@ export default function EngagementLayout() {
               <NavLink to="/" className="text-xs text-ink-500 hover:text-ink-300">
                 Engagements
               </NavLink>
-              <span className="text-ink-700">/</span>
+              <span className="text-ink-500">/</span>
               <span className="text-xs text-ink-400">{engagement.clientName || 'Untitled client'}</span>
             </div>
             <h1 className="mt-1 truncate text-xl font-semibold tracking-tight text-ink-50">
@@ -94,13 +108,15 @@ export default function EngagementLayout() {
             <div className="w-44">
               <ProgressBar
                 value={metrics.completion}
+                label="Engagement progress"
                 tone={metrics.completion === 1 ? 'safe' : 'brand'}
               />
-              <p className="mt-1.5 text-[11px] text-ink-500">
+              <p className="mt-1.5 text-[11px] text-ink-400">
                 {c.tested + c.na} of {c.applicable} applicable completed
               </p>
             </div>
             <Select
+              aria-label="Engagement status"
               value={engagement.status}
               onChange={(e) =>
                 void setEngagementStatus(engagement.id, e.target.value as EngagementStatus)
@@ -116,17 +132,28 @@ export default function EngagementLayout() {
 
         <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-ink-800 pt-4">
           <Badge tone="brand">{c.applicable} applicable</Badge>
-          <Badge tone="neutral">{c.notTested} not tested</Badge>
-          <Badge tone="safe">{c.notVulnerable} not vulnerable</Badge>
-          <Badge tone="vulnerable">{c.vulnerable} vulnerable</Badge>
-          <Badge tone="na">{c.na} N/A</Badge>
-          <span className="ml-auto text-[11px] text-ink-600">
-            {c.excluded} tests excluded from this engagement
+          <Badge tone="neutral" glyph="○">
+            {c.notTested} Not Tested
+          </Badge>
+          <Badge tone="brand" glyph="●">
+            {c.tested} Tested
+          </Badge>
+          <Badge tone="na" glyph="⊘">
+            {c.na} N/A
+          </Badge>
+          <Badge tone="vulnerable" glyph="▲">
+            {c.vulnerable} Vulnerable
+          </Badge>
+          <Badge tone="safe" glyph="✓">
+            {c.notVulnerable} Not Vulnerable
+          </Badge>
+          <span className="ml-auto text-[11px] text-ink-400">
+            {c.excluded} Not Applicable
           </span>
         </div>
       </div>
 
-      <nav className="flex gap-1 border-b border-ink-800">
+      <nav aria-label="Engagement sections" className="flex gap-1 overflow-x-auto border-b border-ink-800">
         {TABS.map((tab) => (
           <NavLink
             key={tab.label}
@@ -134,12 +161,13 @@ export default function EngagementLayout() {
             end={tab.end}
             className={({ isActive }) =>
               clsx(
-                '-mb-px border-b-2 px-4 py-2 text-sm transition-colors',
+                '-mb-px shrink-0 border-b-2 px-3 py-2 text-sm whitespace-nowrap transition-colors sm:px-4',
                 isActive
-                  ? 'border-brand-500 text-ink-50'
-                  : 'border-transparent text-ink-400 hover:text-ink-100',
+                  ? 'border-brand-500 font-medium text-ink-50'
+                  : 'border-transparent text-ink-300 hover:text-ink-100',
               )
             }
+            aria-current={undefined}
           >
             {tab.label}
           </NavLink>

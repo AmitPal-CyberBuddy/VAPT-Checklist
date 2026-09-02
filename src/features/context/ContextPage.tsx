@@ -1,6 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Badge, Button, Card, Modal, ProgressBar, SectionHeading } from '../../ui/primitives';
+import {
+  Badge,
+  Button,
+  Card,
+  InlineAlert,
+  LoadingPanel,
+  Modal,
+  ProgressBar,
+  SectionHeading,
+} from '../../ui/primitives';
 import { IconAlert, IconCheck } from '../../ui/icons';
 import { ContextForm, contextCompleteness } from './ContextForm';
 import { useChecklist, useEngagement } from '../../hooks/useData';
@@ -64,7 +73,7 @@ export default function ContextPage() {
     }
   }
 
-  if (!engagement || !items) return <Card className="text-sm text-ink-400">Loading…</Card>;
+  if (!engagement || !items) return <LoadingPanel rows={6} label="Loading application context" />;
 
   const protectedDiffs = (diffs ?? []).filter((d) => d.hasRecordedWork && !d.to);
   const manualDiffs = (diffs ?? []).filter((d) => d.isManualOverride);
@@ -76,7 +85,7 @@ export default function ContextPage() {
         <div className="min-w-0">
           <SectionHeading
             title="Application context"
-            description="These facts drive which vulnerabilities belong in this engagement. You can override any individual decision on the checklist."
+            description="These facts decide which vulnerabilities belong in this engagement. You can override any individual decision in the workspace."
           />
         </div>
         <div className="flex items-center gap-4">
@@ -96,10 +105,9 @@ export default function ContextPage() {
       </Card>
 
       {dirty && (
-        <div className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-300">
-          <IconAlert size={14} />
+        <InlineAlert tone="warn" icon={<IconAlert size={16} aria-hidden="true" />}>
           Unsaved context changes — applicability is recalculated only when you apply them.
-        </div>
+        </InlineAlert>
       )}
 
       <ContextForm context={draft} onChange={setFact} />
@@ -110,8 +118,8 @@ export default function ContextPage() {
         title="Apply context changes"
         description={
           diffs && diffs.length === 0
-            ? 'The recorded facts changed, but no test changes scope as a result.'
-            : `${diffs?.length ?? 0} test${diffs?.length === 1 ? '' : 's'} would change scope.`
+            ? 'The recorded facts changed, but no test changes applicability as a result.'
+            : `${diffs?.length ?? 0} test${diffs?.length === 1 ? '' : 's'} would change applicability.`
         }
         width="lg"
         footer={
@@ -133,9 +141,9 @@ export default function ContextPage() {
         <div className="max-h-96 space-y-4 overflow-y-auto">
           {cleanDiffs.length > 0 && (
             <DiffList
-              title="Scope changes"
+              title="Applicability changes"
               tone="brand"
-              note="These tests will be included or excluded automatically."
+              note="These tests become Applicable or Not Applicable automatically."
               diffs={cleanDiffs}
             />
           )}
@@ -151,14 +159,14 @@ export default function ContextPage() {
             <DiffList
               title="Protected — work already recorded"
               tone="na"
-              note="These tests would be excluded by the new context, but they already carry a status or notes, so they stay in scope. Exclude them manually on the checklist if you want them removed."
+              note="The new context would mark these Not Applicable, but they already carry a status or notes, so they stay Applicable. Change them by hand in the workspace if you want them removed."
               diffs={protectedDiffs}
             />
           )}
           {diffs?.length === 0 && (
-            <div className="flex items-center gap-2 rounded-lg border border-emerald-500/25 bg-emerald-500/5 px-3 py-3 text-sm text-emerald-300">
-              <IconCheck size={16} /> Nothing to change — the checklist already matches this context.
-            </div>
+            <InlineAlert tone="success" icon={<IconCheck size={16} aria-hidden="true" />}>
+              Nothing to change — the test list already matches this context.
+            </InlineAlert>
           )}
         </div>
       </Modal>
@@ -184,13 +192,13 @@ function DiffList({
         <p className="text-sm font-medium text-ink-100">{title}</p>
       </div>
       <p className="mb-2 text-xs text-ink-500">{note}</p>
-      <ul className="divide-y divide-ink-850 rounded-lg border border-ink-800">
+      <ul className="divide-y divide-ink-800 rounded-[--radius-control] border border-ink-700">
         {diffs.map((d) => (
           <li key={d.testId} className="flex items-center gap-3 px-3 py-1.5 text-sm">
-            <span className="font-mono text-[11px] text-ink-600">{d.testId}</span>
+            <span className="font-mono text-[11px] text-ink-500">{d.testId}</span>
             <span className="flex-1 truncate text-ink-200">{d.vulnerabilityName}</span>
             <Badge tone={d.to ? 'success' : 'na'}>
-              {d.from ? 'In scope' : 'Excluded'} → {d.to ? 'In scope' : 'Excluded'}
+              {d.from ? 'Applicable' : 'Not Applicable'} → {d.to ? 'Applicable' : 'Not Applicable'}
             </Badge>
           </li>
         ))}

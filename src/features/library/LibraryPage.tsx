@@ -1,6 +1,16 @@
 import { useMemo, useState } from 'react';
 import clsx from 'clsx';
-import { Badge, Card, Input, Select, Stat, priorityTone } from '../../ui/primitives';
+import {
+  Badge,
+  Button,
+  Card,
+  EmptyState,
+  FilterSelect,
+  Input,
+  PageHeader,
+  PriorityBadge,
+  Stat,
+} from '../../ui/primitives';
 import { IconChevron, IconExternal, IconSearch, IconX } from '../../ui/icons';
 import { CATEGORIES, CATEGORY_BY_ID, categoryName } from '../../data/categories';
 import { LIBRARY_VERSION, SEARCH_INDEX, TEST_LIBRARY, libraryStats } from '../../data/library';
@@ -65,13 +75,10 @@ export default function LibraryPage() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-ink-50">Test library</h1>
-        <p className="mt-1 max-w-3xl text-sm text-ink-400">
-          The permanent VAPT knowledge base bundled with the application. Definitions are immutable
-          — engagements reference them by ID and hold their own status, result and notes.
-        </p>
-      </div>
+      <PageHeader
+        title="Test library"
+        description="The permanent VAPT knowledge base bundled with the application. Definitions are immutable — engagements reference them by ID and hold their own status, result and notes."
+      />
 
       <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <Stat label="Tests" value={stats.total} tone="brand" hint={`Library v${LIBRARY_VERSION}`} />
@@ -94,16 +101,20 @@ export default function LibraryPage() {
         <div className="relative min-w-56 flex-1">
           <IconSearch
             size={15}
-            className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-ink-500"
+            aria-hidden="true"
+            className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-ink-400"
           />
           <Input
+            type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            aria-label="Search the test library"
             placeholder="Search name, alias, ID, guidance, CWE, OWASP…"
             className="pl-9"
           />
         </div>
-        <Select
+        <FilterSelect
+          label="Category"
           value={category}
           onChange={(e) => {
             setCategory(e.target.value);
@@ -117,8 +128,9 @@ export default function LibraryPage() {
               {c.name} ({stats.byCategory[c.id] ?? 0})
             </option>
           ))}
-        </Select>
-        <Select
+        </FilterSelect>
+        <FilterSelect
+          label="Subcategory"
           value={subcategory}
           onChange={(e) => setSubcategory(e.target.value)}
           className="w-52"
@@ -129,15 +141,15 @@ export default function LibraryPage() {
               {sub}
             </option>
           ))}
-        </Select>
-        <Select value={priority} onChange={(e) => setPriority(e.target.value)} className="w-40">
+        </FilterSelect>
+        <FilterSelect label="Priority" value={priority} onChange={(e) => setPriority(e.target.value)} className="w-40">
           <option value="all">All priorities</option>
           {PRIORITIES.map((p) => (
             <option key={p} value={p}>
               {p}
             </option>
           ))}
-        </Select>
+        </FilterSelect>
         <span className="text-xs text-ink-500">{filtered.length} shown</span>
         {filtersActive && (
           <button
@@ -170,35 +182,51 @@ export default function LibraryPage() {
 
       <Card className="p-0">
         {filtered.length === 0 && (
-          <p className="px-4 py-10 text-center text-sm text-ink-500">
-            Nothing matches those filters.
-          </p>
+          <EmptyState
+            compact
+            icon={<IconSearch size={24} />}
+            title={query ? `No tests match “${query}”` : 'No tests match those filters'}
+            description="Search covers vulnerability names, aliases, test IDs, descriptions, guidance and standards codes."
+            action={
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setQuery('');
+                  setCategory('all');
+                  setSubcategory('all');
+                  setPriority('all');
+                }}
+              >
+                Clear filters
+              </Button>
+            }
+          />
         )}
         {filtered.map((t) => {
           const expanded = open === t.id;
           return (
-            <div key={t.id} className="border-t border-ink-850 first:border-t-0">
+            <div key={t.id} className="border-t border-ink-800 first:border-t-0">
               <button
                 onClick={() => setOpen(expanded ? null : t.id)}
-                className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-ink-900/60"
+                className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-ink-850"
               >
                 <IconChevron
                   size={14}
                   className={clsx(
-                    'shrink-0 text-ink-600 transition-transform',
+                    'shrink-0 text-ink-500 transition-transform',
                     expanded && 'rotate-90',
                   )}
                 />
-                <span className="font-mono text-[11px] text-ink-600">{t.id}</span>
+                <span className="font-mono text-[11px] text-ink-500">{t.id}</span>
                 <span className="flex-1 truncate text-sm text-ink-100">{t.vulnerabilityName}</span>
                 <span className="hidden text-xs text-ink-500 md:inline">{t.subcategory}</span>
-                <span className="hidden text-xs text-ink-600 lg:inline">
+                <span className="hidden text-xs text-ink-500 lg:inline">
                   {categoryName(t.category)}
                 </span>
-                <Badge tone={priorityTone(t.priority)}>{t.priority}</Badge>
+                <PriorityBadge priority={t.priority} />
               </button>
               {expanded && (
-                <div className="animate-in grid gap-4 border-t border-ink-850 bg-ink-950/40 px-4 py-4 pl-11 lg:grid-cols-2">
+                <div className="animate-in grid gap-4 border-t border-ink-800 bg-ink-950/40 px-4 py-4 pl-11 lg:grid-cols-2">
                   <div className="space-y-3">
                     <div>
                       <p className="mb-1 text-[11px] tracking-wider text-ink-400 uppercase">
@@ -265,7 +293,7 @@ export default function LibraryPage() {
                     {t.tags && t.tags.length > 0 && (
                       <div className="mt-3 flex flex-wrap gap-1.5">
                         {t.tags.map((tag) => (
-                          <span key={tag} className="text-[11px] text-ink-600">
+                          <span key={tag} className="text-[11px] text-ink-500">
                             #{tag}
                           </span>
                         ))}

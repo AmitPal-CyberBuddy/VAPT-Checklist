@@ -1,5 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
-import { Badge, Button, Card, Modal, SectionHeading, Stat } from '../../ui/primitives';
+import {
+  Badge,
+  Button,
+  Card,
+  InlineAlert,
+  Modal,
+  PageHeader,
+  SectionHeading,
+  Stat,
+} from '../../ui/primitives';
 import { IconAlert, IconDownload, IconTrash } from '../../ui/icons';
 import { DB_NAME, DB_VERSION, estimateUsage } from '../../persistence/db';
 import {
@@ -18,16 +27,15 @@ function ImportPreview({ inspection }: { inspection: BackupInspection }) {
   if (!inspection.ok) {
     return (
       <div className="space-y-3">
-        <div className="flex items-start gap-2 rounded-lg border border-rose-500/30 bg-rose-500/5 p-3">
-          <IconAlert size={16} className="mt-0.5 shrink-0 text-rose-400" />
-          <p className="text-sm text-rose-300">
-            Nothing was imported and your existing engagements are untouched.
-          </p>
-        </div>
-        <ul className="max-h-56 space-y-1 overflow-y-auto rounded-lg border border-ink-800 p-3 text-xs text-ink-300">
+        <InlineAlert tone="error" icon={<IconAlert size={16} aria-hidden="true" />}>
+          Nothing was imported and your existing engagements are untouched.
+        </InlineAlert>
+        <ul className="max-h-56 space-y-1 overflow-y-auto rounded-[--radius-control] border border-ink-700 p-3 text-xs text-ink-300">
           {inspection.issues.map((issue, index) => (
             <li key={index} className="flex gap-2">
-              <span className="text-rose-400">•</span>
+              <span aria-hidden="true" className="text-vuln-400">
+                •
+              </span>
               {issue}
             </li>
           ))}
@@ -42,7 +50,7 @@ function ImportPreview({ inspection }: { inspection: BackupInspection }) {
         <Stat label="Engagements" value={inspection.engagements} tone="brand" />
         <Stat label="Test states" value={inspection.testStates} />
       </div>
-      <ul className="space-y-1 rounded-lg border border-ink-800 p-3 text-xs text-ink-300">
+      <ul className="space-y-1 rounded-[--radius-control] border border-ink-700 p-3 text-xs text-ink-300">
         {inspection.names.map((name) => (
           <li key={name} className="truncate">
             {name}
@@ -50,13 +58,13 @@ function ImportPreview({ inspection }: { inspection: BackupInspection }) {
         ))}
       </ul>
       {inspection.warnings.length > 0 && (
-        <ul className="space-y-1 rounded-lg border border-amber-500/25 bg-amber-500/5 p-3 text-xs text-amber-300">
+        <ul className="space-y-1 rounded-[--radius-control] border border-amber-500/30 bg-amber-500/5 p-3 text-xs text-amber-300">
           {inspection.warnings.map((warning, index) => (
             <li key={index}>{warning}</li>
           ))}
         </ul>
       )}
-      <p className="text-xs text-ink-500">
+      <p className="text-xs text-ink-400">
         Imported engagements are added alongside what you already have. If an id collides it is
         re-keyed, so nothing is overwritten.
       </p>
@@ -139,13 +147,10 @@ export default function SettingsPage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-5">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-ink-50">Data & settings</h1>
-        <p className="mt-1 text-sm text-ink-400">
-          Everything is stored locally in this browser. There is no account, no server and no
-          synchronisation — take backups if the data matters.
-        </p>
-      </div>
+      <PageHeader
+        title="Data & settings"
+        description="Everything is stored locally in this browser. There is no account, no server and no synchronisation — take backups if the data matters."
+      />
 
       <div className="grid gap-3 sm:grid-cols-4">
         <Stat label="Engagements" value={engagements?.length ?? '—'} tone="brand" />
@@ -199,40 +204,39 @@ export default function SettingsPage() {
           }
         />
         {outdated.length > 0 ? (
-          <div className="flex items-center gap-2 text-xs text-amber-300">
-            <IconAlert size={14} />
+          <InlineAlert tone="warn" icon={<IconAlert size={14} aria-hidden="true" />}>
             {outdated.length} engagement(s) were created on an older library version.
-          </div>
+          </InlineAlert>
         ) : (
-          <p className="text-xs text-ink-500">All engagements are on library v{LIBRARY_VERSION}.</p>
+          <p className="text-xs text-ink-400">All engagements are on library v{LIBRARY_VERSION}.</p>
         )}
       </Card>
 
       <Card className="space-y-3">
         <SectionHeading title="Storage details" />
         <dl className="grid gap-2 text-sm sm:grid-cols-2">
-          <div className="flex justify-between rounded-lg border border-ink-800 px-3 py-2">
+          <div className="flex justify-between rounded-[--radius-control] border border-ink-700 px-3 py-2">
             <dt className="text-ink-400">Mechanism</dt>
             <dd className="text-ink-100">IndexedDB (Dexie)</dd>
           </div>
-          <div className="flex justify-between rounded-lg border border-ink-800 px-3 py-2">
+          <div className="flex justify-between rounded-[--radius-control] border border-ink-700 px-3 py-2">
             <dt className="text-ink-400">Database</dt>
             <dd className="font-mono text-xs text-ink-100">
               {DB_NAME} · v{DB_VERSION}
             </dd>
           </div>
-          <div className="flex justify-between rounded-lg border border-ink-800 px-3 py-2">
+          <div className="flex justify-between rounded-[--radius-control] border border-ink-700 px-3 py-2">
             <dt className="text-ink-400">Network calls</dt>
-            <dd className="text-emerald-400">None</dd>
+            <dd className="text-safe-400">None</dd>
           </div>
-          <div className="flex justify-between rounded-lg border border-ink-800 px-3 py-2">
+          <div className="flex justify-between rounded-[--radius-control] border border-ink-700 px-3 py-2">
             <dt className="text-ink-400">Excel generation</dt>
             <dd className="text-ink-100">Client-side (bundled)</dd>
           </div>
         </dl>
       </Card>
 
-      <Card className="space-y-3 border-rose-500/25">
+      <Card className="space-y-3 border-vuln-500/30">
         <SectionHeading
           title="Danger zone"
           description="Permanently removes every engagement, result and note stored by this application in this browser."

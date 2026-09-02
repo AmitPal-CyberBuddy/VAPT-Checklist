@@ -2,11 +2,12 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
 import {
-  Badge,
   Button,
   Card,
   Field,
   Input,
+  PageHeader,
+  PriorityBadge,
   ProgressBar,
   SectionHeading,
   Textarea,
@@ -106,31 +107,28 @@ export default function NewEngagementPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
-      <div>
-        <button
-          onClick={() => navigate('/')}
-          className="mb-2 text-xs text-ink-500 hover:text-ink-300"
-        >
-          ← Back to engagements
-        </button>
-        <h1 className="text-2xl font-semibold tracking-tight text-ink-50">New engagement</h1>
-        <p className="mt-1 text-sm text-ink-400">
-          Describe the target once. The applicable vulnerability checklist is derived from it — and
-          you stay free to override any decision later.
-        </p>
-      </div>
+      <PageHeader
+        breadcrumb={
+          <button onClick={() => navigate('/')} className="rounded hover:text-ink-200">
+            ← Back to engagements
+          </button>
+        }
+        title="New engagement"
+        description="Describe the target once. The applicable test list is derived from it — and you stay free to override any decision later."
+      />
 
-      <ol className="flex flex-wrap gap-2">
+      <ol className="grid gap-2 sm:grid-cols-3">
         {STEPS.map((s) => (
-          <li key={s.id} className="flex-1">
+          <li key={s.id}>
             <button
               onClick={() => (s.id === 1 || canContinue) && setStep(s.id)}
               disabled={s.id > 1 && !canContinue}
+              aria-current={step === s.id ? 'step' : undefined}
               className={clsx(
-                'w-full rounded-lg border px-3 py-2 text-left transition-colors disabled:opacity-40',
+                'w-full rounded-[--radius-control] border px-3 py-2 text-left transition-colors disabled:opacity-40',
                 step === s.id
                   ? 'border-brand-500/50 bg-brand-500/10'
-                  : 'border-ink-700 bg-ink-900/40 hover:border-ink-600',
+                  : 'border-ink-700 bg-ink-850 hover:border-ink-600',
               )}
             >
               <span className="flex items-center gap-2">
@@ -144,7 +142,7 @@ export default function NewEngagementPage() {
                 </span>
                 <span className="text-sm font-medium text-ink-100">{s.title}</span>
               </span>
-              <span className="mt-0.5 block pl-7 text-[11px] text-ink-500">{s.hint}</span>
+              <span className="mt-0.5 block pl-7 text-[11px] text-ink-400">{s.hint}</span>
             </button>
           </li>
         ))}
@@ -189,11 +187,12 @@ export default function NewEngagementPage() {
                     key={option.value}
                     type="button"
                     onClick={() => toggleApplicationType(option.value)}
+                    aria-pressed={active}
                     className={clsx(
-                      'rounded-lg border px-3 py-1.5 text-xs transition-colors',
+                      'rounded-[--radius-control] border px-3 py-1.5 text-xs transition-colors',
                       active
                         ? 'border-brand-500/60 bg-brand-500/15 text-brand-400'
-                        : 'border-ink-600 bg-ink-900/60 text-ink-300 hover:border-ink-500 hover:text-ink-100',
+                        : 'border-ink-600 bg-ink-850 text-ink-300 hover:border-ink-500 hover:text-ink-100',
                     )}
                   >
                     {option.label}
@@ -343,22 +342,35 @@ export default function NewEngagementPage() {
           <Card className="space-y-3">
             <SectionHeading
               title="Generated checklist"
-              description={`${preview.applicable.length} applicable · ${preview.excluded.length} excluded by context · ${preview.uncertain.length} included because facts are unknown`}
+              description={`${preview.applicable.length} applicable · ${preview.excluded.length} Not Applicable by context · ${preview.uncertain.length} kept because facts are unknown`}
               actions={
                 <Button size="sm" variant="subtle" onClick={() => setStep(2)}>
                   Adjust context
                 </Button>
               }
             />
-            <div className="max-h-96 overflow-y-auto rounded-lg border border-ink-800">
-              <table className="w-full text-left text-sm">
+            <div className="max-h-96 overflow-x-auto overflow-y-auto rounded-[--radius-control] border border-ink-700">
+              <table className="w-full min-w-[46rem] text-left text-sm">
+                <caption className="sr-only">
+                  Tests that will be seeded as applicable for this engagement
+                </caption>
                 <thead className="sticky top-0 bg-ink-900 text-[11px] tracking-wider text-ink-400 uppercase">
                   <tr>
-                    <th className="px-3 py-2 font-medium">ID</th>
-                    <th className="px-3 py-2 font-medium">Vulnerability</th>
-                    <th className="px-3 py-2 font-medium">Subcategory</th>
-                    <th className="px-3 py-2 font-medium">Priority</th>
-                    <th className="px-3 py-2 font-medium">Why included</th>
+                    <th scope="col" className="px-3 py-2 font-medium">
+                      ID
+                    </th>
+                    <th scope="col" className="px-3 py-2 font-medium">
+                      Vulnerability
+                    </th>
+                    <th scope="col" className="px-3 py-2 font-medium">
+                      Subcategory
+                    </th>
+                    <th scope="col" className="px-3 py-2 font-medium">
+                      Priority
+                    </th>
+                    <th scope="col" className="px-3 py-2 font-medium">
+                      Why applicable
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -370,7 +382,7 @@ export default function NewEngagementPage() {
                         a.definition.id.localeCompare(b.definition.id),
                     )
                     .map(({ definition, suggestion }) => (
-                      <tr key={definition.id} className="border-t border-ink-850">
+                      <tr key={definition.id} className="border-t border-ink-800">
                         <td className="px-3 py-1.5 font-mono text-[11px] text-ink-500">
                           {definition.id}
                         </td>
@@ -379,19 +391,7 @@ export default function NewEngagementPage() {
                           {definition.subcategory}
                         </td>
                         <td className="px-3 py-1.5">
-                          <Badge
-                            tone={
-                              definition.priority === 'Critical'
-                                ? 'critical'
-                                : definition.priority === 'High'
-                                  ? 'high'
-                                  : definition.priority === 'Medium'
-                                    ? 'medium'
-                                    : 'low'
-                            }
-                          >
-                            {definition.priority}
-                          </Badge>
+                          <PriorityBadge priority={definition.priority} />
                         </td>
                         <td className="px-3 py-1.5 text-xs text-ink-500">
                           {suggestion.uncertain ? (

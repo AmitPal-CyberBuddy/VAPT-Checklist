@@ -38,8 +38,8 @@ export const toast = {
 };
 
 const TONES: Record<ToastTone, { cls: string; Icon: typeof IconCheck }> = {
-  success: { cls: 'border-emerald-500/40 text-emerald-300', Icon: IconCheck },
-  error: { cls: 'border-rose-500/40 text-rose-300', Icon: IconAlert },
+  success: { cls: 'border-safe-500/40 text-safe-400', Icon: IconCheck },
+  error: { cls: 'border-vuln-500/40 text-vuln-400', Icon: IconAlert },
   info: { cls: 'border-brand-500/40 text-brand-400', Icon: IconInfo },
 };
 
@@ -54,21 +54,17 @@ function ToastItem({ item }: { item: Toast }) {
 
   return (
     <div
-      className={clsx(
-        'panel animate-in flex w-80 items-start gap-3 border p-3 shadow-xl shadow-ink-950/60',
-        cls,
-      )}
-      role="status"
+      className={clsx('panel animate-in flex w-80 max-w-full items-start gap-3 border p-3', cls)}
     >
-      <Icon size={16} className="mt-0.5 shrink-0" />
+      <Icon size={16} aria-hidden="true" className="mt-0.5 shrink-0" />
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium text-ink-100">{item.message}</p>
         {item.detail && <p className="mt-0.5 text-xs break-words text-ink-400">{item.detail}</p>}
       </div>
       <button
         onClick={() => dismiss(item.id)}
-        className="shrink-0 text-ink-500 hover:text-ink-200"
-        aria-label="Dismiss"
+        className="shrink-0 rounded text-ink-400 hover:text-ink-100"
+        aria-label="Dismiss notification"
       >
         <IconX size={14} />
       </button>
@@ -79,7 +75,10 @@ function ToastItem({ item }: { item: Toast }) {
 export function Toaster() {
   const toasts = useToastStore((s) => s.toasts);
   return (
-    <div className="no-print pointer-events-none fixed right-4 bottom-4 z-[60] flex flex-col items-end gap-2">
+    <div
+      aria-live="polite"
+      aria-atomic="false"
+      className="no-print pointer-events-none fixed right-3 bottom-3 z-[60] flex max-w-[calc(100vw-1.5rem)] flex-col items-end gap-2 sm:right-4 sm:bottom-4">
       {toasts.map((t) => (
         <div key={t.id} className="pointer-events-auto">
           <ToastItem item={t} />

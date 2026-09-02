@@ -3,10 +3,12 @@ import { Link, useNavigate } from 'react-router-dom';
 import {
   Badge,
   Button,
-  Card,
   EmptyState,
+  IconButton,
   Input,
+  LoadingPanel,
   Modal,
+  PageHeader,
   ProgressBar,
 } from '../../ui/primitives';
 import { IconCopy, IconDownload, IconPlus, IconSearch, IconShield, IconTrash } from '../../ui/icons';
@@ -71,47 +73,51 @@ export default function EngagementsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-ink-50">Engagements</h1>
-          <p className="mt-1 max-w-2xl text-sm text-ink-400">
-            Each engagement pairs an application context with its own copy of the test library.
-            Given this application — what should I test, what have I tested, and what did I find?
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="relative">
-            <IconSearch
-              size={15}
-              className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-ink-500"
-            />
-            <Input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search engagements"
-              className="w-56 pl-9"
-            />
-          </div>
-          <Button
-            variant="primary"
-            icon={<IconPlus size={15} />}
-            onClick={() => navigate('/engagements/new')}
-          >
-            New engagement
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Engagements"
+        description="Each engagement pairs an application context with its own copy of the test library. Given this application — what should I test, what have I tested, and what did I find?"
+        actions={
+          <>
+            <div className="relative">
+              <IconSearch
+                size={15}
+                aria-hidden="true"
+                className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-ink-400"
+              />
+              <Input
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                aria-label="Search engagements by name, client or scope"
+                placeholder="Search engagements"
+                className="w-48 pl-9 sm:w-56"
+              />
+            </div>
+            <Button
+              variant="primary"
+              icon={<IconPlus size={15} />}
+              onClick={() => navigate('/engagements/new')}
+            >
+              New engagement
+            </Button>
+          </>
+        }
+      />
 
       {summaries === undefined ? (
-        <Card className="text-sm text-ink-400">Loading…</Card>
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <LoadingPanel rows={3} label="Loading engagements" />
+          <LoadingPanel rows={3} label="" />
+          <LoadingPanel rows={3} label="" />
+        </div>
       ) : filtered.length === 0 ? (
         <EmptyState
           icon={<IconShield size={32} />}
-          title={query ? 'No engagements match that search' : 'No engagements yet'}
+          title={query ? `No engagements match “${query}”` : 'No engagements yet'}
           description={
             query
-              ? 'Try a different name, client or scope entry.'
-              : 'Create an engagement, describe the target application, and the applicable vulnerability checklist is generated for you.'
+              ? 'Search covers the engagement name, client and scope. Try a shorter term.'
+              : 'Create an engagement, describe the target application, and the applicable test list is generated for you — 184 vulnerability tests, narrowed to the ones that matter for that target.'
           }
           action={
             !query && (
@@ -126,9 +132,9 @@ export default function EngagementsPage() {
           }
         />
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <ul className="grid list-none gap-4 md:grid-cols-2 xl:grid-cols-3">
           {filtered.map(({ engagement, applicable, resolved, vulnerable, completion }) => (
-            <Card key={engagement.id} className="flex flex-col gap-4 transition-colors hover:border-ink-600">
+            <li key={engagement.id} className="panel flex flex-col gap-4 p-4 transition-colors hover:border-ink-600">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <Link
@@ -170,49 +176,47 @@ export default function EngagementsPage() {
                     {Math.round(completion * 100)}%
                   </span>
                 </div>
-                <ProgressBar value={completion} tone={completion === 1 ? 'safe' : 'brand'} />
+                <ProgressBar
+                  value={completion}
+                  label={`${engagement.name} progress`}
+                  tone={completion === 1 ? 'safe' : 'brand'}
+                />
               </div>
 
               <div className="flex items-center justify-between border-t border-ink-800 pt-3">
                 <div className="flex items-center gap-2">
                   {vulnerable > 0 ? (
-                    <Badge tone="vulnerable">
-                      {vulnerable} finding{vulnerable === 1 ? '' : 's'}
+                    <Badge tone="vulnerable" glyph="▲">
+                      {vulnerable} vulnerable
                     </Badge>
                   ) : (
-                    <Badge tone="neutral">No findings recorded</Badge>
+                    <Badge tone="neutral">No vulnerable tests</Badge>
                   )}
-                  <span className="text-[11px] text-ink-600">
+                  <span className="text-[11px] text-ink-400">
                     {new Date(engagement.updatedAt).toLocaleDateString()}
                   </span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <Button
+                  <IconButton
                     size="sm"
-                    variant="ghost"
-                    title="Download Excel"
+                    label={`Download Excel for ${engagement.name}`}
                     disabled={exporting === engagement.id}
                     onClick={() => void handleExcel(engagement)}
-                  >
-                    <IconDownload size={14} />
-                  </Button>
-                  <Button
+                    icon={<IconDownload size={14} />}
+                  />
+                  <IconButton
                     size="sm"
-                    variant="ghost"
-                    title="Duplicate (context only)"
+                    label={`Duplicate ${engagement.name} (context only)`}
                     onClick={() => void handleDuplicate(engagement)}
-                  >
-                    <IconCopy size={14} />
-                  </Button>
-                  <Button
+                    icon={<IconCopy size={14} />}
+                  />
+                  <IconButton
                     size="sm"
-                    variant="ghost"
-                    title="Delete"
+                    label={`Delete ${engagement.name}`}
                     onClick={() => setPendingDelete(engagement)}
-                    className="hover:text-rose-400"
-                  >
-                    <IconTrash size={14} />
-                  </Button>
+                    className="hover:text-vuln-400"
+                    icon={<IconTrash size={14} />}
+                  />
                   <Button size="sm" variant="subtle" onClick={() => navigate(`/e/${engagement.id}`)}>
                     Open
                   </Button>
@@ -223,15 +227,15 @@ export default function EngagementsPage() {
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="justify-start text-emerald-400"
+                  className="justify-start text-safe-400"
                   onClick={() => void setEngagementStatus(engagement.id, 'Completed')}
                 >
-                  All applicable tests resolved — mark as completed
+                  All applicable tests completed — mark engagement as Completed
                 </Button>
               )}
-            </Card>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
 
       <Modal

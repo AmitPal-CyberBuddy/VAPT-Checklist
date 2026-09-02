@@ -19,3 +19,4 @@ Consequences. Status is `Accepted` unless noted.
 | [0012](0012-progress-rule-and-workspace.md) | One progress formula, and a two-pane testing workspace |
 | [0013](0013-unrepresentable-inconsistent-states.md) | Inconsistent test states are unrepresentable |
 | [0014](0014-workbook-structure-and-autofilter.md) | Workbook structure and autofilter post-processing |
+| [0015](0015-design-language.md) | One design language, enforced by the components |

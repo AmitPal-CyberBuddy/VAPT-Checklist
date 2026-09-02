@@ -1,6 +1,15 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Badge, Button, Card, SectionHeading, Stat, Toggle } from '../../ui/primitives';
+import {
+  Badge,
+  Button,
+  Card,
+  InlineAlert,
+  LoadingPanel,
+  SectionHeading,
+  Stat,
+  Toggle,
+} from '../../ui/primitives';
 import { IconAlert, IconDownload } from '../../ui/icons';
 import { useChecklist, useEngagement, useMetrics } from '../../hooks/useData';
 import { buildFileName } from '../../export/fileName';
@@ -51,14 +60,16 @@ export default function ExportPage() {
   const [includeNotApplicable, setIncludeNotApplicable] = useState(true);
   const [includeCoverage, setIncludeCoverage] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [failure, setFailure] = useState<string | null>(null);
 
-  if (!engagement || !items) return <Card className="text-sm text-ink-400">Loading…</Card>;
+  if (!engagement || !items) return <LoadingPanel rows={5} label="Loading export options" />;
 
   const notTested = metrics.counts.notTested;
 
   async function handleExcel() {
     if (!engagement || !items) return;
     setBusy(true);
+    setFailure(null);
     try {
       // Lazy-loaded: the XLSX writer is only fetched when an export is requested.
       const { exportEngagementToExcel } = await import('../../export/excel');
@@ -68,7 +79,9 @@ export default function ExportPage() {
       });
       toast.success('Workbook downloaded', fileName);
     } catch (error) {
-      toast.error('Excel export failed', String(error));
+      const message = error instanceof Error ? error.message : String(error);
+      setFailure(message);
+      toast.error('Excel export failed', message);
     } finally {
       setBusy(false);
     }
@@ -111,7 +124,7 @@ export default function ExportPage() {
               return (
                 <div
                   key={sheet.key}
-                  className="flex items-start justify-between gap-4 rounded-lg border border-ink-800 bg-ink-900/40 px-3 py-2.5"
+                  className="flex items-start justify-between gap-4 rounded-[--radius-control] border border-ink-700 bg-ink-850 px-3 py-2.5"
                 >
                   <div className="min-w-0">
                     <p className="flex items-center gap-2 text-sm text-ink-100">
@@ -129,7 +142,7 @@ export default function ExportPage() {
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-ink-800 pt-4">
             <div>
               <p className="font-mono text-xs text-ink-400">{buildFileName(engagement)}</p>
-              <p className="mt-0.5 text-[11px] text-ink-600">
+              <p className="mt-0.5 text-[11px] text-ink-500">
                 Frozen headers, filter dropdowns, tuned column widths, colour-coded priority and
                 result cells.
               </p>
@@ -144,6 +157,22 @@ export default function ExportPage() {
               {busy ? 'Generating…' : 'Download Excel'}
             </Button>
           </div>
+
+          {failure && (
+            <InlineAlert
+              tone="error"
+              icon={<IconAlert size={16} aria-hidden="true" />}
+              title="The workbook could not be generated"
+              action={
+                <Button size="sm" variant="subtle" onClick={() => void handleExcel()}>
+                  Try again
+                </Button>
+              }
+            >
+              {failure}. Your engagement data is unaffected. If it keeps failing, take a JSON backup
+              below so nothing is at risk.
+            </InlineAlert>
+          )}
         </Card>
 
         <Card className="space-y-3">
@@ -184,18 +213,14 @@ export default function ExportPage() {
         </Card>
 
         {notTested > 0 && (
-          <Card className="space-y-2 border-amber-500/30 bg-amber-500/5">
-            <div className="flex items-start gap-2">
-              <IconAlert size={16} className="mt-0.5 shrink-0 text-amber-400" />
-              <div className="text-sm">
-                <p className="font-medium text-amber-300">Assessment is not complete</p>
-                <p className="mt-1 text-xs text-ink-300">
-                  {notTested} applicable test{notTested === 1 ? '' : 's'} still Not Tested. They are
-                  exported with an empty status so the gap is visible in the report.
-                </p>
-              </div>
-            </div>
-          </Card>
+          <InlineAlert
+            tone="warn"
+            icon={<IconAlert size={16} aria-hidden="true" />}
+            title="Assessment is not complete"
+          >
+            {notTested} applicable test{notTested === 1 ? '' : 's'} still Not Tested. They export
+            with that status, so the gap is visible in the report rather than hidden.
+          </InlineAlert>
         )}
 
         <Card className="space-y-2 text-xs text-ink-400">

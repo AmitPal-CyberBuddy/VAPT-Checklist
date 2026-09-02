@@ -15,7 +15,7 @@ import type { ApplicabilityCondition, ApplicabilitySuggestion } from '../../doma
  */
 
 const MARK: Record<ApplicabilityCondition['outcome'], { glyph: string; cls: string }> = {
-  met: { glyph: '✓', cls: 'text-emerald-400' },
+  met: { glyph: '✓', cls: 'text-safe-400' },
   unmet: { glyph: '✕', cls: 'text-ink-500' },
   unknown: { glyph: '?', cls: 'text-amber-400' },
 };
@@ -42,7 +42,7 @@ export function ApplicabilityExplanation({
       <p
         className={clsx(
           'mb-1 font-medium',
-          uncertain ? 'text-amber-400' : applicable ? 'text-emerald-400' : 'text-ink-400',
+          uncertain ? 'text-amber-400' : applicable ? 'text-safe-400' : 'text-ink-400',
         )}
       >
         {conditions.length === 0 ? suggestion.summary : `${heading}:`}
@@ -56,7 +56,7 @@ export function ApplicabilityExplanation({
                 <span className={clsx('w-3 shrink-0 font-mono', mark.cls)}>{mark.glyph}</span>
                 <span className="text-ink-200">{condition.label}</span>
                 {!compact && (
-                  <span className="truncate text-ink-600">— {condition.detail}</span>
+                  <span className="truncate text-ink-500">— {condition.detail}</span>
                 )}
               </li>
             );

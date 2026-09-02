@@ -1,47 +1,55 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import clsx from 'clsx';
-import { Badge, Button, Card, EmptyState, Input, Select } from '../../ui/primitives';
-import { IconSearch, IconX } from '../../ui/icons';
+import {
+  Badge,
+  Button,
+  Card,
+  EmptyState,
+  FilterSelect,
+  Input,
+  LoadingPanel,
+} from '../../ui/primitives';
+import { IconFilter, IconSearch, IconX } from '../../ui/icons';
 import { TestListRow } from './TestListRow';
 import { TestDetailPanel } from './TestDetailPanel';
 import { CATEGORIES, CATEGORY_BY_ID, categoryName } from '../../data/categories';
 import { SEARCH_INDEX } from '../../data/library';
 import { parseQuery, relevance } from '../../data/searchIndex';
 import { useChecklist, useEngagement } from '../../hooks/useData';
+import { useIsWide } from '../../hooks/useMediaQuery';
 import { bulkUpdateTestStates, updateTestState } from '../../persistence/repository';
 import { suggestApplicability } from '../../domain/applicability';
 import { PRIORITIES, PRIORITY_ORDER, type CategoryId, type ChecklistItem } from '../../domain/types';
 import { toast } from '../../ui/toast';
 
-type ScopeFilter = 'applicable' | 'excluded' | 'all' | 'manual' | 'unconfirmed';
+type ScopeFilter = 'applicable' | 'notApplicable' | 'all' | 'manual' | 'unconfirmed';
 type StatusFilter = 'all' | 'Not Tested' | 'Tested' | 'N/A';
 type ResultFilter = 'all' | 'Vulnerable' | 'Not Vulnerable';
 type SortBy = 'priority' | 'id' | 'name' | 'status' | 'recent';
 
 const SCOPE_LABELS: Record<ScopeFilter, string> = {
-  applicable: 'In scope',
-  excluded: 'Excluded',
+  applicable: 'Applicable',
+  notApplicable: 'Not Applicable',
   all: 'All tests',
-  manual: 'Manually overridden',
+  manual: 'Set by me',
   unconfirmed: 'Unconfirmed',
 };
 
 const STATUS_RANK: Record<string, number> = { 'Not Tested': 0, Tested: 1, 'N/A': 2 };
 
 /**
- * The testing workspace: list on the left, full test detail on the right.
+ * The testing workspace: list on the left, full test on the right.
  *
- * One screen for the whole loop — open, read guidance, set status, set result,
- * note, move on — with keyboard shortcuts so a tester never has to reach for
- * the mouse between tests. Every write goes through the repository, so the
- * dashboard, filters and export update from the same state.
+ * Below `lg` the two panes become two views (list → detail → back), because a
+ * squeezed side-by-side layout is worse than either one at full width.
  */
 export default function WorkspacePage() {
   const { engagementId = '' } = useParams();
   const engagement = useEngagement(engagementId);
   const items = useChecklist(engagementId);
   const [params, setParams] = useSearchParams();
+  const isWide = useIsWide();
 
   const [query, setQuery] = useState('');
   const [scope, setScope] = useState<ScopeFilter>('applicable');
@@ -56,12 +64,16 @@ export default function WorkspacePage() {
   const [subcategory, setSubcategory] = useState<string>('all');
   const [priority, setPriority] = useState<string>('all');
   const [sortBy, setSortBy] = useState<SortBy>('priority');
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [activeId, setActiveId] = useState<string | null>(params.get('test'));
+  const [mobileView, setMobileView] = useState<'list' | 'detail'>(
+    params.get('test') ? 'detail' : 'list',
+  );
 
   const notesRef = useRef<HTMLTextAreaElement>(null);
-  const listRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
 
   const context = engagement?.context ?? {};
 
@@ -74,7 +86,7 @@ export default function WorkspacePage() {
     setSubcategory('all');
   }, [category]);
 
-  const uncertainIds = useMemo(() => {
+  const unconfirmedIds = useMemo(() => {
     const ids = new Set<string>();
     for (const { definition } of items ?? []) {
       if (suggestApplicability(definition, context).uncertain) ids.add(definition.id);
@@ -92,9 +104,9 @@ export default function WorkspacePage() {
     const terms = parseQuery(query);
     const matched = items.filter(({ definition: d, state: s }) => {
       if (scope === 'applicable' && !s.applicable) return false;
-      if (scope === 'excluded' && s.applicable) return false;
+      if (scope === 'notApplicable' && s.applicable) return false;
       if (scope === 'manual' && s.applicabilitySource !== 'manual') return false;
-      if (scope === 'unconfirmed' && !(s.applicable && uncertainIds.has(d.id))) return false;
+      if (scope === 'unconfirmed' && !(s.applicable && unconfirmedIds.has(d.id))) return false;
       if (status !== 'all' && s.status !== status) return false;
       if (result !== 'all' && s.result !== result) return false;
       if (category !== 'all' && d.category !== category) return false;
@@ -148,12 +160,11 @@ export default function WorkspacePage() {
       );
     }
     return sorted;
-  }, [items, query, scope, status, result, category, subcategory, priority, sortBy, uncertainIds]);
+  }, [items, query, scope, status, result, category, subcategory, priority, sortBy, unconfirmedIds]);
 
   const activeIndex = visible.findIndex((i) => i.definition.id === activeId);
   const active = activeIndex >= 0 ? visible[activeIndex] : visible[0];
 
-  // Keep a valid selection as filters change, without fighting the tester.
   useEffect(() => {
     if (visible.length === 0) return;
     if (!visible.some((i) => i.definition.id === activeId)) {
@@ -164,11 +175,13 @@ export default function WorkspacePage() {
   const open = useCallback(
     (id: string) => {
       setActiveId(id);
+      setMobileView('detail');
       const next = new URLSearchParams(params);
       next.set('test', id);
       setParams(next, { replace: true });
-      const row = listRef.current?.querySelector(`[data-test-id="${id}"]`);
-      row?.scrollIntoView?.({ block: 'nearest' });
+      listRef.current
+        ?.querySelector(`[data-test-id="${id}"]`)
+        ?.scrollIntoView?.({ block: 'nearest' });
     },
     [params, setParams],
   );
@@ -189,7 +202,7 @@ export default function WorkspacePage() {
     const forward = visible.slice(from + 1).find((i) => i.state.status === 'Not Tested');
     const wrapped = forward ?? visible.find((i) => i.state.status === 'Not Tested');
     if (wrapped) open(wrapped.definition.id);
-    else toast.info('Nothing left untested', 'Every test in this view has a status.');
+    else toast.info('Nothing left Not Tested', 'Every test in this view has a status.');
   }, [activeIndex, visible, open]);
 
   /* ----------------------------------------------------------- shortcuts */
@@ -198,9 +211,7 @@ export default function WorkspacePage() {
       const target = event.target as HTMLElement | null;
       const typing =
         target &&
-        (target.tagName === 'INPUT' ||
-          target.tagName === 'TEXTAREA' ||
-          target.isContentEditable);
+        (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable);
       if (typing) {
         if (event.key === 'Escape') target?.blur();
         return;
@@ -223,9 +234,7 @@ export default function WorkspacePage() {
           if (current) void updateTestState(engagementId, current.definition.id, { status: 'Not Tested' });
           break;
         case '2':
-          // Tested needs a result; pressing 2 focuses the choice rather than
-          // writing a half-recorded row. v / b complete it.
-          if (current && current.state.result) {
+          if (current?.state.result) {
             void updateTestState(engagementId, current.definition.id, { status: 'Tested' });
           } else if (current) {
             toast.info('Choose a result', 'Press v for Vulnerable or b for Not Vulnerable.');
@@ -271,7 +280,6 @@ export default function WorkspacePage() {
   }, [active, engagementId, step, nextUntested]);
 
   const activeFilters =
-    (query ? 1 : 0) +
     (scope !== 'applicable' ? 1 : 0) +
     (status !== 'all' ? 1 : 0) +
     (result !== 'all' ? 1 : 0) +
@@ -291,101 +299,164 @@ export default function WorkspacePage() {
 
   async function bulk(change: Parameters<typeof bulkUpdateTestStates>[2], message: string) {
     const ids = [...selected];
-    await bulkUpdateTestStates(engagementId, ids, change);
-    toast.success(message, `${ids.length} test${ids.length === 1 ? '' : 's'} updated.`);
-    setSelected(new Set());
+    try {
+      await bulkUpdateTestStates(engagementId, ids, change);
+      toast.success(message, `${ids.length} test${ids.length === 1 ? '' : 's'} updated.`);
+      setSelected(new Set());
+    } catch (error) {
+      toast.error('Bulk update failed', error instanceof Error ? error.message : String(error));
+    }
   }
 
-  if (!items || !engagement) return <Card className="text-sm text-ink-400">Loading workspace…</Card>;
+  if (!items || !engagement) {
+    return (
+      <div className="grid gap-3 lg:grid-cols-[minmax(280px,340px)_1fr]">
+        <LoadingPanel rows={8} label="Loading tests" />
+        <LoadingPanel rows={10} label="Loading test detail" />
+      </div>
+    );
+  }
 
-  const untestedShown = visible.filter((i) => i.state.status === 'Not Tested').length;
+  const notTestedShown = visible.filter((i) => i.state.status === 'Not Tested').length;
+  const showList = isWide || mobileView === 'list';
+  const showDetail = isWide || mobileView === 'detail';
 
   return (
     <div className="space-y-3">
-      {/* Filter bar -------------------------------------------------------- */}
-      <Card className="space-y-2.5 py-3">
+      {/* Toolbar ----------------------------------------------------------- */}
+      <Card className="space-y-2.5 py-3" as="section" aria-labelledby="workspace-filters">
+        <h2 id="workspace-filters" className="sr-only">
+          Search and filter tests
+        </h2>
         <div className="flex flex-wrap items-center gap-2">
-          <div className="relative min-w-52 flex-1">
+          <div className="relative min-w-0 flex-1">
             <IconSearch
               size={15}
-              className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-ink-500"
+              aria-hidden="true"
+              className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-ink-400"
             />
             <Input
               id="workspace-search"
+              type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search name, alias, ID, guidance, notes…   ( / )"
+              aria-label="Search tests by name, alias, ID, guidance or notes"
+              placeholder="Search tests…  ( / )"
               className="pl-9"
             />
           </div>
-          <Select value={scope} onChange={(e) => setScope(e.target.value as ScopeFilter)} className="w-40">
-            {(Object.keys(SCOPE_LABELS) as ScopeFilter[]).map((key) => (
-              <option key={key} value={key}>
-                {SCOPE_LABELS[key]}
-              </option>
-            ))}
-          </Select>
-          <Select value={status} onChange={(e) => setStatus(e.target.value as StatusFilter)} className="w-36">
-            <option value="all">Any status</option>
-            <option value="Not Tested">Not Tested</option>
-            <option value="Tested">Tested</option>
-            <option value="N/A">N/A</option>
-          </Select>
-          <Select value={result} onChange={(e) => setResult(e.target.value as ResultFilter)} className="w-36">
-            <option value="all">Any result</option>
-            <option value="Vulnerable">Vulnerable</option>
-            <option value="Not Vulnerable">Not Vulnerable</option>
-          </Select>
-          <Select value={priority} onChange={(e) => setPriority(e.target.value)} className="w-32">
-            <option value="all">Any priority</option>
-            {PRIORITIES.map((p) => (
-              <option key={p} value={p}>
-                {p}
-              </option>
-            ))}
-          </Select>
-          <Select value={category} onChange={(e) => setCategory(e.target.value)} className="w-48">
-            <option value="all">Any category</option>
-            {CATEGORIES.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </Select>
-          <Select value={subcategory} onChange={(e) => setSubcategory(e.target.value)} className="w-44">
-            <option value="all">Any subcategory</option>
-            {subcategoryOptions.map((sub) => (
-              <option key={sub} value={sub}>
-                {sub}
-              </option>
-            ))}
-          </Select>
-          <Select value={sortBy} onChange={(e) => setSortBy(e.target.value as SortBy)} className="w-40">
+
+          <Button
+            variant={filtersOpen || activeFilters > 0 ? 'secondary' : 'subtle'}
+            icon={<IconFilter size={14} />}
+            aria-expanded={filtersOpen}
+            aria-controls="workspace-filter-panel"
+            onClick={() => setFiltersOpen((v) => !v)}
+          >
+            Filters
+            {activeFilters > 0 && (
+              <span className="ml-1 rounded bg-brand-500 px-1.5 text-[11px] font-semibold text-ink-950">
+                {activeFilters}
+              </span>
+            )}
+          </Button>
+
+          <FilterSelect
+            label="Sort tests by"
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as SortBy)}
+            className="w-auto min-w-36"
+          >
             <option value="priority">Sort: Priority</option>
             <option value="status">Sort: Status</option>
             <option value="id">Sort: Test ID</option>
             <option value="name">Sort: Name</option>
             <option value="recent">Sort: Recently updated</option>
-          </Select>
-          {activeFilters > 0 && (
-            <Button size="sm" variant="ghost" icon={<IconX size={13} />} onClick={resetFilters}>
-              Clear
-            </Button>
-          )}
+          </FilterSelect>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 border-t border-ink-800 pt-2.5 text-xs text-ink-500">
-          <span>
-            <strong className="text-ink-200">{visible.length}</strong> shown ·{' '}
-            <strong className="text-ink-300">{untestedShown}</strong> not tested
+        {filtersOpen && (
+          <div
+            id="workspace-filter-panel"
+            className="animate-in grid gap-2 border-t border-ink-800 pt-2.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6"
+          >
+            <FilterSelect
+              label="Applicability"
+              value={scope}
+              onChange={(e) => setScope(e.target.value as ScopeFilter)}
+            >
+              {(Object.keys(SCOPE_LABELS) as ScopeFilter[]).map((key) => (
+                <option key={key} value={key}>
+                  {SCOPE_LABELS[key]}
+                </option>
+              ))}
+            </FilterSelect>
+            <FilterSelect
+              label="Status"
+              value={status}
+              onChange={(e) => setStatus(e.target.value as StatusFilter)}
+            >
+              <option value="all">Any status</option>
+              <option value="Not Tested">Not Tested</option>
+              <option value="Tested">Tested</option>
+              <option value="N/A">N/A</option>
+            </FilterSelect>
+            <FilterSelect
+              label="Result"
+              value={result}
+              onChange={(e) => setResult(e.target.value as ResultFilter)}
+            >
+              <option value="all">Any result</option>
+              <option value="Vulnerable">Vulnerable</option>
+              <option value="Not Vulnerable">Not Vulnerable</option>
+            </FilterSelect>
+            <FilterSelect label="Priority" value={priority} onChange={(e) => setPriority(e.target.value)}>
+              <option value="all">Any priority</option>
+              {PRIORITIES.map((p) => (
+                <option key={p} value={p}>
+                  {p}
+                </option>
+              ))}
+            </FilterSelect>
+            <FilterSelect label="Category" value={category} onChange={(e) => setCategory(e.target.value)}>
+              <option value="all">Any category</option>
+              {CATEGORIES.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </FilterSelect>
+            <FilterSelect
+              label="Subcategory"
+              value={subcategory}
+              onChange={(e) => setSubcategory(e.target.value)}
+            >
+              <option value="all">Any subcategory</option>
+              {subcategoryOptions.map((sub) => (
+                <option key={sub} value={sub}>
+                  {sub}
+                </option>
+              ))}
+            </FilterSelect>
+          </div>
+        )}
+
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 border-t border-ink-800 pt-2.5 text-xs text-ink-400">
+          <span aria-live="polite">
+            <strong className="text-ink-100">{visible.length}</strong> shown ·{' '}
+            <strong className="text-ink-200">{notTestedShown}</strong> Not Tested
           </span>
-          {uncertainIds.size > 0 && scope !== 'unconfirmed' && (
-            <button className="text-amber-400 hover:underline" onClick={() => setScope('unconfirmed')}>
-              {uncertainIds.size} unconfirmed
+          {unconfirmedIds.size > 0 && scope !== 'unconfirmed' && (
+            <button
+              className="rounded text-amber-400 hover:underline"
+              onClick={() => setScope('unconfirmed')}
+            >
+              {unconfirmedIds.size} unconfirmed
             </button>
           )}
           <button
-            className={clsx('hover:text-brand-400', selectionMode ? 'text-brand-400' : 'text-ink-400')}
+            className={clsx('rounded hover:text-brand-400', selectionMode ? 'text-brand-400' : '')}
+            aria-pressed={selectionMode}
             onClick={() => {
               setSelectionMode((v) => !v);
               setSelected(new Set());
@@ -395,7 +466,7 @@ export default function WorkspacePage() {
           </button>
           {selectionMode && (
             <button
-              className="text-ink-400 hover:text-brand-400"
+              className="rounded hover:text-brand-400"
               onClick={() =>
                 setSelected(
                   selected.size === visible.length
@@ -409,56 +480,66 @@ export default function WorkspacePage() {
                 : 'Select all shown'}
             </button>
           )}
-          <span className="ml-auto hidden text-[11px] text-ink-600 lg:inline">
-            <kbd className="rounded bg-ink-800 px-1">j</kbd>/
-            <kbd className="rounded bg-ink-800 px-1">k</kbd> move ·{' '}
-            <kbd className="rounded bg-ink-800 px-1">1</kbd>
-            <kbd className="rounded bg-ink-800 px-1">2</kbd>
-            <kbd className="rounded bg-ink-800 px-1">3</kbd> status ·{' '}
-            <kbd className="rounded bg-ink-800 px-1">v</kbd>/
-            <kbd className="rounded bg-ink-800 px-1">b</kbd> result ·{' '}
-            <kbd className="rounded bg-ink-800 px-1">e</kbd> note ·{' '}
-            <kbd className="rounded bg-ink-800 px-1">⏎</kbd> next untested
+          {(activeFilters > 0 || query) && (
+            <button className="ml-auto rounded hover:text-brand-400" onClick={resetFilters}>
+              <IconX size={11} className="mr-1 inline" aria-hidden="true" />
+              Clear filters
+            </button>
+          )}
+          <span className="hidden w-full text-[11px] text-ink-500 xl:block">
+            <kbd>j</kbd>/<kbd>k</kbd> move · <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> status ·{' '}
+            <kbd>v</kbd>/<kbd>b</kbd> result · <kbd>e</kbd> note · <kbd>⏎</kbd> next Not Tested ·{' '}
+            <kbd>/</kbd> search
           </span>
         </div>
       </Card>
 
       {/* Bulk bar ---------------------------------------------------------- */}
       {selectionMode && selected.size > 0 && (
-        <div className="panel animate-in sticky top-16 z-30 flex flex-wrap items-center gap-2 border-brand-500/30 bg-ink-900/95 p-3">
+        <div
+          role="toolbar"
+          aria-label="Bulk actions"
+          className="panel animate-in sticky top-16 z-30 flex flex-wrap items-center gap-2 border-brand-500/40 p-3"
+        >
           <Badge tone="brand">{selected.size} selected</Badge>
-          <Button size="sm" onClick={() => void bulk({ status: 'Not Tested' }, 'Reset to Not Tested')}>
+          <Button size="sm" onClick={() => void bulk({ status: 'Not Tested' }, 'Set to Not Tested')}>
             Not Tested
           </Button>
           <Button
             size="sm"
-            onClick={() => void bulk({ status: 'Tested', result: 'Not Vulnerable' }, 'Marked Not Vulnerable')}
+            onClick={() =>
+              void bulk({ status: 'Tested', result: 'Not Vulnerable' }, 'Set to Not Vulnerable')
+            }
           >
             Tested → Not Vulnerable
           </Button>
           <Button
             size="sm"
-            onClick={() => void bulk({ status: 'Tested', result: 'Vulnerable' }, 'Marked Vulnerable')}
+            onClick={() => void bulk({ status: 'Tested', result: 'Vulnerable' }, 'Set to Vulnerable')}
           >
             Tested → Vulnerable
           </Button>
-          <Button size="sm" onClick={() => void bulk({ status: 'N/A' }, 'Marked N/A')}>
+          <Button size="sm" onClick={() => void bulk({ status: 'N/A' }, 'Set to N/A')}>
             N/A
           </Button>
-          <span className="mx-1 h-4 w-px bg-ink-700" />
+          <span className="mx-1 h-4 w-px bg-ink-700" aria-hidden="true" />
           <Button
             size="sm"
             variant="subtle"
-            onClick={() => void bulk({ applicable: true, applicabilitySource: 'manual' }, 'Included in scope')}
+            onClick={() =>
+              void bulk({ applicable: true, applicabilitySource: 'manual' }, 'Marked Applicable')
+            }
           >
-            Include
+            Applicable
           </Button>
           <Button
             size="sm"
             variant="subtle"
-            onClick={() => void bulk({ applicable: false, applicabilitySource: 'manual' }, 'Excluded from scope')}
+            onClick={() =>
+              void bulk({ applicable: false, applicabilitySource: 'manual' }, 'Marked Not Applicable')
+            }
           >
-            Exclude
+            Not Applicable
           </Button>
           <Button size="sm" variant="ghost" className="ml-auto" onClick={() => setSelected(new Set())}>
             Clear
@@ -466,48 +547,56 @@ export default function WorkspacePage() {
         </div>
       )}
 
-      {/* Two-pane workspace ------------------------------------------------ */}
+      {/* Panes ------------------------------------------------------------- */}
       {visible.length === 0 ? (
         <EmptyState
-          title="No tests match these filters"
-          description="Adjust the filters, or widen the scope selector to see excluded tests."
+          icon={<IconSearch size={28} />}
+          title={query ? `No tests match “${query}”` : 'No tests match these filters'}
+          description={
+            query
+              ? 'Search covers vulnerability names, aliases, test IDs, guidance and your notes. Try a shorter term, or clear the filters.'
+              : 'Nothing in this engagement matches the current combination. Widen the applicability filter to include tests marked Not Applicable.'
+          }
           action={
-            <Button variant="subtle" onClick={resetFilters}>
+            <Button variant="secondary" onClick={resetFilters}>
               Clear filters
             </Button>
           }
         />
       ) : (
         <div className="grid gap-3 lg:grid-cols-[minmax(280px,340px)_1fr]">
-          <div
-            ref={listRef}
-            className="panel max-h-[calc(100vh-15rem)] min-h-[24rem] divide-y divide-ink-850 overflow-y-auto p-0"
-          >
-            {visible.map((item) => (
-              <div key={item.definition.id} data-test-id={item.definition.id}>
-                <TestListRow
-                  item={item}
-                  active={active?.definition.id === item.definition.id}
-                  selected={selected.has(item.definition.id)}
-                  selectionMode={selectionMode}
-                  categoryLabel={categoryName(item.definition.category)}
-                  uncertain={uncertainIds.has(item.definition.id)}
-                  onOpen={() => open(item.definition.id)}
-                  onToggleSelect={() =>
-                    setSelected((prev) => {
-                      const next = new Set(prev);
-                      if (next.has(item.definition.id)) next.delete(item.definition.id);
-                      else next.add(item.definition.id);
-                      return next;
-                    })
-                  }
-                />
-              </div>
-            ))}
-          </div>
+          {showList && (
+            <nav
+              aria-label="Tests"
+              className="panel max-h-[calc(100vh-16rem)] min-h-[20rem] overflow-y-auto p-0 lg:max-h-[calc(100vh-15rem)]"
+            >
+              <ul ref={listRef} className="divide-y divide-ink-800">
+                {visible.map((item) => (
+                  <TestListRow
+                    key={item.definition.id}
+                    item={item}
+                    active={active?.definition.id === item.definition.id}
+                    selected={selected.has(item.definition.id)}
+                    selectionMode={selectionMode}
+                    categoryLabel={categoryName(item.definition.category)}
+                    unconfirmed={unconfirmedIds.has(item.definition.id)}
+                    onOpen={() => open(item.definition.id)}
+                    onToggleSelect={() =>
+                      setSelected((prev) => {
+                        const next = new Set(prev);
+                        if (next.has(item.definition.id)) next.delete(item.definition.id);
+                        else next.add(item.definition.id);
+                        return next;
+                      })
+                    }
+                  />
+                ))}
+              </ul>
+            </nav>
+          )}
 
-          <div className="panel max-h-[calc(100vh-15rem)] min-h-[24rem] overflow-hidden p-0">
-            {active && (
+          {showDetail && active && (
+            <div className="panel max-h-[calc(100vh-15rem)] min-h-[24rem] overflow-hidden p-0">
               <TestDetailPanel
                 key={active.definition.id}
                 item={active}
@@ -518,10 +607,11 @@ export default function WorkspacePage() {
                 onPrevious={() => step(-1)}
                 onNext={() => step(1)}
                 onNextUntested={nextUntested}
+                onBackToList={isWide ? undefined : () => setMobileView('list')}
                 notesRef={notesRef}
               />
-            )}
-          </div>
+            </div>
+          )}
         </div>
       )}
     </div>

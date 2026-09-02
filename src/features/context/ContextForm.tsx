@@ -32,20 +32,27 @@ function TriControl({
   onChange: (v: boolean | undefined) => void;
 }) {
   const options: { key: Tri; label: string; active: string; next: boolean | undefined }[] = [
-    { key: 'yes', label: 'Yes', active: 'bg-emerald-500/90 text-ink-950 border-emerald-400', next: true },
-    { key: 'no', label: 'No', active: 'bg-ink-500 text-ink-50 border-ink-400', next: false },
-    { key: 'unknown', label: 'Unknown', active: 'bg-amber-500/80 text-ink-950 border-amber-400', next: undefined },
+    { key: 'yes', label: 'Yes', active: 'bg-safe-500 text-ink-950 border-safe-400', next: true },
+    { key: 'no', label: 'No', active: 'bg-ink-600 text-ink-50 border-ink-500', next: false },
+    { key: 'unknown', label: 'Unknown', active: 'bg-amber-500 text-ink-950 border-amber-400', next: undefined },
   ];
   return (
-    <div className="inline-flex rounded-lg border border-ink-600 bg-ink-900/70 p-0.5">
+    <div
+      role="radiogroup"
+      aria-label="Answer"
+      className="inline-flex rounded-[--radius-control] border border-ink-600 bg-ink-950/60 p-0.5"
+    >
       {options.map((o) => (
         <button
           key={o.key}
           type="button"
+          role="radio"
+          aria-checked={value === o.key}
+          tabIndex={value === o.key ? 0 : -1}
           onClick={() => onChange(o.next)}
           className={clsx(
             'rounded-md border border-transparent px-2.5 py-1 text-[11px] font-medium transition-colors',
-            value === o.key ? o.active : 'text-ink-400 hover:bg-ink-800 hover:text-ink-100',
+            value === o.key ? o.active : 'text-ink-300 hover:bg-ink-800 hover:text-ink-100',
           )}
         >
           {o.label}
@@ -75,11 +82,12 @@ function MultiControl({
             onClick={() =>
               onChange(active ? value.filter((v) => v !== o.value) : [...value, o.value])
             }
+            aria-pressed={active}
             className={clsx(
-              'rounded-lg border px-2.5 py-1 text-xs transition-colors',
+              'rounded-[--radius-control] border px-2.5 py-1 text-xs transition-colors',
               active
                 ? 'border-brand-500/60 bg-brand-500/15 text-brand-400'
-                : 'border-ink-600 bg-ink-900/60 text-ink-300 hover:border-ink-500 hover:text-ink-100',
+                : 'border-ink-600 bg-ink-950/40 text-ink-300 hover:border-ink-500 hover:text-ink-100',
             )}
           >
             {o.label}
@@ -107,8 +115,8 @@ export function FactRow({
   return (
     <div
       className={clsx(
-        'flex flex-col gap-2 rounded-lg border px-3 py-2.5 transition-colors sm:flex-row sm:items-center sm:justify-between',
-        unknown ? 'border-ink-800 bg-ink-900/30' : 'border-ink-700 bg-ink-900/60',
+        'flex flex-col gap-2 rounded-[--radius-control] border px-3 py-2.5 transition-colors sm:flex-row sm:items-center sm:justify-between',
+        unknown ? 'border-ink-800 bg-ink-950/30' : 'border-ink-700 bg-ink-850',
       )}
     >
       <div className="min-w-0 sm:pr-6">
@@ -126,7 +134,7 @@ export function FactRow({
             )
           )}
         </p>
-        {fact.hint && <p className="mt-0.5 text-xs text-ink-500">{fact.hint}</p>}
+        {fact.hint && <p className="mt-0.5 text-xs text-ink-400">{fact.hint}</p>}
       </div>
       <div className="shrink-0">
         {fact.type === 'boolean' && (
