@@ -20,6 +20,7 @@ export function TestListRow({
   onToggleSelect,
   categoryLabel,
   unconfirmed,
+  buttonRef,
 }: {
   item: ChecklistItem;
   active: boolean;
@@ -29,6 +30,7 @@ export function TestListRow({
   onToggleSelect: () => void;
   categoryLabel: string;
   unconfirmed: boolean;
+  buttonRef?: React.Ref<HTMLButtonElement>;
 }) {
   const { definition: d, state: s } = item;
 
@@ -51,15 +53,22 @@ export function TestListRow({
         />
       )}
 
+      {/*
+        Roving tabindex: only the active row is a tab stop, so Tab moves past
+        the list in one press and the arrow keys walk it — instead of ~170
+        stops between the filters and the test detail.
+      */}
       <button
+        ref={buttonRef}
         onClick={onOpen}
         aria-current={active ? 'true' : undefined}
+        tabIndex={active ? 0 : -1}
         className="min-w-0 flex-1 py-2 text-left"
       >
         {/* 1 — vulnerability name dominates */}
         <span
           className={clsx(
-            'block truncate text-[13px] leading-snug',
+            'block truncate text-sm leading-snug',
             active ? 'font-semibold text-ink-50' : 'font-medium text-ink-100',
           )}
         >
@@ -71,19 +80,19 @@ export function TestListRow({
           <StatusBadge status={s.status} />
           <ResultBadge result={s.result} />
           {!s.applicable && (
-            <span className="rounded-md border border-ink-600 px-1.5 py-0.5 text-[11px] text-ink-300">
+            <span className="rounded-md border border-ink-600 px-1.5 py-0.5 text-micro text-ink-300">
               Not Applicable
             </span>
           )}
         </span>
 
         {/* 4 + 5 — priority then supporting metadata */}
-        <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] text-ink-400">
+        <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-micro text-ink-400">
           <PriorityBadge priority={d.priority} />
           <span className="font-mono">{d.id}</span>
           <span className="truncate">{categoryLabel}</span>
           {unconfirmed && s.applicable && (
-            <span className="text-amber-400" title="In scope only because context facts are unknown">
+            <span className="text-amber-400" title="Applicable only because context facts are unknown">
               Unconfirmed
             </span>
           )}

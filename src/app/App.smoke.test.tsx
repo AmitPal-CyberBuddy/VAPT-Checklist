@@ -211,6 +211,70 @@ describe('application shell', () => {
   });
 });
 
+describe('keyboard ergonomics', () => {
+  beforeEach(async () => {
+    await db.open();
+    await clearAllData();
+    setViewport(true);
+  });
+  afterEach(cleanup);
+
+  it('makes the test list a single tab stop (roving tabindex)', async () => {
+    const engagement = await createEngagement({
+      name: 'Roving',
+      context: { assetTypes: ['web-app'], hasAuthentication: true },
+    });
+    window.location.hash = `#/e/${engagement.id}/workspace`;
+    render(<App />);
+
+    const list = await screen.findByRole('navigation', { name: 'Tests' });
+    const rows = within(list)
+      .getAllByRole('button')
+      .filter((b) => b.getAttribute('tabindex') !== null);
+    expect(rows.length).toBeGreaterThan(50);
+
+    // Exactly one row is reachable with Tab; the rest are arrow-key targets.
+    const tabbable = rows.filter((b) => b.getAttribute('tabindex') === '0');
+    expect(tabbable).toHaveLength(1);
+    expect(tabbable[0].getAttribute('aria-current')).toBe('true');
+  });
+
+  it('announces the active test to screen readers', async () => {
+    const engagement = await createEngagement({
+      name: 'Announce',
+      context: { assetTypes: ['web-app'], hasAuthentication: true },
+    });
+    window.location.hash = `#/e/${engagement.id}/workspace?test=AUTH-001`;
+    render(<App />);
+
+    await screen.findByText('Testing guidance');
+    const live = document.querySelector('[aria-live="polite"][aria-atomic="true"]');
+    expect(live?.textContent).toContain('Authentication Bypass');
+    expect(live?.textContent).toContain('Status Not Tested');
+  });
+
+  it('traps Tab inside a modal and closes it on Escape', async () => {
+    const engagement = await createEngagement({ name: 'Trap me' });
+    window.location.hash = '#/';
+    render(<App />);
+
+    fireEvent.click(
+      await screen.findByRole('button', { name: `Delete ${engagement.name}` }),
+    );
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog.getAttribute('aria-modal')).toBe('true');
+
+    const focusable = within(dialog).getAllByRole('button');
+    const last = focusable[focusable.length - 1];
+    last.focus();
+    fireEvent.keyDown(document, { key: 'Tab' });
+    expect(document.activeElement).toBe(focusable[0]);
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+  });
+});
+
 describe('narrow viewports', () => {
   beforeEach(async () => {
     await db.open();

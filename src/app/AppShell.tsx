@@ -32,7 +32,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <header className="no-print sticky top-0 z-40 border-b border-ink-800 bg-ink-950/95 backdrop-blur">
         <div className="mx-auto flex h-14 max-w-[1600px] items-center gap-3 px-3 sm:gap-6 sm:px-6">
-          <NavLink to="/" className="flex shrink-0 items-center gap-2.5" aria-label="VAPT Checklist — home">
+          <NavLink to="/" className="flex shrink-0 items-center gap-2" aria-label="VAPT Checklist — home">
             <span className="flex h-8 w-8 items-center justify-center rounded-[--radius-control] border border-brand-500/40 bg-brand-500/10 text-brand-400">
               <IconShield size={18} />
             </span>
@@ -40,7 +40,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               <span className="block text-sm font-semibold tracking-tight text-ink-50">
                 VAPT Checklist
               </span>
-              <span className="block text-[10px] tracking-widest text-ink-400 uppercase">
+              <span className="block text-micro tracking-widest text-ink-400 uppercase">
                 Assessment Tracker
               </span>
             </span>
@@ -71,7 +71,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             })}
           </nav>
 
-          <div className="ml-auto flex items-center gap-3 text-[11px] text-ink-400">
+          <div className="ml-auto flex items-center gap-3 text-micro text-ink-400">
             <span className="hidden xl:inline">
               {TEST_LIBRARY.length} tests · library v{LIBRARY_VERSION}
             </span>

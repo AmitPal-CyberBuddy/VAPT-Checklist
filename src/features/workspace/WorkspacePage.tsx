@@ -8,6 +8,7 @@ import {
   EmptyState,
   FilterSelect,
   Input,
+  LiveAnnouncement,
   LoadingPanel,
 } from '../../ui/primitives';
 import { IconFilter, IconSearch, IconX } from '../../ui/icons';
@@ -74,6 +75,9 @@ export default function WorkspacePage() {
 
   const notesRef = useRef<HTMLTextAreaElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
+  const activeRowRef = useRef<HTMLButtonElement>(null);
+  /** True when the last move came from the keyboard, so focus should follow. */
+  const keyboardMove = useRef(false);
 
   const context = engagement?.context ?? {};
 
@@ -187,14 +191,23 @@ export default function WorkspacePage() {
   );
 
   const step = useCallback(
-    (delta: number) => {
+    (delta: number, fromKeyboard = false) => {
       if (visible.length === 0) return;
       const from = activeIndex < 0 ? 0 : activeIndex;
       const nextIndex = Math.min(visible.length - 1, Math.max(0, from + delta));
+      keyboardMove.current = fromKeyboard;
       open(visible[nextIndex].definition.id);
     },
     [activeIndex, visible, open],
   );
+
+  // Keep focus on the active row when the keyboard moved the selection, so the
+  // roving tabindex stays coherent and the change is announced.
+  useEffect(() => {
+    if (!keyboardMove.current) return;
+    keyboardMove.current = false;
+    if (document.activeElement?.closest('[data-test-id]')) activeRowRef.current?.focus();
+  }, [activeId]);
 
   const nextUntested = useCallback(() => {
     if (visible.length === 0) return;
@@ -223,12 +236,12 @@ export default function WorkspacePage() {
         case 'j':
         case 'ArrowDown':
           event.preventDefault();
-          step(1);
+          step(1, true);
           break;
         case 'k':
         case 'ArrowUp':
           event.preventDefault();
-          step(-1);
+          step(-1, true);
           break;
         case '1':
           if (current) void updateTestState(engagementId, current.definition.id, { status: 'Not Tested' });
@@ -323,8 +336,18 @@ export default function WorkspacePage() {
 
   return (
     <div className="space-y-3">
+      {active && (
+        <LiveAnnouncement
+          message={`Test ${(activeIndex < 0 ? 0 : activeIndex) + 1} of ${visible.length}: ${
+            active.definition.vulnerabilityName
+          }. Priority ${active.definition.priority}. Status ${active.state.status}${
+            active.state.result ? `, result ${active.state.result}` : ''
+          }.`}
+        />
+      )}
+
       {/* Toolbar ----------------------------------------------------------- */}
-      <Card className="space-y-2.5 py-3" as="section" aria-labelledby="workspace-filters">
+      <Card className="space-y-2 py-3" as="section" aria-labelledby="workspace-filters">
         <h2 id="workspace-filters" className="sr-only">
           Search and filter tests
         </h2>
@@ -355,7 +378,7 @@ export default function WorkspacePage() {
           >
             Filters
             {activeFilters > 0 && (
-              <span className="ml-1 rounded bg-brand-500 px-1.5 text-[11px] font-semibold text-ink-950">
+              <span className="ml-1 rounded bg-brand-500 px-1.5 text-micro font-semibold text-ink-950">
                 {activeFilters}
               </span>
             )}
@@ -486,7 +509,7 @@ export default function WorkspacePage() {
               Clear filters
             </button>
           )}
-          <span className="hidden w-full text-[11px] text-ink-500 xl:block">
+          <span className="hidden w-full text-micro text-ink-500 xl:block">
             <kbd>j</kbd>/<kbd>k</kbd> move · <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> status ·{' '}
             <kbd>v</kbd>/<kbd>b</kbd> result · <kbd>e</kbd> note · <kbd>⏎</kbd> next Not Tested ·{' '}
             <kbd>/</kbd> search
@@ -580,6 +603,9 @@ export default function WorkspacePage() {
                     selectionMode={selectionMode}
                     categoryLabel={categoryName(item.definition.category)}
                     unconfirmed={unconfirmedIds.has(item.definition.id)}
+                    buttonRef={
+                      active?.definition.id === item.definition.id ? activeRowRef : undefined
+                    }
                     onOpen={() => open(item.definition.id)}
                     onToggleSelect={() =>
                       setSelected((prev) => {

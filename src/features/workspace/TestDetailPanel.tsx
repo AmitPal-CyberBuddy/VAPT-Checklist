@@ -173,7 +173,7 @@ export function TestDetailPanel({
             <h2 className="text-base leading-tight font-semibold text-ink-50 sm:text-lg">
               {d.vulnerabilityName}
             </h2>
-            <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-ink-400">
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-micro text-ink-400">
               <PriorityBadge priority={d.priority} />
               <span className="font-mono">{d.id}</span>
               <span aria-hidden="true">·</span>
@@ -185,7 +185,7 @@ export function TestDetailPanel({
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-1">
-            <span className="mr-1 hidden text-[11px] tabular-nums text-ink-400 sm:inline">
+            <span className="mr-1 hidden text-micro tabular-nums text-ink-400 sm:inline">
               {position} / {total}
             </span>
             <IconButton
@@ -200,7 +200,7 @@ export function TestDetailPanel({
 
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           <div className="flex items-center gap-2">
-            <span className="text-[11px] font-medium tracking-wider text-ink-400 uppercase">
+            <span className="text-micro font-medium tracking-wider text-ink-400 uppercase">
               Status
             </span>
             <SegmentedControl
@@ -218,7 +218,7 @@ export function TestDetailPanel({
               awaitingChoice && 'ring-2 ring-amber-400 ring-offset-2 ring-offset-ink-900',
             )}
           >
-            <span className="text-[11px] font-medium tracking-wider text-ink-400 uppercase">
+            <span className="text-micro font-medium tracking-wider text-ink-400 uppercase">
               Result
             </span>
             <SegmentedControl
@@ -254,7 +254,7 @@ export function TestDetailPanel({
         <Section title="Description">
           <p className="text-sm leading-relaxed text-ink-200">{d.description}</p>
           {d.aliases && d.aliases.length > 0 && (
-            <p className="mt-2 text-[11px] text-ink-400">
+            <p className="mt-2 text-micro text-ink-400">
               Also known as: <span className="text-ink-300">{d.aliases.join(' · ')}</span>
             </p>
           )}
@@ -263,10 +263,10 @@ export function TestDetailPanel({
         <Section title="Testing guidance">
           <ol className="space-y-2 text-sm text-ink-200">
             {d.testingGuidance.map((step, i) => (
-              <li key={i} className="flex gap-2.5">
+              <li key={i} className="flex gap-2">
                 <span
                   aria-hidden="true"
-                  className="mt-0.5 flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded bg-ink-800 text-[10px] text-ink-300"
+                  className="mt-0.5 flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded bg-ink-800 text-micro text-ink-300"
                 >
                   {i + 1}
                 </span>
@@ -286,7 +286,7 @@ export function TestDetailPanel({
             placeholder="Endpoints and parameters tested, payloads used, observations, conclusion…"
             className="text-xs"
           />
-          <div className="mt-1.5 flex flex-wrap items-center justify-between gap-2 text-[11px] text-ink-400">
+          <div className="mt-1.5 flex flex-wrap items-center justify-between gap-2 text-micro text-ink-400">
             <span>Optional · saved automatically</span>
             <span>Updated {s.updatedAt.slice(0, 16).replace('T', ' ')}</span>
           </div>
@@ -300,7 +300,7 @@ export function TestDetailPanel({
                     key={reason}
                     type="button"
                     onClick={() => saveNotes(reason)}
-                    className="rounded-md border border-ink-600 bg-ink-900 px-2 py-1 text-[11px] text-ink-200 transition-colors hover:border-amber-500/50 hover:text-amber-300"
+                    className="rounded-md border border-ink-600 bg-ink-900 px-2 py-1 text-micro text-ink-200 transition-colors hover:border-amber-500/50 hover:text-amber-300"
                   >
                     {reason}
                   </button>
@@ -330,12 +330,12 @@ export function TestDetailPanel({
                 }
               />
             </div>
-            <p className="border-t border-ink-800 pt-2 text-[11px] text-ink-400">
+            <p className="border-t border-ink-800 pt-2 text-micro text-ink-400">
               Rule: {describeRule(d.applicability)}
             </p>
             {s.applicabilitySource === 'manual' && (
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="text-[11px] text-amber-300">
+                <span className="text-micro text-amber-300">
                   Set by you (suggestion: {s.suggestedApplicable ? 'Applicable' : 'Not Applicable'})
                 </span>
                 <Button
@@ -363,7 +363,7 @@ export function TestDetailPanel({
                 href={reference.url}
                 target="_blank"
                 rel="noreferrer noopener"
-                className="inline-flex items-center gap-1 rounded-md border border-ink-600 px-2 py-0.5 text-[11px] text-ink-300 transition-colors hover:border-brand-500/50 hover:text-brand-400"
+                className="inline-flex items-center gap-1 rounded-md border border-ink-600 px-2 py-0.5 text-micro text-ink-300 transition-colors hover:border-brand-500/50 hover:text-brand-400"
               >
                 {reference.label}
                 <IconExternal size={10} aria-hidden="true" />
@@ -389,7 +389,7 @@ export function TestDetailPanel({
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section>
-      <h3 className="mb-1.5 text-[11px] font-medium tracking-wider text-ink-400 uppercase">
+      <h3 className="mb-1.5 text-micro font-medium tracking-wider text-ink-400 uppercase">
         {title}
       </h3>
       {children}

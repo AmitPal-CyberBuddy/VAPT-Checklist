@@ -295,7 +295,7 @@ export default function SettingsPage() {
         }
       >
         <div className="flex items-center gap-2 text-sm text-ink-300">
-          <Badge tone="critical">{engagements?.length ?? 0} engagements</Badge>
+          <Badge tone="neutral">{engagements?.length ?? 0} engagements</Badge>
           will be removed from IndexedDB.
         </div>
       </Modal>

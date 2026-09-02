@@ -208,7 +208,7 @@ export default function LibraryPage() {
             <div key={t.id} className="border-t border-ink-800 first:border-t-0">
               <button
                 onClick={() => setOpen(expanded ? null : t.id)}
-                className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-ink-850"
+                className="flex w-full items-center gap-3 px-4 py-2 text-left hover:bg-ink-850"
               >
                 <IconChevron
                   size={14}
@@ -217,7 +217,7 @@ export default function LibraryPage() {
                     expanded && 'rotate-90',
                   )}
                 />
-                <span className="font-mono text-[11px] text-ink-500">{t.id}</span>
+                <span className="font-mono text-micro text-ink-500">{t.id}</span>
                 <span className="flex-1 truncate text-sm text-ink-100">{t.vulnerabilityName}</span>
                 <span className="hidden text-xs text-ink-500 md:inline">{t.subcategory}</span>
                 <span className="hidden text-xs text-ink-500 lg:inline">
@@ -229,14 +229,14 @@ export default function LibraryPage() {
                 <div className="animate-in grid gap-4 border-t border-ink-800 bg-ink-950/40 px-4 py-4 pl-11 lg:grid-cols-2">
                   <div className="space-y-3">
                     <div>
-                      <p className="mb-1 text-[11px] tracking-wider text-ink-400 uppercase">
+                      <p className="mb-1 text-micro tracking-wider text-ink-400 uppercase">
                         Description
                       </p>
                       <p className="text-sm leading-relaxed text-ink-200">{t.description}</p>
                     </div>
                     {t.aliases && t.aliases.length > 0 && (
                       <div>
-                        <p className="mb-1 text-[11px] tracking-wider text-ink-400 uppercase">
+                        <p className="mb-1 text-micro tracking-wider text-ink-400 uppercase">
                           Also known as
                         </p>
                         <div className="flex flex-wrap gap-1.5">
@@ -249,7 +249,7 @@ export default function LibraryPage() {
                       </div>
                     )}
                     <div>
-                      <p className="mb-1 text-[11px] tracking-wider text-ink-400 uppercase">
+                      <p className="mb-1 text-micro tracking-wider text-ink-400 uppercase">
                         Applicability rule
                       </p>
                       <p className="font-mono text-xs text-ink-300">
@@ -257,7 +257,7 @@ export default function LibraryPage() {
                       </p>
                     </div>
                     <div>
-                      <p className="mb-1 text-[11px] tracking-wider text-ink-400 uppercase">
+                      <p className="mb-1 text-micro tracking-wider text-ink-400 uppercase">
                         References
                       </p>
                       <div className="flex flex-wrap gap-1.5">
@@ -267,7 +267,7 @@ export default function LibraryPage() {
                             href={reference.url}
                             target="_blank"
                             rel="noreferrer noopener"
-                            className="inline-flex items-center gap-1 rounded-md border border-ink-600 px-1.5 py-0.5 text-[11px] text-ink-300 hover:border-brand-500/50 hover:text-brand-400"
+                            className="inline-flex items-center gap-1 rounded-md border border-ink-600 px-1.5 py-0.5 text-micro text-ink-300 hover:border-brand-500/50 hover:text-brand-400"
                           >
                             {reference.label}
                             <IconExternal size={10} />
@@ -277,13 +277,13 @@ export default function LibraryPage() {
                     </div>
                   </div>
                   <div>
-                    <p className="mb-1 text-[11px] tracking-wider text-ink-400 uppercase">
+                    <p className="mb-1 text-micro tracking-wider text-ink-400 uppercase">
                       Testing guidance
                     </p>
                     <ol className="space-y-1.5 text-sm text-ink-300">
                       {t.testingGuidance.map((g, i) => (
                         <li key={i} className="flex gap-2">
-                          <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded bg-ink-800 text-[10px] text-ink-400">
+                          <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded bg-ink-800 text-micro text-ink-400">
                             {i + 1}
                           </span>
                           <span className="leading-relaxed">{g}</span>
@@ -293,7 +293,7 @@ export default function LibraryPage() {
                     {t.tags && t.tags.length > 0 && (
                       <div className="mt-3 flex flex-wrap gap-1.5">
                         {t.tags.map((tag) => (
-                          <span key={tag} className="text-[11px] text-ink-500">
+                          <span key={tag} className="text-micro text-ink-500">
                             #{tag}
                           </span>
                         ))}

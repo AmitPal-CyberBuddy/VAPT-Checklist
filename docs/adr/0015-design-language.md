@@ -45,6 +45,10 @@ Style guidance in a document does not prevent any of this. Only the components c
 7. **Every state is a component.** `EmptyState`, `InlineAlert` and `LoadingPanel` cover empty,
    informational/error and loading states, so no screen improvises one.
 
+8. **The rules are executable.** `src/ui/designSystem.test.ts` reads the source and fails the build
+   when a screen steps outside the type scale, uses a raw palette hue, hand-rolls a button, ships a
+   retired term, or omits an accessible name. A style guide is a hope; a test is a constraint.
+
 The full language is written up in [`docs/DESIGN-SYSTEM.md`](../DESIGN-SYSTEM.md).
 
 ## Consequences
@@ -56,6 +60,10 @@ The full language is written up in [`docs/DESIGN-SYSTEM.md`](../DESIGN-SYSTEM.md
 - Contrast is a property of the palette, so it holds everywhere rather than needing per-screen care.
 - Cost: primitives are stricter to use — an icon button without a label will not compile, and a
   screen cannot quickly hand-roll a one-off badge. That friction is the point.
+- The contract test earns its keep immediately: on its first run it found a priority badge tone
+  borrowed for a count, a retired term in a tooltip and on the export screen, an unlabelled select
+  and two unnamed progress bars — none of which were visible in review.
+- `@types/node` is now a dev dependency, needed only so that test can read the source tree.
 - The dashboard lost its "Progress by priority" card in this pass; priority is already carried by
   the statistics row and the vulnerable-tests summary, and the card was decoration rather than a
   decision aid.

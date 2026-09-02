@@ -12,6 +12,7 @@
  *     users, in greyscale print and in a screen reader.
  */
 import { forwardRef, useEffect, useId, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import clsx from 'clsx';
 import type {
   ButtonHTMLAttributes,
@@ -37,9 +38,26 @@ const BUTTON_VARIANTS: Record<ButtonVariant, string> = {
 
 const BUTTON_SIZES: Record<ButtonSize, string> = {
   sm: 'h-8 px-2.5 text-xs gap-1.5',
-  md: 'h-9 px-3.5 text-sm gap-2',
+  md: 'h-9 px-3 text-sm gap-2',
   lg: 'h-11 px-5 text-sm gap-2',
 };
+
+/** The single source of button styling — shared with LinkButton. */
+export function buttonClass(
+  variant: ButtonVariant = 'secondary',
+  size: ButtonSize = 'md',
+  full?: boolean,
+  className?: string,
+) {
+  return clsx(
+    'inline-flex items-center justify-center rounded-[--radius-control] whitespace-nowrap',
+    'transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-45',
+    BUTTON_VARIANTS[variant],
+    BUTTON_SIZES[size],
+    full && 'w-full',
+    className,
+  );
+}
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
@@ -59,21 +77,39 @@ export function Button({
   ...rest
 }: ButtonProps) {
   return (
-    <button
-      type={type}
-      className={clsx(
-        'inline-flex items-center justify-center rounded-[--radius-control] whitespace-nowrap',
-        'transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-45',
-        BUTTON_VARIANTS[variant],
-        BUTTON_SIZES[size],
-        full && 'w-full',
-        className,
-      )}
-      {...rest}
-    >
+    <button type={type} className={buttonClass(variant, size, full, className)} {...rest}>
       {icon}
       {children}
     </button>
+  );
+}
+
+/**
+ * A navigation link that looks and behaves like a button. Screens must use this
+ * rather than restyling an anchor, so link-buttons and buttons never diverge.
+ */
+export function LinkButton({
+  to,
+  variant = 'secondary',
+  size = 'md',
+  icon,
+  full,
+  className,
+  children,
+}: {
+  to: string;
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  icon?: ReactNode;
+  full?: boolean;
+  className?: string;
+  children: ReactNode;
+}) {
+  return (
+    <Link to={to} className={buttonClass(variant, size, full, className)}>
+      {icon}
+      {children}
+    </Link>
   );
 }
 
@@ -148,13 +184,13 @@ export function Badge({
       title={title}
       className={clsx(
         'inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5',
-        'text-[11px] leading-4 font-medium whitespace-nowrap',
+        'text-micro leading-4 font-medium whitespace-nowrap',
         BADGE_TONES[tone],
         className,
       )}
     >
       {glyph && (
-        <span aria-hidden="true" className="font-mono text-[10px] leading-none">
+        <span aria-hidden="true" className="font-mono text-micro leading-none">
           {glyph}
         </span>
       )}
@@ -460,14 +496,14 @@ export function SegmentedControl<T extends string>({
             className={clsx(
               'inline-flex items-center gap-1 rounded-[calc(var(--radius-control)-2px)] border',
               'border-transparent font-medium transition-colors duration-150',
-              size === 'sm' ? 'px-2 py-1 text-[11px]' : 'px-2.5 py-1.5 text-xs',
+              size === 'sm' ? 'px-2 py-1 text-micro' : 'px-2.5 py-1.5 text-xs',
               active
                 ? SEGMENT_ACTIVE[option.tone ?? 'default']
                 : 'text-ink-300 hover:bg-ink-800 hover:text-ink-100',
             )}
           >
             {option.glyph && (
-              <span aria-hidden="true" className="font-mono text-[10px] leading-none">
+              <span aria-hidden="true" className="font-mono text-micro leading-none">
                 {option.glyph}
               </span>
             )}
@@ -667,11 +703,32 @@ export function Modal({
 
   useEffect(() => {
     if (!open) return;
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
-    };
-    document.addEventListener('keydown', onKey);
     const previous = document.activeElement as HTMLElement | null;
+
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      // Focus trap: cycle within the dialog instead of escaping to the page.
+      const focusable = panelRef.current?.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      );
+      if (!focusable || focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const activeEl = document.activeElement;
+      if (event.shiftKey && (activeEl === first || activeEl === panelRef.current)) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && activeEl === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener('keydown', onKey);
     panelRef.current?.focus();
     return () => {
       document.removeEventListener('keydown', onKey);
@@ -737,10 +794,10 @@ export function Stat({
     brand: 'text-brand-400',
   };
   return (
-    <div className={clsx('panel-inset px-3 py-2.5', className)}>
-      <p className="flex items-center gap-1.5 text-[11px] font-medium tracking-wider text-ink-400 uppercase">
+    <div className={clsx('panel-inset px-3 py-2', className)}>
+      <p className="flex items-center gap-1.5 text-micro font-medium tracking-wider text-ink-400 uppercase">
         {glyph && (
-          <span aria-hidden="true" className="font-mono text-[10px]">
+          <span aria-hidden="true" className="font-mono text-micro">
             {glyph}
           </span>
         )}
@@ -758,6 +815,15 @@ export function Stat({
 
 export function Skeleton({ className }: { className?: string }) {
   return <div className={clsx('animate-pulse rounded bg-ink-800', className)} aria-hidden="true" />;
+}
+
+/** Politely announces a message to screen readers without showing it. */
+export function LiveAnnouncement({ message }: { message: string }) {
+  return (
+    <p aria-live="polite" aria-atomic="true" className="sr-only">
+      {message}
+    </p>
+  );
 }
 
 /** Consistent loading placeholder. Announced once, not per element. */

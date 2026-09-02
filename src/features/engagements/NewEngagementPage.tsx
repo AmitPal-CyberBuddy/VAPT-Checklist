@@ -134,7 +134,7 @@ export default function NewEngagementPage() {
               <span className="flex items-center gap-2">
                 <span
                   className={clsx(
-                    'flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-semibold',
+                    'flex h-5 w-5 items-center justify-center rounded-full text-micro font-semibold',
                     step >= s.id ? 'bg-brand-500 text-ink-950' : 'bg-ink-700 text-ink-300',
                   )}
                 >
@@ -142,7 +142,7 @@ export default function NewEngagementPage() {
                 </span>
                 <span className="text-sm font-medium text-ink-100">{s.title}</span>
               </span>
-              <span className="mt-0.5 block pl-7 text-[11px] text-ink-400">{s.hint}</span>
+              <span className="mt-0.5 block pl-7 text-micro text-ink-400">{s.hint}</span>
             </button>
           </li>
         ))}
@@ -295,7 +295,7 @@ export default function NewEngagementPage() {
             </div>
             <div className="flex items-center gap-4">
               <div className="w-40">
-                <ProgressBar value={completeness.ratio} />
+                <ProgressBar value={completeness.ratio} label="Context questions answered" />
               </div>
               <Button size="sm" variant="subtle" onClick={() => setShowAllFacts((v) => !v)}>
                 {showAllFacts ? 'Key questions only' : 'Show all questions'}
@@ -331,7 +331,7 @@ export default function NewEngagementPage() {
           <div className="grid gap-3 sm:grid-cols-4">
             {(['Critical', 'High', 'Medium', 'Low'] as Priority[]).map((p) => (
               <Card key={p} className="py-3">
-                <p className="text-[11px] tracking-wider text-ink-400 uppercase">{p}</p>
+                <p className="text-micro tracking-wider text-ink-400 uppercase">{p}</p>
                 <p className="mt-1 text-2xl font-semibold tabular-nums text-ink-50">
                   {preview.byPriority[p]}
                 </p>
@@ -354,7 +354,7 @@ export default function NewEngagementPage() {
                 <caption className="sr-only">
                   Tests that will be seeded as applicable for this engagement
                 </caption>
-                <thead className="sticky top-0 bg-ink-900 text-[11px] tracking-wider text-ink-400 uppercase">
+                <thead className="sticky top-0 bg-ink-900 text-micro tracking-wider text-ink-400 uppercase">
                   <tr>
                     <th scope="col" className="px-3 py-2 font-medium">
                       ID
@@ -383,7 +383,7 @@ export default function NewEngagementPage() {
                     )
                     .map(({ definition, suggestion }) => (
                       <tr key={definition.id} className="border-t border-ink-800">
-                        <td className="px-3 py-1.5 font-mono text-[11px] text-ink-500">
+                        <td className="px-3 py-1.5 font-mono text-micro text-ink-500">
                           {definition.id}
                         </td>
                         <td className="px-3 py-1.5 text-ink-100">{definition.vulnerabilityName}</td>

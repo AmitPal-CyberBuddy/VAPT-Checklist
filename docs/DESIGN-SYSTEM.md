@@ -17,6 +17,26 @@ Implementation: [`src/ui/primitives.tsx`](../src/ui/primitives.tsx) (components)
 | **Radius** | `--radius-control` 0.5rem · `--radius-panel` 0.75rem | Two radii only |
 | **Accent** | `brand-500` action · `vuln-500` vulnerable · `safe-500` not vulnerable | Semantic, never decorative |
 
+### Type scale
+
+Seven steps, nothing between them, **nothing below 11px** — anything smaller stops being readable
+in a long session.
+
+| Step | Size | Used for |
+| --- | --- | --- |
+| `text-micro` | 11px | Metadata, badges, keyboard hints |
+| `text-xs` | 12px | Secondary body, table cells, hints |
+| `text-sm` | 14px | Body, controls, list rows |
+| `text-base` | 16px | Detail-view lead |
+| `text-lg` | 18px | Detail-view title |
+| `text-xl` | 20px | Page title (mobile) |
+| `text-2xl` | 24px | Page title, statistic values |
+
+### Spacing
+
+The 4px scale, restricted to `1 (4) · 2 (8) · 3 (12) · 4 (16) · 5 (20) · 6 (24)`, plus `0.5`/`1.5`
+for badge-level inset. Half-steps above `2` are not used.
+
 The background is a flat colour. There are no gradients, no hero sections, no decorative
 illustrations and no shadows beyond what a border already conveys. Motion is limited to a 140 ms
 fade on newly mounted content and is disabled entirely under `prefers-reduced-motion`.
@@ -91,7 +111,10 @@ was the result* from a single glance at any row.
 | `Field` | Wraps its control in a `<label>`; marks required fields for sighted and screen-reader users |
 | `FilterSelect` | A `<select>` whose visible label would cost too much room; `label` is mandatory |
 | `SegmentedControl` | `role="radiogroup"` with a mandatory group `label` |
+| `LinkButton` | A router link that looks like a button — screens never restyle an anchor |
+| `Modal` | `role="dialog"`, labelled, closes on `Escape`, traps `Tab`, restores focus on close |
 | `EmptyState` / `InlineAlert` / `LoadingPanel` | The only ways to render empty, informational and loading states |
+| `LiveAnnouncement` | Politely announces transient changes (the active test) to screen readers |
 
 **Lists, not cards, for repeated data.** The workspace list is a dense `<ul>`: at ~170 rows every
 pixel of card chrome is a pixel not spent on the vulnerability name.
@@ -122,7 +145,13 @@ minimum width, so the page itself never overflows.
 
 - **Landmarks**: `banner`, `navigation` (named), `main`, `contentinfo`, plus a skip link.
 - **Keyboard**: every action reachable; the workspace loop is fully keyboard-driven
-  (`j`/`k`, `1`/`2`/`3`, `v`/`b`, `e`, `⏎`, `/`); modals close on `Escape` and restore focus.
+  (`j`/`k`, `1`/`2`/`3`, `v`/`b`, `e`, `⏎`, `/`); modals close on `Escape`, trap `Tab` and restore
+  focus to the trigger.
+- **Roving tabindex**: the workspace list is a *single* tab stop — Tab moves past it in one press,
+  arrow keys walk the rows, and focus follows keyboard selection. Without this, reaching the test
+  detail meant tabbing through ~170 buttons.
+- **Announcements**: moving between tests announces "Test 3 of 42: SQL Injection. Priority
+  Critical. Status Not Tested." through a polite live region.
 - **Focus**: one visible treatment (`2px` brand outline, `2px` offset) on every focusable element.
 - **Names**: icon-only controls, filter selects, progress bars and radio groups all carry explicit
   accessible names.
@@ -133,7 +162,25 @@ minimum width, so the page itself never overflows.
 
 ---
 
-## 8. Every state is designed
+## 8. The rules are tested, not just written
+
+[`src/ui/designSystem.test.ts`](../src/ui/designSystem.test.ts) reads the source and fails the build
+on drift. It is why this document stays true.
+
+| Contract | Fails when |
+| --- | --- |
+| Type scale | A size outside the seven steps, or any text below 11px |
+| Colour | A raw palette hue (`rose`, `emerald`, `slate`…) instead of a semantic token |
+| Shape | A radius outside the two defined ones; any gradient; a shadow above `shadow-sm` |
+| Components | A screen hand-rolls a button, or restyles a priority/status/result state |
+| Vocabulary | The words *Pending, Untested, Incomplete, Resolved, Findings, In scope, Excluded, Issue* appear in the interface |
+| Accessibility | An unlabelled `Select`, an unnamed `ProgressBar`, a missing skip link or duplicate `main` |
+
+It caught five live violations on its first run — a borrowed `critical` badge tone in Settings, a
+retired phrase in a workspace tooltip, "Excluded" on the export screen, an unlabelled context
+select, and two unnamed progress bars.
+
+## 9. Every state is designed
 
 | State | Where |
 | --- | --- |

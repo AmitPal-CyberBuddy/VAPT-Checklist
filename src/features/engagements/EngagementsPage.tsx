@@ -162,7 +162,7 @@ export default function EngagementsPage() {
               </div>
 
               {(engagement.applicationUrl || engagement.scope.length > 0) && (
-                <p className="truncate font-mono text-[11px] text-ink-500">
+                <p className="truncate font-mono text-micro text-ink-500">
                   {[engagement.applicationUrl, ...engagement.scope].filter(Boolean).join(' · ')}
                 </p>
               )}
@@ -192,7 +192,7 @@ export default function EngagementsPage() {
                   ) : (
                     <Badge tone="neutral">No vulnerable tests</Badge>
                   )}
-                  <span className="text-[11px] text-ink-400">
+                  <span className="text-micro text-ink-400">
                     {new Date(engagement.updatedAt).toLocaleDateString()}
                   </span>
                 </div>

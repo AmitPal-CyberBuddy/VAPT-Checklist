@@ -42,7 +42,7 @@ const SHEETS = [
     key: 'notApplicable',
     name: 'Not Applicable',
     description:
-      'Excluded tests with the rule and reason — the audit trail for every scope decision.',
+      'Tests marked Not Applicable, with the rule and reason — the audit trail for every applicability decision.',
   },
   {
     key: 'coverage',
@@ -124,7 +124,7 @@ export default function ExportPage() {
               return (
                 <div
                   key={sheet.key}
-                  className="flex items-start justify-between gap-4 rounded-[--radius-control] border border-ink-700 bg-ink-850 px-3 py-2.5"
+                  className="flex items-start justify-between gap-4 rounded-[--radius-control] border border-ink-700 bg-ink-850 px-3 py-2"
                 >
                   <div className="min-w-0">
                     <p className="flex items-center gap-2 text-sm text-ink-100">
@@ -142,7 +142,7 @@ export default function ExportPage() {
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-ink-800 pt-4">
             <div>
               <p className="font-mono text-xs text-ink-400">{buildFileName(engagement)}</p>
-              <p className="mt-0.5 text-[11px] text-ink-500">
+              <p className="mt-0.5 text-micro text-ink-500">
                 Frozen headers, filter dropdowns, tuned column widths, colour-coded priority and
                 result cells.
               </p>
@@ -197,7 +197,7 @@ export default function ExportPage() {
           <SectionHeading title="What will be exported" />
           <div className="grid grid-cols-2 gap-2">
             <Stat label="Applicable" value={metrics.counts.applicable} />
-            <Stat label="Excluded" value={metrics.counts.excluded} />
+            <Stat label="Not Applicable" value={metrics.counts.excluded} />
             <Stat
               label="Vulnerable"
               value={metrics.counts.vulnerable}

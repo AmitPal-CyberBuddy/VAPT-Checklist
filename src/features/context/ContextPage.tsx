@@ -90,13 +90,13 @@ export default function ContextPage() {
         </div>
         <div className="flex items-center gap-4">
           <div className="w-44">
-            <div className="mb-1 flex justify-between text-[11px] text-ink-400">
+            <div className="mb-1 flex justify-between text-micro text-ink-400">
               <span>Recorded</span>
               <span className="tabular-nums">
                 {completeness.answered}/{completeness.total}
               </span>
             </div>
-            <ProgressBar value={completeness.ratio} />
+            <ProgressBar value={completeness.ratio} label="Context questions answered" />
           </div>
           <Button variant="primary" disabled={!dirty || saving} onClick={() => void review()}>
             {dirty ? 'Review & apply changes' : 'No changes'}
@@ -195,7 +195,7 @@ function DiffList({
       <ul className="divide-y divide-ink-800 rounded-[--radius-control] border border-ink-700">
         {diffs.map((d) => (
           <li key={d.testId} className="flex items-center gap-3 px-3 py-1.5 text-sm">
-            <span className="font-mono text-[11px] text-ink-500">{d.testId}</span>
+            <span className="font-mono text-micro text-ink-500">{d.testId}</span>
             <span className="flex-1 truncate text-ink-200">{d.vulnerabilityName}</span>
             <Badge tone={d.to ? 'success' : 'na'}>
               {d.from ? 'Applicable' : 'Not Applicable'} → {d.to ? 'Applicable' : 'Not Applicable'}

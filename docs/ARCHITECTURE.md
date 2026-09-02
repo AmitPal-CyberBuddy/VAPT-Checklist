@@ -176,7 +176,8 @@ Tests cover the parts where correctness actually matters:
 | `persistence/persistence.test.ts` | Refresh survival, engagement isolation, counting identities, backup validation |
 | `domain/workflow.test.ts` | Progress rule, high-value ranking, conditional context, status/result |
 | `export/excel.test.ts` | Workbook composition and cell shape |
-| `app/App.smoke.test.tsx` | The app mounts, routes resolve, live data renders, landmarks and accessible names exist, non-colour status indicators, narrow-viewport flow |
+| `app/App.smoke.test.tsx` | The app mounts, routes resolve, live data renders, landmarks and accessible names exist, non-colour status indicators, roving tabindex, modal focus trap, narrow-viewport flow |
+| `ui/designSystem.test.ts` | Design-language contract: type scale, semantic colour, radii, component reuse, vocabulary, accessible names |
 
 Notable guarantees asserted: no Critical test is excluded on unknown facts alone; a described target
 narrows the checklist but never loses a whole category; every context fact drives a rule (or is

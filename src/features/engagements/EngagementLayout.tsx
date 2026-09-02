@@ -5,7 +5,7 @@ import { Badge, LoadingPanel, ProgressBar, Select } from '../../ui/primitives';
 import { useChecklist, useEngagement, useMetrics } from '../../hooks/useData';
 import { repairIntegrity, setEngagementStatus } from '../../persistence/repository';
 import { toast } from '../../ui/toast';
-import { EmptyState } from '../../ui/primitives';
+import { EmptyState, LinkButton } from '../../ui/primitives';
 import { IconAlert } from '../../ui/icons';
 import { FACT_BY_KEY } from '../../domain/context';
 import type { EngagementStatus } from '../../domain/types';
@@ -47,14 +47,7 @@ export default function EngagementLayout() {
         icon={<IconAlert size={28} />}
         title="Engagement not found"
         description="It is not in this browser's local database. Engagements are stored per browser — if it was created elsewhere, import its JSON backup from Data & Settings."
-        action={
-          <NavLink
-            to="/"
-            className="inline-flex h-9 items-center rounded-[--radius-control] border border-ink-600 bg-ink-800 px-3.5 text-sm text-ink-100 hover:bg-ink-700"
-          >
-            Back to engagements
-          </NavLink>
-        }
+        action={<LinkButton to="/">Back to engagements</LinkButton>}
       />
     );
   }
@@ -80,7 +73,7 @@ export default function EngagementLayout() {
             <h1 className="mt-1 truncate text-xl font-semibold tracking-tight text-ink-50">
               {engagement.name}
             </h1>
-            <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-ink-500">
+            <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-micro text-ink-500">
               {engagement.applicationUrl && (
                 <a
                   href={engagement.applicationUrl}
@@ -100,7 +93,7 @@ export default function EngagementLayout() {
 
           <div className="flex items-center gap-4">
             <div className="text-right">
-              <p className="text-[11px] tracking-wider text-ink-400 uppercase">Completion</p>
+              <p className="text-micro tracking-wider text-ink-400 uppercase">Completion</p>
               <p className="text-xl font-semibold tabular-nums text-ink-50">
                 {Math.round(metrics.completion * 100)}%
               </p>
@@ -111,7 +104,7 @@ export default function EngagementLayout() {
                 label="Engagement progress"
                 tone={metrics.completion === 1 ? 'safe' : 'brand'}
               />
-              <p className="mt-1.5 text-[11px] text-ink-400">
+              <p className="mt-1.5 text-micro text-ink-400">
                 {c.tested + c.na} of {c.applicable} applicable completed
               </p>
             </div>
@@ -147,7 +140,7 @@ export default function EngagementLayout() {
           <Badge tone="safe" glyph="✓">
             {c.notVulnerable} Not Vulnerable
           </Badge>
-          <span className="ml-auto text-[11px] text-ink-400">
+          <span className="ml-auto text-micro text-ink-400">
             {c.excluded} Not Applicable
           </span>
         </div>

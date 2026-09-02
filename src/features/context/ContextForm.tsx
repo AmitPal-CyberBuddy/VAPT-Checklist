@@ -51,7 +51,7 @@ function TriControl({
           tabIndex={value === o.key ? 0 : -1}
           onClick={() => onChange(o.next)}
           className={clsx(
-            'rounded-md border border-transparent px-2.5 py-1 text-[11px] font-medium transition-colors',
+            'rounded-md border border-transparent px-2.5 py-1 text-micro font-medium transition-colors',
             value === o.key ? o.active : 'text-ink-300 hover:bg-ink-800 hover:text-ink-100',
           )}
         >
@@ -115,7 +115,7 @@ export function FactRow({
   return (
     <div
       className={clsx(
-        'flex flex-col gap-2 rounded-[--radius-control] border px-3 py-2.5 transition-colors sm:flex-row sm:items-center sm:justify-between',
+        'flex flex-col gap-2 rounded-[--radius-control] border px-3 py-2 transition-colors sm:flex-row sm:items-center sm:justify-between',
         unknown ? 'border-ink-800 bg-ink-950/30' : 'border-ink-700 bg-ink-850',
       )}
     >
@@ -142,6 +142,7 @@ export function FactRow({
         )}
         {fact.type === 'single' && (
           <Select
+            aria-label={fact.label}
             value={(value as string) ?? ''}
             onChange={(e) => onChange(fact.key, e.target.value || undefined)}
             className="w-full sm:w-64"

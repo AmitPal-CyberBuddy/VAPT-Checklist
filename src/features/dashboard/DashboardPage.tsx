@@ -5,6 +5,7 @@ import {
   Card,
   EmptyState,
   InlineAlert,
+  LinkButton,
   LoadingPanel,
   PriorityBadge,
   ProgressBar,
@@ -68,11 +69,11 @@ export default function DashboardPage() {
           </h2>
           <dl className="grid gap-3 sm:grid-cols-3">
             <div className="min-w-0">
-              <dt className="text-[11px] tracking-wider text-ink-400 uppercase">Engagement</dt>
+              <dt className="text-micro tracking-wider text-ink-400 uppercase">Engagement</dt>
               <dd className="mt-0.5 truncate text-sm font-medium text-ink-50">{engagement.name}</dd>
             </div>
             <div className="min-w-0">
-              <dt className="text-[11px] tracking-wider text-ink-400 uppercase">Application URL</dt>
+              <dt className="text-micro tracking-wider text-ink-400 uppercase">Application URL</dt>
               <dd className="mt-0.5 truncate font-mono text-xs text-ink-200">
                 {engagement.applicationUrl ? (
                   <a
@@ -91,14 +92,14 @@ export default function DashboardPage() {
               </dd>
             </div>
             <div className="min-w-0">
-              <dt className="text-[11px] tracking-wider text-ink-400 uppercase">Application type</dt>
+              <dt className="text-micro tracking-wider text-ink-400 uppercase">Application type</dt>
               <dd className="mt-0.5 text-sm text-ink-200">
                 {applicationTypeLabel(engagement.context.assetTypes as string[] | undefined)}
               </dd>
             </div>
           </dl>
           {(engagement.clientName || engagement.testerName || engagement.scope.length > 0) && (
-            <p className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-ink-800 pt-3 text-[11px] text-ink-400">
+            <p className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-ink-800 pt-3 text-micro text-ink-400">
               {engagement.clientName && <span>Client: {engagement.clientName}</span>}
               {engagement.testerName && <span>Tester: {engagement.testerName}</span>}
               {engagement.scope.length > 0 && (
@@ -114,7 +115,7 @@ export default function DashboardPage() {
           <div className="flex items-baseline justify-between">
             <h2
               id="progress-heading"
-              className="text-[11px] font-medium tracking-wider text-ink-400 uppercase"
+              className="text-micro font-medium tracking-wider text-ink-400 uppercase"
             >
               Overall progress
             </h2>
@@ -132,13 +133,15 @@ export default function DashboardPage() {
             <strong className="text-ink-200">{completed}</strong> completed (Tested {c.tested} + N/A{' '}
             {c.na}) of <strong className="text-ink-200">{c.applicable}</strong> applicable tests
           </p>
-          <Link
+          <LinkButton
             to={`/e/${engagementId}/workspace`}
-            className="mt-3 inline-flex h-9 w-full items-center justify-center gap-2 rounded-[--radius-control] border border-brand-400/40 bg-brand-500 text-sm font-semibold text-ink-950 transition-colors hover:bg-brand-400"
+            variant="primary"
+            full
+            className="mt-3"
+            icon={<IconList size={15} />}
           >
-            <IconList size={15} aria-hidden="true" />
             Open testing workspace
-          </Link>
+          </LinkButton>
         </Card>
       </div>
 
@@ -147,7 +150,7 @@ export default function DashboardPage() {
         <h2 id="stats-heading" className="sr-only">
           Assessment statistics
         </h2>
-        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 xl:grid-cols-6">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
           <Stat
             label="Total applicable"
             value={c.applicable}
@@ -219,7 +222,7 @@ export default function DashboardPage() {
               <li key={item.definition.id}>
                 <Link
                   to={`/e/${engagementId}/workspace?test=${item.definition.id}`}
-                  className="flex h-full items-start gap-3 rounded-[--radius-control] border border-ink-700 bg-ink-850 px-3 py-2.5 transition-colors hover:border-brand-500/50 hover:bg-ink-800"
+                  className="flex h-full items-start gap-3 rounded-[--radius-control] border border-ink-700 bg-ink-850 px-3 py-2 transition-colors hover:border-brand-500/50 hover:bg-ink-800"
                 >
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-medium text-ink-100">
@@ -233,7 +236,7 @@ export default function DashboardPage() {
                     </span>
                     <span
                       className={clsx(
-                        'mt-1 block truncate text-[11px]',
+                        'mt-1 block truncate text-micro',
                         uncertain ? 'text-amber-300' : 'text-brand-400',
                       )}
                     >
@@ -283,13 +286,13 @@ export default function DashboardPage() {
               <li key={definition.id}>
                 <Link
                   to={`/e/${engagementId}/workspace?test=${definition.id}`}
-                  className="flex items-start gap-3 py-2.5 transition-opacity hover:opacity-80"
+                  className="flex items-start gap-3 py-2 transition-opacity hover:opacity-80"
                 >
                   <span className="min-w-0 flex-1">
                     <span className="block text-sm font-medium text-ink-100">
                       {definition.vulnerabilityName}
                     </span>
-                    <span className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-ink-400">
+                    <span className="mt-1 flex flex-wrap items-center gap-1.5 text-micro text-ink-400">
                       <PriorityBadge priority={definition.priority} />
                       <Badge tone="vulnerable" glyph="▲">
                         Vulnerable
