@@ -41,11 +41,12 @@ export function ApplicationTypePicker({
               aria-pressed={selected}
               onClick={() => onChange(type.id)}
               className={clsx(
-                'flex h-full w-full flex-col gap-1.5 rounded-[--radius-control] border p-3 text-left transition-colors',
+                'flex h-full w-full flex-col gap-1.5 rounded-[--radius-control] border p-3 text-left transition-colors duration-150',
                 selected
-                  ? 'border-brand-500 bg-brand-500/10'
-                  : 'border-ink-700 bg-ink-850 hover:border-ink-600',
-                unsupported && !selected && 'opacity-70',
+                  ? 'border-brand-500 bg-brand-500/10 shadow-[0_0_0_1px_var(--color-brand-500)]'
+                  : unsupported
+                    ? 'border-dashed border-ink-700 bg-ink-900 opacity-60 hover:opacity-80'
+                    : 'border-ink-700 bg-ink-850 hover:border-brand-500/40 hover:bg-ink-800',
               )}
             >
               <span className="flex flex-wrap items-center gap-2">
@@ -54,15 +55,17 @@ export function ApplicationTypePicker({
                   {badge.label}
                 </Badge>
               </span>
-              <span className="text-xs text-ink-400">{type.description}</span>
+              <span className="text-xs leading-relaxed text-ink-400">{type.description}</span>
               <span className="mt-auto pt-1 text-micro text-ink-400">
                 {unsupported ? (
                   'No tests for this domain'
                 ) : (
                   <>
-                    <strong className="text-ink-200">{coverage.specific.length}</strong> tests
-                    specific to this domain
-                    <span className="mt-0.5 block">
+                    <strong className="font-mono tabular-nums text-ink-100">
+                      {coverage.specific.length}
+                    </strong>{' '}
+                    tests specific to this domain
+                    <span className="mt-0.5 block tabular-nums">
                       {coverage.startingChecklist} in the starting checklist
                     </span>
                   </>
@@ -153,7 +156,7 @@ export function ApplicationTypeDetail({ type }: { type: ApplicationTypeId }) {
 
       {definition.limitations && (
         <div className="border-t border-ink-800 pt-3">
-          <p className="flex items-center gap-1.5 text-xs font-medium text-amber-300">
+          <p className="flex items-center gap-1.5 text-xs font-medium text-warn-300">
             <IconInfo size={13} aria-hidden="true" />
             What it does not cover
           </p>

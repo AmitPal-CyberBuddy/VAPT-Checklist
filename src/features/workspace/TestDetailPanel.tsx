@@ -100,13 +100,25 @@ export function TestDetailPanel({
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pending = useRef<string | null>(null);
 
+  /**
+   * Sync the editor with the stored row — but only when the store genuinely
+   * changed AND the editor holds no unsaved draft. Passive effects flush after
+   * paint, so an unconditional mount-time reset races with text typed in that
+   * window and wipes it; a save-echo arriving mid-typing would do the same.
+   * useState already seeds the draft; switching tests, imports and other tabs'
+   * saves still reset it here.
+   */
+  const lastSynced = useRef({ id: s.id, notes: s.notes, status: s.status });
   useEffect(() => {
-    setNotes(s.notes);
-  }, [s.id, s.notes]);
-
-  useEffect(() => {
-    setPendingTested(false);
-  }, [s.id, s.status]);
+    const prev = lastSynced.current;
+    lastSynced.current = { id: s.id, notes: s.notes, status: s.status };
+    if (s.id !== prev.id || (s.notes !== prev.notes && pending.current === null)) {
+      setNotes(s.notes);
+    }
+    if (s.id !== prev.id || s.status !== prev.status) {
+      setPendingTested(false);
+    }
+  }, [s.id, s.notes, s.status]);
 
   const [noteError, setNoteError] = useState(false);
 
@@ -221,7 +233,7 @@ export function TestDetailPanel({
           <div
             className={clsx(
               'flex items-center gap-2 rounded-[--radius-control] transition-shadow',
-              awaitingChoice && 'ring-2 ring-amber-400 ring-offset-2 ring-offset-ink-900',
+              awaitingChoice && 'ring-2 ring-warn-400 ring-offset-2 ring-offset-ink-900',
             )}
           >
             <span className="text-micro font-medium tracking-wider text-ink-400 uppercase">
@@ -248,7 +260,7 @@ export function TestDetailPanel({
         </div>
 
         {awaitingChoice && (
-          <p className="flex items-center gap-1.5 text-xs text-amber-300">
+          <p className="animate-in flex items-center gap-1.5 text-xs text-warn-300">
             <IconAlert size={13} aria-hidden="true" />
             Choose Vulnerable or Not Vulnerable — “Tested” is only recorded together with its result.
           </p>
@@ -267,12 +279,12 @@ export function TestDetailPanel({
         </Section>
 
         <Section title="Testing guidance">
-          <ol className="space-y-2 text-sm text-ink-200">
+          <ol className="space-y-2.5 text-sm text-ink-200">
             {d.testingGuidance.map((step, i) => (
-              <li key={i} className="flex gap-2">
+              <li key={i} className="flex gap-2.5">
                 <span
                   aria-hidden="true"
-                  className="mt-0.5 flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded bg-ink-800 text-micro text-ink-300"
+                  className="mt-0.5 flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded bg-ink-800 font-mono text-micro text-brand-400"
                 >
                   {i + 1}
                 </span>
@@ -291,7 +303,7 @@ export function TestDetailPanel({
             aria-label={`Notes for ${d.vulnerabilityName}`}
             maxLength={TEXT_LIMITS.notes}
             placeholder="Endpoints and parameters tested, payloads used, observations, conclusion…"
-            className="text-xs"
+            className="font-mono text-xs"
           />
           <div className="mt-1.5 flex flex-wrap items-center justify-between gap-2 text-micro text-ink-400">
             <span className={noteError ? 'font-medium text-vuln-400' : undefined}>
@@ -311,7 +323,7 @@ export function TestDetailPanel({
                     key={reason}
                     type="button"
                     onClick={() => saveNotes(reason)}
-                    className="rounded-md border border-ink-600 bg-ink-900 px-2 py-1 text-micro text-ink-200 transition-colors hover:border-amber-500/50 hover:text-amber-300"
+                    className="rounded-md border border-ink-600 bg-ink-900 px-2 py-1 text-micro text-ink-200 transition-colors hover:border-warn-500/50 hover:text-warn-300"
                   >
                     {reason}
                   </button>
@@ -348,7 +360,7 @@ export function TestDetailPanel({
             </p>
             {s.applicabilitySource === 'manual' && (
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="text-micro text-amber-300">
+                <span className="text-micro text-warn-300">
                   Set by you (suggestion: {s.suggestedApplicable ? 'Applicable' : 'Not Applicable'})
                 </span>
                 <Button

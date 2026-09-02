@@ -65,7 +65,7 @@ Full conventions: [`TEST-LIBRARY.md`](TEST-LIBRARY.md).
 | `applicationUrl` | Primary target, shown on the dashboard and in the report |
 | `scope: string[]` | Additional hosts, URLs, package names |
 | `startDate`, `endDate`, `description` | Engagement admin |
-| `status` | `Active \| Completed \| Archived` |
+| `status` | `Active \| Completed \| Archived`. A workflow label only — never locks the record. Setting `Completed` while applicable tests are still `Not Tested` asks for an explicit confirmation in the engagement header, mirroring the per-test rule that `Tested` requires a result |
 | `context: ApplicationContext` | The recorded facts |
 | `libraryVersion` | Library revision the engagement was seeded from |
 | `createdAt`, `updatedAt` | ISO timestamps |

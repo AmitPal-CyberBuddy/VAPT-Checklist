@@ -1,3 +1,8 @@
+/* Self-hosted type — no runtime network dependency, works on any static host. */
+@import '@fontsource-variable/inter';
+@import '@fontsource/jetbrains-mono/400.css';
+@import '@fontsource/jetbrains-mono/500.css';
+@import '@fontsource/jetbrains-mono/600.css';
 @import 'tailwindcss';
 
 /**
@@ -13,24 +18,30 @@
  *   line      ink-700 (panel border) · ink-600 (control border)
  *   radius    --radius-control (0.5rem) · --radius-panel (0.75rem)
  *
- * Semantic colour (priority / status / result) is defined once here and
- * consumed through the Badge components — never re-invented per screen.
+ * Semantic colour is defined once here and consumed through the Badge and
+ * Alert components — never re-invented per screen:
+ *   brand   action / info            vuln  vulnerable / critical / danger
+ *   safe    not vulnerable / success warn  warning
+ *   high·medium·low  the remaining priority severities (critical = vuln)
+ *
+ * Motion is one scale as well: fast press/hover feedback, standard state
+ * changes, slow only where a number needs to travel (progress).
  */
 @theme {
-  --color-ink-950: #070b14;
-  --color-ink-900: #0b1120;
-  --color-ink-850: #111a2c;
-  --color-ink-800: #162034;
-  --color-ink-700: #22304a;
-  --color-ink-600: #3a465c;
-  --color-ink-500: #71809a;
-  --color-ink-400: #8b9ab0;
-  --color-ink-300: #aab6c8;
-  --color-ink-200: #cbd5e1;
-  --color-ink-100: #e2e8f0;
+  --color-ink-950: #060a12;
+  --color-ink-900: #0a101c;
+  --color-ink-850: #101827;
+  --color-ink-800: #151f31;
+  --color-ink-700: #212d44;
+  --color-ink-600: #374357;
+  --color-ink-500: #72819b;
+  --color-ink-400: #8d9cb2;
+  --color-ink-300: #acb8ca;
+  --color-ink-200: #ccd6e2;
+  --color-ink-100: #e3e9f1;
   --color-ink-50: #f4f7fb;
 
-  --color-brand-400: #38bdf8;
+  --color-brand-400: #45c0f9;
   --color-brand-500: #0ea5e9;
   --color-brand-600: #0284c7;
 
@@ -38,6 +49,18 @@
   --color-vuln-500: #f43f5e;
   --color-safe-400: #34d399;
   --color-safe-500: #10b981;
+
+  --color-high-300: #fdba74;
+  --color-high-400: #fb923c;
+  --color-high-500: #f97316;
+
+  --color-medium-200: #fde68a;
+  --color-medium-300: #fcd34d;
+  --color-medium-400: #fbbf24;
+
+  --color-warn-300: #fcd34d;
+  --color-warn-400: #fbbf24;
+  --color-warn-500: #f59e0b;
 
   --radius-control: 0.5rem;
   --radius-panel: 0.75rem;
@@ -48,8 +71,8 @@
    * plus 0.5/1.5 for badge-level inset. Half-steps above 2 are not used.
    */
 
-  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --font-mono: ui-monospace, 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
 
   /*
    * Type scale — seven steps, nothing between them, nothing below `micro`.
@@ -64,6 +87,12 @@
    */
   --text-micro: 0.6875rem;
   --text-micro--line-height: 1rem;
+
+  /* One motion scale — fast feedback, standard state changes, nothing slow. */
+  --motion-fast: 120ms;
+  --motion-base: 160ms;
+  --motion-slow: 240ms;
+  --ease-standard: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @layer base {
@@ -74,11 +103,26 @@
 
   body {
     margin: 0;
-    /* Flat surface on purpose: this is a working tool, not a landing page. */
+    /*
+     * The surface stays flat — but not dead. A hairline technical grid at a
+     * fraction of a percent of contrast gives the dark field a measured,
+     * instrument-like character without ever competing with the panels.
+     */
     background-color: var(--color-ink-950);
+    background-image:
+      linear-gradient(to right, rgb(141 156 178 / 0.028) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(141 156 178 / 0.028) 1px, transparent 1px);
+    background-size: 30px 30px;
+    background-attachment: fixed;
     color: var(--color-ink-100);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background-color: rgb(14 165 233 / 0.28);
+    color: var(--color-ink-50);
   }
 
   * {
@@ -101,11 +145,20 @@
     background-clip: content-box;
   }
 
-  /* One focus treatment everywhere, always visible against every surface. */
+  /*
+   * One focus treatment everywhere, always visible against every surface.
+   * Form controls have their own ring treatment (border + 2px ring), so the
+   * outline is suppressed on them to avoid a double indicator.
+   */
   :focus-visible {
     outline: 2px solid var(--color-brand-400);
     outline-offset: 2px;
     border-radius: 2px;
+  }
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible {
+    outline: none;
   }
 
   input,
@@ -115,23 +168,41 @@
     font-family: inherit;
   }
 
+  /* Keycap chips for keyboard hints — micro-controls get one smaller radius. */
   kbd {
     font-family: var(--font-mono);
     font-size: 0.6875rem;
+    border: 1px solid var(--color-ink-700);
+    border-bottom-width: 2px;
+    border-radius: 0.25rem;
+    background-color: var(--color-ink-900);
+    padding: 0.0625rem 0.3rem;
+    color: var(--color-ink-300);
+  }
+
+  code {
+    font-family: var(--font-mono);
   }
 }
 
 @layer utilities {
+  /*
+   * Panels have no elevation. What they do carry, in place of shadow, is a
+   * 1px top keyline — the same cue machined consoles use — which keeps dark
+   * surfaces crisp against the backdrop without any sense of float.
+   */
   .panel {
     background-color: var(--color-ink-900);
     border: 1px solid var(--color-ink-700);
     border-radius: var(--radius-panel);
+    box-shadow: inset 0 1px 0 rgb(141 156 178 / 0.045);
   }
 
   .panel-inset {
     background-color: var(--color-ink-850);
     border: 1px solid var(--color-ink-700);
     border-radius: var(--radius-control);
+    box-shadow: inset 0 1px 0 rgb(141 156 178 / 0.035);
   }
 
   .skip-link {
@@ -145,14 +216,55 @@
     font-size: 0.8125rem;
     font-weight: 600;
     color: var(--color-ink-950);
-    transition: top 120ms ease-out;
+    transition: top var(--motion-fast) var(--ease-standard);
   }
   .skip-link:focus {
     top: 0.75rem;
   }
 
+  /* Newly mounted content fades in — fast, and only once per mount. */
   .animate-in {
-    animation: fade-in 140ms ease-out;
+    animation: fade-in 140ms var(--ease-standard);
+  }
+
+  /* Panels that open in place (modals, disclosures) rise a few pixels. */
+  .animate-rise {
+    animation: rise-in var(--motion-base) var(--ease-standard);
+  }
+
+  /* Toasts arrive from below, where they dock. */
+  .animate-toast {
+    animation: toast-in var(--motion-base) var(--ease-standard);
+  }
+
+  /* Route-level crossfade — 120 ms, never in the way of navigation. */
+  .animate-page {
+    animation: fade-in var(--motion-fast) var(--ease-standard);
+  }
+
+  /* Token-coloured chevron for selects — the native arrow belongs to the OS theme. */
+  .select-chevron {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238d9cb2' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.6rem center;
+  }
+
+  /*
+   * A semantic accent rail, used on list rows and high-value cards.
+   * Position drives meaning: the left edge is where the eye scans first.
+   */
+  .rail-vuln {
+    box-shadow: inset 2px 0 0 var(--color-vuln-500);
+  }
+  .rail-warn {
+    box-shadow: inset 2px 0 0 var(--color-warn-500);
+  }
+  .rail-brand {
+    box-shadow: inset 2px 0 0 var(--color-brand-500);
+  }
+  .rail-safe {
+    box-shadow: inset 2px 0 0 var(--color-safe-500);
   }
 }
 
@@ -162,6 +274,28 @@
   }
   to {
     opacity: 1;
+  }
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 

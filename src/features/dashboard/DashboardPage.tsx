@@ -12,7 +12,7 @@ import {
   SectionHeading,
   Stat,
 } from '../../ui/primitives';
-import { IconCheck, IconExternal, IconList, IconTarget } from '../../ui/icons';
+import { IconCheck, IconChevron, IconExternal, IconList, IconTarget } from '../../ui/icons';
 import { useChecklist, useEngagement, useMetrics } from '../../hooks/useData';
 import { collectFindings, highValueTests } from '../../domain/metrics';
 import { contextCompleteness } from '../context/ContextForm';
@@ -144,17 +144,18 @@ export default function DashboardPage() {
             >
               Overall progress
             </h2>
-            <span className="text-2xl font-semibold tabular-nums text-ink-50">
+            <span className="text-2xl font-semibold tracking-tight tabular-nums text-ink-50">
               {Math.round(metrics.completion * 100)}%
             </span>
           </div>
           <ProgressBar
-            className="mt-2"
+            className="mt-2.5"
+            height="lg"
             label="Overall assessment progress"
             value={metrics.completion}
             tone={metrics.completion === 1 ? 'safe' : 'brand'}
           />
-          <p className="mt-2 text-xs text-ink-400">
+          <p className="mt-2 text-xs tabular-nums text-ink-400">
             <strong className="text-ink-200">{completed}</strong> completed (Tested {c.tested} + N/A{' '}
             {c.na}) of <strong className="text-ink-200">{c.applicable}</strong> applicable tests
           </p>
@@ -268,7 +269,10 @@ export default function DashboardPage() {
               <li key={item.definition.id}>
                 <Link
                   to={`/e/${engagementId}/workspace?test=${item.definition.id}`}
-                  className="flex h-full items-start gap-3 rounded-[--radius-control] border border-ink-700 bg-ink-850 px-3 py-2 transition-colors hover:border-brand-500/50 hover:bg-ink-800"
+                  className={clsx(
+                    'group flex h-full items-start gap-3 rounded-[--radius-control] border border-ink-700 bg-ink-850 px-3 py-2 transition-colors duration-150 hover:border-brand-500/50 hover:bg-ink-800',
+                    uncertain ? 'rail-warn' : 'rail-brand',
+                  )}
                 >
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-medium text-ink-100">
@@ -282,13 +286,18 @@ export default function DashboardPage() {
                     </span>
                     <span
                       className={clsx(
-                        'mt-1 block truncate text-micro',
-                        uncertain ? 'text-amber-300' : 'text-brand-400',
+                        'mt-1 block truncate font-mono text-micro',
+                        uncertain ? 'text-warn-300' : 'text-brand-400',
                       )}
                     >
                       {rationale}
                     </span>
                   </span>
+                  <IconChevron
+                    size={14}
+                    aria-hidden="true"
+                    className="mt-0.5 shrink-0 text-ink-600 transition-colors duration-150 group-hover:text-brand-400"
+                  />
                 </Link>
               </li>
             ))}
@@ -332,7 +341,7 @@ export default function DashboardPage() {
               <li key={definition.id}>
                 <Link
                   to={`/e/${engagementId}/workspace?test=${definition.id}`}
-                  className="flex items-start gap-3 py-2 transition-opacity hover:opacity-80"
+                  className="rail-vuln flex items-start gap-3 py-2 pl-3 transition-colors duration-150 hover:bg-ink-850/60"
                 >
                   <span className="min-w-0 flex-1">
                     <span className="block text-sm font-medium text-ink-100">

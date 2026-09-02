@@ -584,7 +584,7 @@ export default function WorkspacePage() {
           </span>
           {unconfirmedIds.size > 0 && scope !== 'unconfirmed' && (
             <button
-              className="rounded text-amber-400 hover:underline"
+              className="rounded text-warn-400 hover:underline"
               onClick={() => setScope('unconfirmed')}
             >
               {unconfirmedIds.size} unconfirmed

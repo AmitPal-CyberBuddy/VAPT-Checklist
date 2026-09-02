@@ -51,7 +51,8 @@ export function buttonClass(
 ) {
   return clsx(
     'inline-flex items-center justify-center rounded-[--radius-control] whitespace-nowrap',
-    'transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-45',
+    // Hover changes colour; press sinks 1px — the two smallest, clearest cues.
+    'transition-colors duration-150 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-45 disabled:active:translate-y-0',
     BUTTON_VARIANTS[variant],
     BUTTON_SIZES[size],
     full && 'w-full',
@@ -155,13 +156,13 @@ const BADGE_TONES: Record<BadgeTone, string> = {
   neutral: 'bg-ink-800 text-ink-200 border-ink-600',
   brand: 'bg-brand-500/12 text-brand-400 border-brand-500/40',
   critical: 'bg-vuln-500/15 text-vuln-400 border-vuln-500/45',
-  high: 'bg-orange-500/12 text-orange-300 border-orange-500/40',
-  medium: 'bg-amber-400/12 text-amber-200 border-amber-400/35',
+  high: 'bg-high-500/12 text-high-300 border-high-500/40',
+  medium: 'bg-medium-400/12 text-medium-200 border-medium-400/35',
   low: 'bg-brand-500/10 text-brand-400 border-brand-500/30',
   vulnerable: 'bg-vuln-500/15 text-vuln-400 border-vuln-500/45',
   safe: 'bg-safe-500/12 text-safe-400 border-safe-500/40',
   na: 'bg-ink-800 text-ink-300 border-ink-600',
-  warn: 'bg-amber-500/12 text-amber-300 border-amber-500/40',
+  warn: 'bg-warn-500/12 text-warn-300 border-warn-500/40',
   success: 'bg-safe-500/12 text-safe-400 border-safe-500/40',
 };
 
@@ -429,8 +430,10 @@ export function FieldGroup({
 
 const CONTROL =
   'w-full rounded-[--radius-control] border border-ink-600 bg-ink-950/60 px-3 py-2 text-sm ' +
-  'text-ink-100 placeholder:text-ink-500 transition-colors hover:border-ink-500 ' +
-  'focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500/40 ' +
+  'text-ink-100 placeholder:text-ink-500 transition-colors duration-150 hover:border-ink-500 ' +
+  // Form controls use border + ring as their focus indicator (the global
+  // :focus-visible outline is suppressed on them, so it cannot weaken here).
+  'focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/45 ' +
   'disabled:cursor-not-allowed disabled:opacity-50';
 
 export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(
@@ -450,7 +453,11 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes<H
 export const Select = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSelectElement>>(
   function Select({ className, children, ...rest }, ref) {
     return (
-      <select ref={ref} className={clsx(CONTROL, 'cursor-pointer pr-8', className)} {...rest}>
+      <select
+        ref={ref}
+        className={clsx(CONTROL, 'select-chevron cursor-pointer pr-8', className)}
+        {...rest}
+      >
         {children}
       </select>
     );
@@ -607,21 +614,21 @@ export function ProgressBar({
   value: number;
   tone?: 'brand' | 'safe' | 'warn' | 'vuln';
   className?: string;
-  height?: 'sm' | 'md';
+  height?: 'sm' | 'md' | 'lg';
   label?: string;
 }) {
   const tones = {
     brand: 'bg-brand-500',
     safe: 'bg-safe-500',
-    warn: 'bg-amber-500',
+    warn: 'bg-warn-500',
     vuln: 'bg-vuln-500',
   };
   const percent = Math.round(Math.min(100, Math.max(0, value * 100)));
   return (
     <div
       className={clsx(
-        'w-full overflow-hidden rounded-full bg-ink-800',
-        height === 'sm' ? 'h-1.5' : 'h-2',
+        'w-full overflow-hidden rounded-full bg-ink-800 shadow-[inset_0_1px_2px_rgb(3_6_12/0.5)]',
+        height === 'sm' ? 'h-1.5' : height === 'md' ? 'h-2' : 'h-3',
         className,
       )}
       role="progressbar"
@@ -657,12 +664,16 @@ export function EmptyState({
   return (
     <div
       className={clsx(
-        'flex flex-col items-center justify-center gap-3 rounded-[--radius-panel]',
+        'animate-in flex flex-col items-center justify-center gap-3 rounded-[--radius-panel]',
         'border border-dashed border-ink-700 bg-ink-900/50 px-6 text-center',
         compact ? 'py-8' : 'py-14',
       )}
     >
-      {icon && <div className="text-ink-500">{icon}</div>}
+      {icon && (
+        <div className="flex h-11 w-11 items-center justify-center rounded-[--radius-control] border border-ink-700 bg-ink-850 text-ink-400">
+          {icon}
+        </div>
+      )}
       <div>
         <p className="text-sm font-semibold text-ink-100">{title}</p>
         {description && <p className="mx-auto mt-1 max-w-md text-sm text-ink-400">{description}</p>}
@@ -674,7 +685,7 @@ export function EmptyState({
 
 const ALERT_TONES = {
   info: 'border-brand-500/30 bg-brand-500/5 text-brand-400',
-  warn: 'border-amber-500/30 bg-amber-500/5 text-amber-300',
+  warn: 'border-warn-500/30 bg-warn-500/5 text-warn-300',
   error: 'border-vuln-500/35 bg-vuln-500/5 text-vuln-400',
   success: 'border-safe-500/30 bg-safe-500/5 text-safe-400',
 } as const;
@@ -774,7 +785,7 @@ export function Modal({
   const widths = { sm: 'max-w-md', md: 'max-w-xl', lg: 'max-w-3xl' };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-ink-950/85 p-4 pt-[8vh]">
+    <div className="animate-in fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-ink-950/85 p-4 pt-[8vh] backdrop-blur-sm">
       <button
         type="button"
         aria-label="Close dialog"
@@ -788,7 +799,7 @@ export function Modal({
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className={clsx('panel animate-in relative w-full p-5 outline-none', widths[width])}
+        className={clsx('panel animate-rise relative w-full p-5 outline-none', widths[width])}
       >
         <div className="mb-4">
           <h2 id={titleId} className="text-base font-semibold text-ink-50">
@@ -824,11 +835,25 @@ export function Stat({
     neutral: 'text-ink-50',
     vuln: 'text-vuln-400',
     safe: 'text-safe-400',
-    warn: 'text-amber-400',
+    warn: 'text-warn-300',
     brand: 'text-brand-400',
   };
+  /* The semantic rail at the scan edge — colour plus the glyph and label. */
+  const rails: Record<typeof tone, string> = {
+    neutral: '',
+    vuln: 'rail-vuln',
+    safe: 'rail-safe',
+    warn: 'rail-warn',
+    brand: 'rail-brand',
+  };
   return (
-    <div className={clsx('panel-inset px-3 py-2', className)}>
+    <div
+      className={clsx(
+        'panel-inset relative overflow-hidden px-3 py-2',
+        tone !== 'neutral' && rails[tone],
+        className,
+      )}
+    >
       <p className="flex items-center gap-1.5 text-micro font-medium tracking-wider text-ink-400 uppercase">
         {glyph && (
           <span aria-hidden="true" className="font-mono text-micro">
@@ -837,7 +862,12 @@ export function Stat({
         )}
         {label}
       </p>
-      <p className={clsx('mt-1 text-2xl leading-tight font-semibold tabular-nums', tones[tone])}>
+      <p
+        className={clsx(
+          'mt-1 text-2xl leading-tight font-semibold tracking-tight tabular-nums',
+          tones[tone],
+        )}
+      >
         {value}
       </p>
       {hint && <p className="mt-0.5 text-xs text-ink-400">{hint}</p>}

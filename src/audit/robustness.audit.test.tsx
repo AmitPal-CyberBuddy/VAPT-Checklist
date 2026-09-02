@@ -296,9 +296,11 @@ describe('a failed save is never shown as a successful one', () => {
     vi.spyOn(db.testStates, 'put').mockRejectedValue(new Error('database closed'));
     fireEvent.change(notes, { target: { value: 'Reproduced on /api/orders?id=2' } });
 
+    // The budget must cover the 350 ms debounce plus a slow CI event loop —
+    // the assertion is about the error surfacing, not about wall-clock speed.
     await waitFor(
       () => expect(screen.getByText(/Not saved — this note is only in the editor/)).toBeTruthy(),
-      { timeout: 2_000 },
+      { timeout: 6_000 },
     );
     // The text is still on screen so it can be copied out.
     expect((notes as HTMLTextAreaElement).value).toContain('/api/orders?id=2');

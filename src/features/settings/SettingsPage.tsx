@@ -58,7 +58,7 @@ function ImportPreview({ inspection }: { inspection: BackupInspection }) {
         ))}
       </ul>
       {inspection.warnings.length > 0 && (
-        <ul className="space-y-1 rounded-[--radius-control] border border-amber-500/30 bg-amber-500/5 p-3 text-xs text-amber-300">
+        <ul className="space-y-1 rounded-[--radius-control] border border-warn-500/30 bg-warn-500/5 p-3 text-xs text-warn-300">
           {inspection.warnings.map((warning, index) => (
             <li key={index}>{warning}</li>
           ))}

@@ -1,7 +1,7 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { NavLink, Outlet, useParams } from 'react-router-dom';
 import clsx from 'clsx';
-import { Badge, LoadingPanel, ProgressBar, Select } from '../../ui/primitives';
+import { Badge, Button, InlineAlert, LoadingPanel, Modal, ProgressBar, Select } from '../../ui/primitives';
 import { useChecklist, useEngagement, useMetrics } from '../../hooks/useData';
 import { repairIntegrity, setEngagementStatus } from '../../persistence/repository';
 import { toast } from '../../ui/toast';
@@ -24,6 +24,13 @@ export default function EngagementLayout() {
   const items = useChecklist(engagementId);
   const metrics = useMetrics(items);
   const repaired = useRef<string | null>(null);
+  /**
+   * "Completed" while applicable tests are still Not Tested is exactly the
+   * kind of contradictory state the state machine forbids per-test — so the
+   * engagement-level label asks for an explicit confirmation rather than
+   * being flipped silently. It stays revisable, never a hard block.
+   */
+  const [confirmingComplete, setConfirmingComplete] = useState(false);
 
   // A database written by an older build could hold `Tested` rows with no
   // result. Repair them once per engagement so the stored data always
@@ -62,6 +69,27 @@ export default function EngagementLayout() {
 
   const c = metrics.counts;
   const safeUrl = safeExternalUrl(engagement.applicationUrl);
+
+  function saveStatus(status: EngagementStatus) {
+    void setEngagementStatus(engagement!.id, status).catch((error: unknown) =>
+      toast.error(
+        'Engagement status not saved',
+        error instanceof Error ? error.message : String(error),
+      ),
+    );
+  }
+
+  function chooseStatus(next: EngagementStatus) {
+    // Guard: hide the confirmation when the checklist is genuinely complete.
+    // While items are still loading the outstanding count is unknown, so the
+    // confirmation is the safe default then too.
+    if (next === 'Completed' && (!items || c.notTested > 0)) {
+      setConfirmingComplete(true);
+      return;
+    }
+    saveStatus(next);
+  }
+
   const typeOptions = FACT_BY_KEY.assetTypes.options ?? [];
   const applicationType = effectiveAssetTypes(engagement.applicationType, engagement.context)
     .map((v) => typeOptions.find((o) => o.value === v)?.label ?? v)
@@ -125,15 +153,7 @@ export default function EngagementLayout() {
             <Select
               aria-label="Engagement status"
               value={engagement.status}
-              onChange={(e) => {
-                void setEngagementStatus(engagement.id, e.target.value as EngagementStatus).catch(
-                  (error: unknown) =>
-                    toast.error(
-                      'Engagement status not saved',
-                      error instanceof Error ? error.message : String(error),
-                    ),
-                );
-              }}
+              onChange={(e) => chooseStatus(e.target.value as EngagementStatus)}
               className="w-36"
             >
               <option value="Active">Active</option>
@@ -188,6 +208,42 @@ export default function EngagementLayout() {
       </nav>
 
       <Outlet />
+
+      <Modal
+        open={confirmingComplete}
+        onClose={() => setConfirmingComplete(false)}
+        title="Mark engagement as Completed?"
+        width="sm"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setConfirmingComplete(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={() => {
+                setConfirmingComplete(false);
+                saveStatus('Completed');
+              }}
+            >
+              Mark Completed anyway
+            </Button>
+          </>
+        }
+      >
+        <InlineAlert
+          tone="warn"
+          icon={<IconAlert size={15} aria-hidden="true" />}
+          title="Work is still outstanding"
+        >
+          {items
+            ? `${c.notTested} applicable test${c.notTested === 1 ? ' is' : 's are'} still Not Tested. `
+            : 'The checklist has not finished loading. '}
+          Outstanding tests keep their Not Tested status on the dashboard, in the export and in a
+          backup — Completed only labels the engagement, and it can be set back to Active at any
+          time.
+        </InlineAlert>
+      </Modal>
     </div>
   );
 }

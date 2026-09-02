@@ -47,20 +47,24 @@ export function AppShell({ children }: { children: ReactNode }) {
       </a>
 
       <header className="no-print sticky top-0 z-40 border-b border-ink-800 bg-ink-950/95 backdrop-blur">
-        <div className="mx-auto flex h-14 max-w-[1600px] items-center gap-3 px-3 sm:gap-6 sm:px-6">
-          <NavLink to="/" className="flex shrink-0 items-center gap-2" aria-label="VAPT Checklist — home">
-            <span className="flex h-8 w-8 items-center justify-center rounded-[--radius-control] border border-brand-500/40 bg-brand-500/10 text-brand-400">
+        {/* The brand keyline — one controlled accent edge across the console. */}
+        <div aria-hidden="true" className="h-0.5 bg-brand-500/45" />
+        <div className="mx-auto flex h-13 max-w-[1600px] items-center gap-3 px-3 sm:gap-6 sm:px-6">
+          <NavLink to="/" className="flex shrink-0 items-center gap-2.5" aria-label="VAPT Checklist — home">
+            <span className="flex h-8 w-8 items-center justify-center rounded-[--radius-control] border border-brand-500/45 bg-brand-500/12 text-brand-400">
               <IconShield size={18} />
             </span>
             <span className="hidden leading-tight sm:block">
               <span className="block text-sm font-semibold tracking-tight text-ink-50">
                 VAPT Checklist
               </span>
-              <span className="block text-micro tracking-widest text-ink-400 uppercase">
+              <span className="mt-0.5 block font-mono text-micro tracking-widest text-ink-500 uppercase">
                 Assessment Tracker
               </span>
             </span>
           </NavLink>
+
+          <div aria-hidden="true" className="hidden h-5 w-px bg-ink-700 lg:block" />
 
           <nav aria-label="Primary" className="flex items-center gap-1">
             {NAV.map(({ to, label, icon: Icon, end }) => {
@@ -73,10 +77,10 @@ export function AppShell({ children }: { children: ReactNode }) {
                   to={to}
                   aria-current={active ? 'page' : undefined}
                   className={clsx(
-                    'flex items-center gap-2 rounded-[--radius-control] px-2.5 py-1.5 text-sm transition-colors sm:px-3',
+                    'flex items-center gap-2 rounded-[--radius-control] border px-2.5 py-1.5 text-sm transition-colors duration-150 sm:px-3',
                     active
-                      ? 'bg-ink-800 text-ink-50'
-                      : 'text-ink-300 hover:bg-ink-900 hover:text-ink-100',
+                      ? 'border-ink-700 bg-ink-800 text-ink-50'
+                      : 'border-transparent text-ink-300 hover:bg-ink-900 hover:text-ink-100',
                   )}
                 >
                   <Icon size={15} aria-hidden="true" />
@@ -88,7 +92,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </nav>
 
           <div className="ml-auto flex items-center gap-3 text-micro text-ink-400">
-            <span className="hidden xl:inline">
+            <span className="hidden font-mono tabular-nums xl:inline">
               {TEST_LIBRARY.length} tests · library v{LIBRARY_VERSION}
             </span>
             <span
@@ -108,10 +112,10 @@ export function AppShell({ children }: { children: ReactNode }) {
                 aria-hidden="true"
                 className={clsx(
                   'h-1.5 w-1.5 rounded-full',
-                  storageOk === false ? 'bg-vuln-400' : 'bg-safe-400',
+                  storageOk === false ? 'animate-pulse bg-vuln-400' : 'bg-safe-400',
                 )}
               />
-              <span className="hidden sm:inline">
+              <span className="hidden font-mono sm:inline">
                 {storageOk === false ? 'Storage unavailable' : 'Saved locally'}
               </span>
             </span>
@@ -133,11 +137,16 @@ export function AppShell({ children }: { children: ReactNode }) {
             )}
           </InlineAlert>
         )}
-        {children}
+        {/* Route-level crossfade: 120 ms fade keyed by path, off under reduced motion. */}
+        <div key={location.pathname} className="animate-page">
+          {children}
+        </div>
       </main>
 
-      <footer className="no-print border-t border-ink-800 px-4 py-4 text-center text-xs text-ink-500 sm:px-6">
-        Fully client-side · no backend, no telemetry · engagement data never leaves this browser
+      <footer className="no-print border-t border-ink-800 px-4 py-4 text-center sm:px-6">
+        <span className="font-mono text-micro tracking-wide text-ink-500">
+          Fully client-side · no backend, no telemetry · engagement data never leaves this browser
+        </span>
       </footer>
     </div>
   );

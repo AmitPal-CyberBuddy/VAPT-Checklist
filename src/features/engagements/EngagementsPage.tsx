@@ -135,7 +135,10 @@ export default function EngagementsPage() {
       ) : (
         <ul className="grid list-none gap-4 md:grid-cols-2 xl:grid-cols-3">
           {filtered.map(({ engagement, applicable, resolved, vulnerable, completion }) => (
-            <li key={engagement.id} className="panel flex flex-col gap-4 p-4 transition-colors hover:border-ink-600">
+            <li
+              key={engagement.id}
+              className="panel flex flex-col gap-4 p-4 transition-[border-color,transform] duration-150 hover:-translate-y-0.5 hover:border-brand-500/30"
+            >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <Link
