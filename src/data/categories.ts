@@ -147,13 +147,7 @@ export const CATEGORIES: Category[] = [
     code: 'FILE',
     name: 'File Handling',
     description: 'Upload, download, storage and parsing of files.',
-    subcategories: [
-      'Upload Validation',
-      'Upload Storage',
-      'Content Processing',
-      'Download Controls',
-      'Resource Limits',
-    ],
+    subcategories: ['Upload Validation', 'Upload Storage', 'Content Processing', 'Resource Limits'],
   },
   {
     id: 'api',

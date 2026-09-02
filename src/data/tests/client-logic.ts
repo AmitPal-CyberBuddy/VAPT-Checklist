@@ -157,6 +157,26 @@ export const clientSideTests: TestDefinition[] = [
     tags: ['client-side'],
   },
   {
+    id: 'CLI-012',
+    vulnerabilityName: 'Cross-Site Script Inclusion (XSSI)',
+    category: 'client-side',
+    subcategory: 'Cross-Origin Policy',
+    priority: 'Medium',
+    description:
+      'An authenticated endpoint returns JavaScript, JSONP or a JSON structure that a third-party page can load with a script tag. The same-origin policy does not apply to script inclusion, so the attacker reads the victim\'s data without needing CORS.',
+    testingGuidance: [
+      'Find responses served as JavaScript, or JSON that is a bare array, an assignment, or wrapped in a caller-supplied callback.',
+      'Load each from an attacker origin with a script tag while authenticated, and try to capture the values (callback function, prototype setters, variable assignment).',
+      'Check for a JSONP callback parameter and whether the callback name is validated.',
+      'Confirm the standard defences: anti-JSON prefix ()]}\', object rather than array at the top level, correct Content-Type, and a CSRF token requirement on data endpoints.',
+    ],
+    owasp: ['WSTG-CLNT-13'],
+    cwe: ['CWE-200'],
+    applicability: rule.all(browser, rule.is('hasAuthentication', true)),
+    aliases: ['XSSI', 'JSONP Data Leakage', 'Cross-Site Script Inclusion'],
+    tags: ['client-side', 'disclosure'],
+  },
+  {
     id: 'CLI-009',
     vulnerabilityName: 'Reverse Tabnabbing',
     category: 'client-side',
@@ -186,7 +206,8 @@ export const clientSideTests: TestDefinition[] = [
     testingGuidance: [
       'Replay the handshake from a foreign origin and confirm whether the connection is accepted with the victim\'s cookies.',
       'Check that authentication/authorisation is enforced per message, not only at connect time.',
-      'Fuzz message payloads for injection and access control gaps, and confirm wss:// is used.',
+      'Fuzz message payloads for injection and access control gaps.',
+      'Confirm the channel is wss:// on every environment, and that no fallback to plaintext ws:// exists.',
     ],
     owasp: ['WSTG-CLNT-10'],
     cwe: ['CWE-346'],
@@ -299,7 +320,7 @@ export const businessLogicTests: TestDefinition[] = [
     subcategory: 'Anti-Automation',
     priority: 'Medium',
     description:
-      'Business functions can be driven at machine speed — mass account creation, scraping of records, bulk lookups — because no CAPTCHA, throttling or behavioural control exists.',
+      'A business function can be driven at machine speed — mass account creation, record scraping, bulk lookups — because nothing distinguishes a human from a script. The concern is the business outcome at volume, not the request rate itself (DOS-001) or API quotas (API-003).',
     testingGuidance: [
       'Automate a business function (registration, search, lookup) and measure how many operations succeed.',
       'Test whether controls can be bypassed by rotating IP, session or user agent.',

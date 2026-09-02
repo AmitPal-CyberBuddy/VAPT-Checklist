@@ -1,7 +1,10 @@
 # The Test Library
 
 The bundled VAPT knowledge base: **184 vulnerability test definitions**, 18 categories,
-100 subcategories, 536 searchable aliases and 563 testing-guidance steps.
+99 subcategories and 542 searchable aliases.
+
+Content and applicability were audited against WSTG 4.2, ASVS 4.0, OWASP Top 10 2021 and API Top 10
+2023 — see [`CONTENT-AUDIT.md`](CONTENT-AUDIT.md) for what changed and why.
 
 It is a product asset, not a list of headings. This document is the contract for keeping it that
 way.
@@ -85,7 +88,7 @@ Two levels. A third would look tidy and slow testers down.
 | Client-Side Security | `CLI` | DOM Security · Browser Storage · Cross-Origin Policy · UI Redressing · Real-Time Channels · Third-Party Content |
 | Business Logic | `LOGIC` | Workflow Integrity · Transaction Integrity · Authorisation Workflow · Anti-Automation · Trust Boundary |
 | Cryptography | `CRYPTO` | Credential Storage · Algorithm Strength · Key Management · Randomness · Data at Rest · Integrity Protection |
-| File Handling | `FILE` | Upload Validation · Upload Storage · Content Processing · Download Controls · Resource Limits |
+| File Handling | `FILE` | Upload Validation · Upload Storage · Content Processing · Resource Limits |
 | API Security | `API` | API Authentication · API Data Exposure · API Resource Controls · API Surface Management · Request Handling · Third-Party Integration · SOAP Services |
 | GraphQL | `GQL` | Schema Exposure · Query Controls · GraphQL Authorization · GraphQL Injection · Transport Security |
 | Information Disclosure | `DISC` | Error Handling · Response Data Exposure · Artefact Exposure · Metadata & Logs · Enumeration |
@@ -94,7 +97,7 @@ Two levels. A third would look tidy and slow testers down.
 | Mobile Application | `MOB` | Local Data Storage · Binary & Secrets · Platform Integration · Network Security · Resilience |
 | Privacy & Data Protection | `PRIV` | Data Minimisation · Third-Party Sharing · Consent Management · Data Presentation · Regulated Data · Data Subject Rights |
 
-Priority distribution: **31 Critical · 64 High · 72 Medium · 17 Low**.
+Priority distribution: **31 Critical · 64 High · 73 Medium · 16 Low**.
 
 ---
 

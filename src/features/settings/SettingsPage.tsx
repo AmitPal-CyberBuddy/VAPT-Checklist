@@ -136,10 +136,23 @@ export default function SettingsPage() {
   async function handleSync() {
     if (!engagements) return;
     let added = 0;
-    for (const e of engagements) added += await syncLibrary(e.id);
+    let retired = 0;
+    for (const e of engagements) {
+      const result = await syncLibrary(e.id);
+      added += result.added;
+      retired += result.retired;
+    }
+    const detail = [
+      added > 0 ? `${added} new test${added === 1 ? '' : 's'} added` : '',
+      retired > 0
+        ? `${retired} recorded state${retired === 1 ? '' : 's'} belong to tests that have since been merged and are no longer shown`
+        : '',
+    ]
+      .filter(Boolean)
+      .join(' · ');
     toast.success(
-      added === 0 ? 'All engagements are up to date' : 'Library synchronised',
-      added === 0 ? undefined : `${added} new test state(s) added.`,
+      added === 0 && retired === 0 ? 'All engagements are up to date' : 'Library synchronised',
+      detail || undefined,
     );
   }
 

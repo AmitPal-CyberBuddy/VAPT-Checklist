@@ -132,9 +132,9 @@ Any decision can be revised at any time. There are deliberately no `Retest`, `Ev
 
 | | |
 | --- | --- |
-| Vulnerability tests | **184** (31 Critical · 64 High · 72 Medium · 17 Low) |
-| Taxonomy | 18 categories → 100 subcategories |
-| Searchable aliases | 536 |
+| Vulnerability tests | **184** (31 Critical · 64 High · 73 Medium · 16 Low) |
+| Taxonomy | 18 categories → 99 subcategories |
+| Searchable aliases | 542 |
 | Testing guidance steps | 563 |
 | Context-driven tests | 163 (21 baseline tests always apply) |
 | Application context facts | 40 (38 drive applicability rules) |
@@ -328,6 +328,7 @@ Clearing site data deletes your engagements, so take a backup before you do.
 - [`docs/TEST-LIBRARY.md`](docs/TEST-LIBRARY.md) — knowledge base conventions, taxonomy, authoring guide
 - [`docs/DESIGN-SYSTEM.md`](docs/DESIGN-SYSTEM.md) — visual language, vocabulary, responsive and accessibility rules
 - [`docs/AUDIT.md`](docs/AUDIT.md) — end-to-end product audit: what was tested, what was found, what was fixed
+- [`docs/CONTENT-AUDIT.md`](docs/CONTENT-AUDIT.md) — security content and applicability audit against WSTG / ASVS / OWASP Top 10
 - [`docs/adr/`](docs/adr/) — architecture decision records
 - [`docs/deployment/`](docs/deployment/) — GitHub Pages deployment and workflows
 

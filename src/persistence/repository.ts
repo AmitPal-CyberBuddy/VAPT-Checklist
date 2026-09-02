@@ -280,12 +280,27 @@ export async function applyApplicability(
   return changed;
 }
 
-/** Adds states for library tests added after the engagement was created. */
-export async function syncLibrary(engagementId: string): Promise<number> {
+export interface LibrarySyncResult {
+  /** New tests seeded into the engagement. */
+  added: number;
+  /**
+   * States for tests that no longer exist in the library (merged or removed).
+   * They are reported, never deleted: the row is the tester's record, and the
+   * checklist simply stops showing it.
+   */
+  retired: number;
+}
+
+/** Reconciles an engagement with the bundled library after a content change. */
+export async function syncLibrary(engagementId: string): Promise<LibrarySyncResult> {
   const engagement = await db.engagements.get(engagementId);
-  if (!engagement) return 0;
-  const existing = new Set((await listStates(engagementId)).map((s) => s.testId));
+  if (!engagement) return { added: 0, retired: 0 };
+
+  const states = await listStates(engagementId);
+  const existing = new Set(states.map((s) => s.testId));
+  const retired = states.filter((s) => !TEST_BY_ID.has(s.testId)).length;
   const timestamp = now();
+
   const added = TEST_LIBRARY.filter((t) => !existing.has(t.id)).map((definition) =>
     createInitialState(
       engagementId,
@@ -294,15 +309,18 @@ export async function syncLibrary(engagementId: string): Promise<number> {
       timestamp,
     ),
   );
-  if (added.length === 0) return 0;
+
   await db.transaction('rw', db.testStates, db.engagements, async () => {
-    await db.testStates.bulkAdd(added);
+    if (added.length > 0) await db.testStates.bulkAdd(added);
+    // Always record the version, even when nothing was added — otherwise the
+    // engagement is reported as outdated forever.
     await db.engagements.update(engagementId, {
       libraryVersion: LIBRARY_VERSION,
-      updatedAt: timestamp,
+      updatedAt: added.length > 0 ? timestamp : engagement.updatedAt,
     });
   });
-  return added.length;
+
+  return { added: added.length, retired };
 }
 
 /* ------------------------------------------------------------ backup / restore */

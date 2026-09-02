@@ -28,7 +28,7 @@ import { apiTests, graphqlTests } from './tests/api-graphql';
 import { disclosureTests, availabilityTests, privacyTests } from './tests/disclosure-dos-privacy';
 import { cloudTests, mobileTests } from './tests/cloud-mobile';
 
-export const LIBRARY_VERSION = '1.1.0';
+export const LIBRARY_VERSION = '1.2.0';
 
 const CATEGORY_INDEX: Record<CategoryId, number> = Object.fromEntries(
   CATEGORIES.map((c, i) => [c.id, i]),

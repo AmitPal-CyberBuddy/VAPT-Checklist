@@ -51,7 +51,7 @@ export const apiTests: TestDefinition[] = [
     subcategory: 'API Resource Controls',
     priority: 'High',
     description:
-      'The API lacks per-client rate limits, payload size limits or pagination ceilings, permitting abuse, cost inflation and denial of service.',
+      'The API has no per-client quota, payload ceiling or pagination limit, so a legitimate caller can exhaust compute, storage or third-party spend. Distinct from DOS-001 (attempt limiting on auth endpoints) and LOGIC-005 (abuse of a business flow).',
     testingGuidance: [
       'Measure the request rate accepted per token, per IP and unauthenticated.',
       'Request very large page sizes (limit=100000) and deeply nested expansions.',
@@ -116,7 +116,10 @@ export const apiTests: TestDefinition[] = [
     ],
     owasp: ['API2:2023'],
     cwe: ['CWE-798', 'CWE-522'],
-    applicability: rule.includes('authMechanisms', 'api-key'),
+    applicability: rule.all(
+      rule.is('hasAuthentication', true),
+      rule.includes('authMechanisms', 'api-key'),
+    ),
     aliases: ['Exposed API Key', 'Unscoped API Key', 'API Key Leakage'],
     tags: ['api'],
   },

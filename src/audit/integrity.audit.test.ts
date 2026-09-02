@@ -11,7 +11,7 @@ import {
   getChecklist,
   updateTestState,
 } from '../persistence/repository';
-import { TEST_LIBRARY, TEST_BY_ID } from '../data/library';
+import { TEST_LIBRARY, TEST_BY_ID, LIBRARY_VERSION } from '../data/library';
 import { suggestApplicability } from '../domain/applicability';
 import { countsAreConsistent, computeMetrics } from '../domain/metrics';
 import { planWorkbook } from '../export/excel';
@@ -252,7 +252,7 @@ describe('§3 applicability across real engagement profiles', () => {
     {
       name: 'WebSockets',
       context: { ...BASE, usesWebsockets: true },
-      expectApplicable: ['CLI-010', 'TLS-006'],
+      expectApplicable: ['CLI-010'],
       expectNotApplicable: [],
     },
   ];
@@ -328,6 +328,111 @@ describe('§3 applicability across real engagement profiles', () => {
     for (const core of ['authentication', 'authorization', 'input-validation', 'session', 'api']) {
       expect(categories.has(core as never)).toBe(true);
     }
+  });
+});
+
+describe('§3b applicability corrections found by the content audit', () => {
+  const WEB: ApplicationContext = {
+    assetTypes: ['web-app'],
+    internetFacing: true,
+    hosting: 'cloud',
+    usesCdnOrProxy: true,
+    datastore: 'sql',
+  };
+  const AUTHED: ApplicationContext = {
+    ...WEB,
+    hasAuthentication: true,
+    authMechanisms: ['session-cookie'],
+    hasPasswordReset: true,
+    hasUserOwnedResources: true,
+  };
+  const applies = (id: string, context: ApplicationContext) =>
+    suggestApplicability(TEST_BY_ID.get(id)!, context).applicable;
+
+  it('does not hide NoSQL injection when the datastore is honestly "unknown"', () => {
+    // SQL injection allowed for 'unknown'; NoSQL did not, so answering the
+    // question truthfully removed a Critical test.
+    expect(applies('INJ-001', { datastore: 'unknown' })).toBe(true);
+    expect(applies('INJ-002', { datastore: 'unknown' })).toBe(true);
+    expect(applies('INJ-002', { datastore: 'sql' })).toBe(false);
+  });
+
+  it('keeps OTP testing for password reset, not only for MFA', () => {
+    expect(applies('AUTH-008', { hasAuthentication: true, hasMfa: false, hasPasswordReset: true })).toBe(true);
+    expect(applies('AUTH-008', { hasAuthentication: true, hasMfa: true, hasPasswordReset: false })).toBe(true);
+    expect(applies('AUTH-008', { hasAuthentication: true, hasMfa: false, hasPasswordReset: false })).toBe(false);
+  });
+
+  it('applies CSRF to a cookie-authenticated API, but not to a bearer-token one', () => {
+    expect(applies('SESS-008', { ...AUTHED, assetTypes: ['rest-api'] })).toBe(true);
+    // No ambient credential, so there is nothing for a foreign origin to ride.
+    expect(
+      applies('SESS-008', { ...AUTHED, assetTypes: ['rest-api'], authMechanisms: ['jwt'] }),
+    ).toBe(false);
+  });
+
+  it('scans uploads for malware even when files are never served back', () => {
+    expect(applies('FILE-003', { hasFileUpload: true, hasFileDownload: false })).toBe(true);
+  });
+
+  it('drops mechanism-specific tests when the application has no authentication', () => {
+    const noAuth: ApplicationContext = { ...WEB, hasAuthentication: false };
+    for (const id of ['SESS-010', 'SESS-013', 'AUTH-013', 'AUTH-014', 'API-006', 'INJ-008']) {
+      expect(applies(id, noAuth), `${id} should not apply without authentication`).toBe(false);
+    }
+    // …but an unrecorded mechanism list still keeps them, conservatively.
+    expect(applies('SESS-010', { ...WEB, hasAuthentication: true })).toBe(true);
+  });
+
+  it('surfaces the tests added by the content audit in the right contexts', () => {
+    expect(applies('INJ-022', { usesCdnOrProxy: true })).toBe(true);
+    expect(applies('INJ-022', { usesCdnOrProxy: false })).toBe(false);
+    expect(applies('CLI-012', AUTHED)).toBe(true);
+    expect(applies('CLI-012', { ...WEB, hasAuthentication: false })).toBe(false);
+    expect(applies('SESS-013', AUTHED)).toBe(true);
+  });
+
+  it('reports retired states and records the version when syncing', async () => {
+    const { createEngagement: create, syncLibrary } = await import('../persistence/repository');
+    const { db: database } = await import('../persistence/db');
+    const { stateKey } = await import('../domain/executionState');
+    await database.open();
+    const engagement = await create({ name: 'Pre-merge', context: { hasFileUpload: true } });
+    // A finding recorded against a test that the audit merged away.
+    await database.testStates.add({
+      id: stateKey(engagement.id, 'FILE-006'),
+      engagementId: engagement.id,
+      testId: 'FILE-006',
+      applicable: true,
+      suggestedApplicable: true,
+      applicabilitySource: 'auto',
+      status: 'Tested',
+      result: 'Vulnerable',
+      notes: 'recorded before the merge',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    } as never);
+    await database.engagements.update(engagement.id, { libraryVersion: '1.1.0' });
+
+    const result = await syncLibrary(engagement.id);
+    expect(result.retired).toBe(1);
+    // The row is reported, never deleted — it is the tester's record.
+    expect(await database.testStates.get(stateKey(engagement.id, 'FILE-006'))).toBeTruthy();
+    // …and the engagement stops reporting itself as outdated.
+    expect((await database.engagements.get(engagement.id))!.libraryVersion).toBe(LIBRARY_VERSION);
+  });
+
+  it('no longer carries the tests merged away by the audit', () => {
+    for (const id of ['TLS-006', 'CONF-006', 'FILE-006']) {
+      expect(TEST_BY_ID.has(id), `${id} was merged and should be gone`).toBe(false);
+    }
+    // Their coverage lives on in the tests that absorbed them.
+    expect(TEST_BY_ID.get('INJ-011')!.aliases).toContain('Arbitrary File Download');
+    expect(TEST_BY_ID.get('CONF-011')!.aliases).toContain('Insecure crossdomain.xml');
+  });
+
+  it('rates a live default administrative credential as Critical', () => {
+    expect(TEST_BY_ID.get('AUTH-002')!.priority).toBe('Critical');
   });
 });
 

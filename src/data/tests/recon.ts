@@ -140,7 +140,7 @@ export const reconTests: TestDefinition[] = [
   },
   {
     id: 'INFO-008',
-    vulnerabilityName: 'Application Entry Point and Attack Surface Gaps',
+    vulnerabilityName: 'Undocumented Application Entry Points',
     category: 'recon',
     subcategory: 'Attack Surface Mapping',
     priority: 'Low',
@@ -154,7 +154,7 @@ export const reconTests: TestDefinition[] = [
     owasp: ['WSTG-INFO-06'],
     cwe: ['CWE-1059'],
     applicability: web,
-    aliases: ['Undocumented Endpoints', 'Hidden Parameter Discovery'],
+    aliases: ['Hidden Parameter Discovery', 'Unmapped Attack Surface'],
     tags: ['recon'],
   },
 ];

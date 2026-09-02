@@ -29,7 +29,9 @@ export const authenticationTests: TestDefinition[] = [
     vulnerabilityName: 'Default or Weak Vendor Credentials',
     category: 'authentication',
     subcategory: 'Credential Security',
-    priority: 'High',
+    // Critical, not High: a live default admin account is immediate, complete
+    // compromise with no exploitation skill required.
+    priority: 'Critical',
     description:
       'Accounts shipped with the platform or created during deployment retain default, guessable or documented credentials.',
     testingGuidance: [
@@ -154,7 +156,10 @@ export const authenticationTests: TestDefinition[] = [
     ],
     owasp: ['WSTG-ATHN-03', 'A07:2021'],
     cwe: ['CWE-330', 'CWE-307'],
-    applicability: rule.all(auth, rule.is('hasMfa', true)),
+    applicability: rule.all(
+      auth,
+      rule.any(rule.is('hasMfa', true), rule.is('hasPasswordReset', true)),
+    ),
     aliases: ['OTP Brute Force', 'Predictable OTP', 'OTP Reuse', 'Weak TOTP Implementation'],
     tags: ['authentication', 'mfa'],
   },
@@ -250,7 +255,7 @@ export const authenticationTests: TestDefinition[] = [
     ],
     owasp: ['WSTG-ATHZ-05', 'A07:2021'],
     cwe: ['CWE-601', 'CWE-352'],
-    applicability: rule.includes('authMechanisms', 'oauth2'),
+    applicability: rule.all(auth, rule.includes('authMechanisms', 'oauth2')),
     aliases: ['OAuth Misconfiguration', 'redirect_uri Manipulation', 'Missing PKCE', 'Account Takeover via OAuth'],
     tags: ['authentication', 'oauth'],
   },
@@ -269,7 +274,7 @@ export const authenticationTests: TestDefinition[] = [
     ],
     owasp: ['WSTG-ATHN-04', 'A07:2021'],
     cwe: ['CWE-347'],
-    applicability: rule.includes('authMechanisms', 'saml'),
+    applicability: rule.all(auth, rule.includes('authMechanisms', 'saml')),
     aliases: ['SAML Signature Bypass', 'XML Signature Wrapping', 'SAML Replay'],
     tags: ['authentication', 'sso'],
   },
@@ -284,7 +289,8 @@ export const authenticationTests: TestDefinition[] = [
     testingGuidance: [
       'Attempt to register with an existing email using case/unicode variants and trailing characters.',
       'Add role/privilege parameters to the registration request (mass assignment) and check the resulting account.',
-      'Test whether email/phone ownership is verified before the account becomes usable, and whether registering an existing unverified address hijacks it.',
+      'Test whether email or phone ownership is actually enforced: register, skip the verification link, and check which functionality is reachable.',
+      'Attempt verification bypass — reuse or predict the verification token, change the address after verifying, or register an address another user has not yet confirmed.',
     ],
     owasp: ['WSTG-IDNT-02', 'WSTG-IDNT-03'],
     cwe: ['CWE-862'],

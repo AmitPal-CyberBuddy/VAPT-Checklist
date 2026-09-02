@@ -101,25 +101,6 @@ export const configTests: TestDefinition[] = [
     tags: ['components'],
   },
   {
-    id: 'CONF-006',
-    vulnerabilityName: 'Cross-Domain Policy Misconfiguration',
-    category: 'config',
-    subcategory: 'Platform Hardening',
-    priority: 'Medium',
-    description:
-      'Legacy cross-domain policy files (crossdomain.xml, clientaccesspolicy.xml) grant wildcard access, allowing third-party rich clients to read authenticated responses.',
-    testingGuidance: [
-      'Request /crossdomain.xml and /clientaccesspolicy.xml on every in-scope host.',
-      'Look for allow-access-from domain="*" or overly broad domains.',
-      'Assess whether the affected host serves authenticated content.',
-    ],
-    owasp: ['WSTG-CONF-08'],
-    cwe: ['CWE-942'],
-    applicability: browser,
-    aliases: ['Insecure crossdomain.xml', 'Flash Cross-Domain Policy'],
-    tags: ['hardening'],
-  },
-  {
     id: 'CONF-007',
     vulnerabilityName: 'Debug and Diagnostic Endpoints Exposed',
     category: 'config',
@@ -168,12 +149,12 @@ export const configTests: TestDefinition[] = [
     testingGuidance: [
       'Review Cache-Control, Pragma and Expires on authenticated responses.',
       'After logout, use browser back/history and cached page inspection to retrieve sensitive content.',
-      'Where a CDN is present, test for cache deception with path confusion (e.g. /account/x.css).',
+      'Confirm intermediary caches are excluded too — private vs public, and Vary on Authorization/Cookie.',
     ],
     owasp: ['WSTG-ATHN-06'],
     cwe: ['CWE-525'],
     applicability: rule.is('hasAuthentication', true),
-    aliases: ['Missing Cache-Control', 'Web Cache Deception', 'Sensitive Data Cached by Proxy'],
+    aliases: ['Missing Cache-Control', 'Sensitive Data Cached by Proxy', 'Missing no-store Directive'],
     tags: ['caching'],
   },
   {
@@ -206,12 +187,17 @@ export const configTests: TestDefinition[] = [
     testingGuidance: [
       'Check for framework sample apps (/examples, /docs, /test, Tomcat examples, IIS default site).',
       'Verify default accounts and demo data are removed from the tested environment.',
+      'Request legacy cross-domain policy files (/crossdomain.xml, /clientaccesspolicy.xml) and flag wildcard grants.',
       'Review any client-supplied hardening baseline against observed configuration.',
     ],
     owasp: ['WSTG-CONF-01', 'A05:2021'],
     cwe: ['CWE-1188'],
     applicability: web,
-    aliases: ['Sample Applications Deployed', 'Default Installation Files'],
+    aliases: [
+      'Sample Applications Deployed',
+      'Default Installation Files',
+      'Insecure crossdomain.xml',
+    ],
     tags: ['hardening'],
   },
   {
@@ -329,25 +315,6 @@ export const transportTests: TestDefinition[] = [
     cwe: ['CWE-311'],
     applicability: rule.includes('assetTypes', 'web-app'),
     aliases: ['Mixed Content', 'Insecure Resource Loading over HTTP'],
-    tags: ['tls'],
-  },
-  {
-    id: 'TLS-006',
-    vulnerabilityName: 'Sensitive Data Exposed in TLS-Adjacent Channels',
-    category: 'transport',
-    subcategory: 'Data in Transit',
-    priority: 'Low',
-    description:
-      'Sensitive values leak outside the encrypted payload — via SNI-visible hostnames, unencrypted DNS, Referer headers to third parties or unprotected WebSocket upgrades.',
-    testingGuidance: [
-      'Check that WebSocket connections use wss:// and inherit authentication.',
-      'Review Referrer-Policy and confirm sensitive URLs are not leaked to external origins.',
-      'Confirm no sensitive API traffic bypasses TLS (e.g. legacy endpoints, mobile SDK calls).',
-    ],
-    owasp: ['WSTG-CRYP-03'],
-    cwe: ['CWE-319'],
-    applicability: rule.any(rule.is('usesWebsockets', true), rule.is('usesThirdPartyScripts', true)),
-    aliases: ['Unencrypted WebSocket', 'Referer Leakage to Third Parties'],
     tags: ['tls'],
   },
 ];

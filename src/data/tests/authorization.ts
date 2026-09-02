@@ -110,12 +110,12 @@ export const authorizationTests: TestDefinition[] = [
   },
   {
     id: 'AUTHZ-006',
-    vulnerabilityName: 'Path Traversal in Access Control',
+    vulnerabilityName: 'Access Control Bypass via URL Path Normalisation',
     category: 'authorization',
     subcategory: 'Access Control Enforcement',
     priority: 'High',
     description:
-      'Traversal sequences or URL encoding tricks in the request path bypass proxy, gateway or framework access control rules that match on prefixes.',
+      'A gateway, WAF or framework matches access rules on the raw URL path while the origin resolves it differently, so an encoded or traversal-laden path reaches a protected handler that the rule was meant to block.',
     testingGuidance: [
       'Test path normalisation bypasses: /admin/..;/, //admin, /%2e%2e/admin, /./admin, trailing dot/slash variants.',
       'Where a reverse proxy or WAF enforces rules, test whether the origin applies the same restriction.',
@@ -124,7 +124,12 @@ export const authorizationTests: TestDefinition[] = [
     owasp: ['WSTG-ATHZ-01'],
     cwe: ['CWE-22', 'CWE-288'],
     applicability: rule.any(rule.is('usesCdnOrProxy', true), rule.is('hasAdminInterface', true)),
-    aliases: ['Path Normalisation Bypass', 'Proxy Access Control Bypass', 'URL Path Confusion'],
+    aliases: [
+      'Path Normalisation Bypass',
+      'Proxy Access Control Bypass',
+      'URL Path Confusion',
+      'Reverse Proxy ACL Bypass',
+    ],
     tags: ['authorization'],
   },
   {

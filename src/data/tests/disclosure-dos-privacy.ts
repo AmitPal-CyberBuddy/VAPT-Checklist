@@ -164,7 +164,7 @@ export const availabilityTests: TestDefinition[] = [
     subcategory: 'Rate Limiting',
     priority: 'High',
     description:
-      'Sensitive or expensive operations accept unlimited requests from a single client, enabling brute force, scraping, resource exhaustion and cost amplification.',
+      'Security-sensitive endpoints — login, OTP, password reset, token exchange — accept unlimited attempts from one client, enabling brute force and credential stuffing. This is the transport-level control; API quota design is API-003 and business-flow abuse is LOGIC-005.',
     testingGuidance: [
       'Baseline the accepted request rate for login, search, OTP, export and API endpoints.',
       'Test limits per IP, per account and per token, and check whether they can be reset by rotating identifiers.',
