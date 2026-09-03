@@ -1,6 +1,18 @@
+import type { ReactElement } from 'react';
 import clsx from 'clsx';
 import { Badge, Card, InlineAlert } from '../../ui/primitives';
-import { IconAlert, IconCheck, IconInfo } from '../../ui/icons';
+import {
+  IconAlert,
+  IconCheck,
+  IconCloud,
+  IconCode,
+  IconGlobe,
+  IconHexagon,
+  IconInfo,
+  IconMonitor,
+  IconServer,
+  IconSmartphone,
+} from '../../ui/icons';
 import { APPLICATION_TYPES, type ApplicationTypeId } from '../../domain/applicationType';
 import { coverageFor } from '../../data/typeCoverage';
 import { categoryName } from '../../data/categories';
@@ -18,6 +30,18 @@ const SUPPORT_BADGE = {
   supported: { tone: 'success' as const, label: 'Supported', glyph: '✓' },
   limited: { tone: 'warn' as const, label: 'Limited support', glyph: '◐' },
   unsupported: { tone: 'neutral' as const, label: 'Not supported', glyph: '○' },
+};
+
+/* One glyph per testing domain, so the picker scans as a set of disciplines. */
+const TYPE_ICON: Record<ApplicationTypeId, ReactElement> = {
+  'web-app': <IconGlobe size={20} aria-hidden="true" />,
+  'rest-api': <IconServer size={20} aria-hidden="true" />,
+  'graphql-api': <IconHexagon size={20} aria-hidden="true" />,
+  'soap-api': <IconCode size={20} aria-hidden="true" />,
+  'mobile-android': <IconSmartphone size={20} aria-hidden="true" />,
+  'mobile-ios': <IconSmartphone size={20} aria-hidden="true" />,
+  cloud: <IconCloud size={20} aria-hidden="true" />,
+  'thick-client': <IconMonitor size={20} aria-hidden="true" />,
 };
 
 export function ApplicationTypePicker({
@@ -41,21 +65,38 @@ export function ApplicationTypePicker({
               aria-pressed={selected}
               onClick={() => onChange(type.id)}
               className={clsx(
-                'flex h-full w-full flex-col gap-1.5 rounded-[--radius-control] border p-3 text-left transition-colors duration-150',
+                'flex h-full w-full flex-col gap-2 rounded-[--radius-control] border p-3.5 text-left transition-colors duration-150',
                 selected
-                  ? 'border-brand-500 bg-brand-500/10 shadow-[0_0_0_1px_var(--color-brand-500)]'
+                  ? 'glow-active border-brand-500 bg-brand-500/10'
                   : unsupported
                     ? 'border-dashed border-ink-700 bg-ink-900 opacity-60 hover:opacity-80'
                     : 'border-ink-700 bg-ink-850 hover:border-brand-500/40 hover:bg-ink-800',
               )}
             >
-              <span className="flex flex-wrap items-center gap-2">
-                <span className="text-sm font-medium text-ink-100">{type.label}</span>
-                <Badge tone={badge.tone} glyph={badge.glyph}>
-                  {badge.label}
-                </Badge>
+              <span className="flex items-start gap-3">
+                <span
+                  aria-hidden="true"
+                  className={clsx(
+                    'flex h-10 w-10 shrink-0 items-center justify-center rounded-[--radius-control] border',
+                    selected
+                      ? 'border-brand-500/50 bg-brand-500/15 text-brand-400'
+                      : 'border-ink-600 bg-ink-900 text-ink-300',
+                  )}
+                >
+                  {TYPE_ICON[type.id]}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm font-medium text-ink-100">{type.label}</span>
+                    <Badge tone={badge.tone} glyph={badge.glyph}>
+                      {badge.label}
+                    </Badge>
+                  </span>
+                  <span className="mt-1 block text-xs leading-relaxed text-ink-400">
+                    {type.description}
+                  </span>
+                </span>
               </span>
-              <span className="text-xs leading-relaxed text-ink-400">{type.description}</span>
               <span className="mt-auto pt-1 text-micro text-ink-400">
                 {unsupported ? (
                   'No tests for this domain'

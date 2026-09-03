@@ -309,7 +309,7 @@
       radial-gradient(520px 280px at 90% 110%, rgb(69 192 249 / 0.08), transparent 55%);
     pointer-events: none;
   }
-  .cmd-hero > * {
+  .cmd-hero > :not(.sr-only) {
     position: relative;
   }
 
@@ -330,7 +330,7 @@
       radial-gradient(400px 280px at 50% 50%, rgb(69 192 249 / 0.04), transparent 70%);
     pointer-events: none;
   }
-  .hero-stage > * {
+  .hero-stage > :not(.sr-only) {
     position: relative;
   }
 
@@ -613,6 +613,194 @@
       0 0 0 1px rgb(14 165 233 / 0.18),
       0 0 26px -8px rgb(69 192 249 / 0.25),
       var(--shadow-lift);
+  }
+
+  /* ---------------------------------------------------------------
+   * Composition layer — the redesign's building blocks.
+   * Every rule below is token-only and theme-aware, and all of them
+   * stay group-disabled under prefers-reduced-motion.
+   * --------------------------------------------------------------- */
+
+  /* The dashboard "command centre" band: a layered surface that reads
+     as the control deck of the assessment. Bigger than a panel, with a
+     keyline and a soft spotlight so it anchors the screen. */
+  .cmd-band {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgb(14 165 233 / 0.22);
+    border-radius: var(--radius-panel);
+    background-color: var(--color-ink-900);
+    background-image: linear-gradient(to bottom, rgb(14 165 233 / 0.07), rgb(14 165 233 / 0.02) 46%, transparent);
+    box-shadow:
+      var(--shadow-panel),
+      0 0 0 1px rgb(3 6 12 / 0.2);
+  }
+  .cmd-band::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(560px 260px at 12% -30%, rgb(14 165 233 / 0.16), transparent 60%),
+      radial-gradient(420px 220px at 96% 120%, rgb(244 63 94 / 0.05), transparent 55%);
+    pointer-events: none;
+  }
+  .cmd-band > :not(.sr-only) {
+    position: relative;
+  }
+  [data-theme='light'] .cmd-band {
+    background-image: linear-gradient(to bottom, rgb(8 145 178 / 0.07), rgb(8 145 178 / 0.02) 50%, transparent);
+  }
+
+  /* A larger-than-standard value for the headline metric on the
+     dashboard. Defined in CSS (not JSX) so the type scale stays
+     audited. */
+  .metric-hero-value {
+    font-size: 2.25rem;
+    line-height: 1.05;
+    font-weight: 650;
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* A labelled numeric tile — used for the six assessment counts.
+     Combines colour + glyph + label so tone is never carried by
+     colour alone. */
+  .metric-tile {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    border: 1px solid var(--color-ink-700);
+    border-radius: var(--radius-control);
+    background-color: var(--color-ink-850);
+    padding: 0.625rem 0.75rem;
+    box-shadow: var(--shadow-inset);
+    transition:
+      border-color var(--motion-fast) var(--ease-standard),
+      transform var(--motion-fast) var(--ease-standard);
+  }
+  .metric-tile:hover {
+    border-color: var(--color-ink-600);
+    transform: translateY(-1px);
+  }
+
+  /* Section keyline — the hairline that separates a section heading
+     from its content, with a short brand leader so the hierarchy is
+     visible at a glance. */
+  .keyline {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .keyline::before {
+    content: '';
+    width: 2rem;
+    height: 1px;
+    background-image: linear-gradient(90deg, rgb(69 192 249 / 0.9), transparent);
+  }
+
+  /* A quiet two-column key-value row used inside detail surfaces. */
+  .kv-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.375rem 0;
+    border-bottom: 1px solid var(--color-ink-800);
+  }
+  .kv-row:last-child {
+    border-bottom: 0;
+  }
+
+  /* Status flash: a one-shot pop used to confirm a recorded change in
+     place (status badge, result badge, metric). Runs on remount so the
+     element can replay it on every change. */
+  .pop-confirm {
+    animation: pop-confirm var(--motion-base) var(--ease-spring);
+  }
+
+  /* Rows that open a detail (workspace list, findings, high-value):
+     an affordance chevron that slides right on hover. */
+  .row-open {
+    transition: transform var(--motion-fast) var(--ease-standard);
+  }
+  .group:hover .row-open {
+    transform: translateX(2px);
+  }
+
+  /* An attention panel for the vulnerable summary — red rail + very
+     soft red wash, strong enough to find but not alarming. */
+  .attn-vuln {
+    border: 1px solid rgb(244 63 94 / 0.3);
+    background-image: linear-gradient(to bottom, rgb(244 63 94 / 0.06), transparent 60%);
+  }
+  .attn-vuln .section-kicker {
+    color: var(--color-vuln-400);
+  }
+  [data-theme='light'] .attn-vuln {
+    border-color: rgb(225 29 72 / 0.3);
+    background-image: linear-gradient(to bottom, rgb(225 29 72 / 0.05), transparent 60%);
+  }
+
+  /* Small caps kicker used above titles inside panels. */
+  .section-kicker {
+    font-family: var(--font-mono);
+    font-size: var(--text-micro);
+    line-height: 1rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--color-brand-400);
+    font-weight: 500;
+  }
+
+  /* A bordered, scrollable surface for tables and dense lists. */
+  .table-shell {
+    border: 1px solid var(--color-ink-700);
+    border-radius: var(--radius-control);
+    overflow: auto;
+  }
+
+  /* Sticky command row for the workspace toolbar. */
+  .command-bar {
+    position: sticky;
+    top: 3.4rem;
+    z-index: 20;
+    backdrop-filter: blur(10px);
+  }
+  [data-theme='light'] .command-bar {
+    backdrop-filter: blur(10px);
+  }
+
+  /* Entrance for a filter panel expanding in place. */
+  .expand-in {
+    animation: expand-in var(--motion-base) var(--ease-standard);
+    transform-origin: top;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .expand-in {
+      animation: none;
+    }
+  }
+}
+
+@keyframes pop-confirm {
+  0% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.12);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes expand-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scaleY(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
   }
 }
 

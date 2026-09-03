@@ -228,22 +228,22 @@ export default function SettingsPage() {
 
       <Card className="space-y-3">
         <SectionHeading title="Storage details" />
-        <dl className="grid gap-2 text-sm sm:grid-cols-2">
-          <div className="flex justify-between rounded-[--radius-control] border border-ink-700 px-3 py-2">
+        <dl className="panel-inset px-4 py-1 text-sm">
+          <div className="kv-row">
             <dt className="text-ink-400">Mechanism</dt>
             <dd className="text-ink-100">IndexedDB (Dexie)</dd>
           </div>
-          <div className="flex justify-between rounded-[--radius-control] border border-ink-700 px-3 py-2">
+          <div className="kv-row">
             <dt className="text-ink-400">Database</dt>
             <dd className="font-mono text-xs text-ink-100">
               {DB_NAME} · v{DB_VERSION}
             </dd>
           </div>
-          <div className="flex justify-between rounded-[--radius-control] border border-ink-700 px-3 py-2">
+          <div className="kv-row">
             <dt className="text-ink-400">Network calls</dt>
             <dd className="text-safe-400">None</dd>
           </div>
-          <div className="flex justify-between rounded-[--radius-control] border border-ink-700 px-3 py-2">
+          <div className="kv-row">
             <dt className="text-ink-400">Excel generation</dt>
             <dd className="text-ink-100">Client-side (bundled)</dd>
           </div>

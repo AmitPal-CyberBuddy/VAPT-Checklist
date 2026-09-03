@@ -367,7 +367,10 @@ export function SectionHeading({
   return (
     <div className={clsx('flex flex-wrap items-start justify-between gap-x-4 gap-y-2', className)}>
       <div className="min-w-0">
-        <h2 id={id} className="text-sm font-semibold tracking-wide text-ink-100 uppercase">
+        <h2
+          id={id}
+          className="flex items-center gap-2 text-sm font-semibold tracking-wide text-ink-100 uppercase"
+        >
           {title}
         </h2>
         {description && <p className="mt-1 text-sm text-ink-400">{description}</p>}
@@ -562,7 +565,7 @@ export function SegmentedControl<T extends string>({
             onClick={() => onChange(option.value)}
             className={clsx(
               'inline-flex items-center gap-1 rounded-[calc(var(--radius-control)-2px)] border',
-              'border-transparent font-medium transition-colors duration-150',
+              'border-transparent font-medium transition-[color,background-color,border-color,box-shadow,transform] duration-150 active:scale-95',
               size === 'sm' ? 'px-2 py-1 text-micro' : 'px-2.5 py-1.5 text-xs',
               active
                 ? SEGMENT_ACTIVE[option.tone ?? 'default']
@@ -893,7 +896,7 @@ export function Stat({
   return (
     <div
       className={clsx(
-        'panel-inset relative overflow-hidden px-3 py-2.5 transition-colors',
+        'metric-tile relative overflow-hidden',
         tone !== 'neutral' && rails[tone],
         className,
       )}
@@ -908,7 +911,7 @@ export function Stat({
       </p>
       <p
         className={clsx(
-          'mt-1 text-2xl leading-tight font-semibold tracking-tight tabular-nums',
+          'text-2xl leading-tight font-semibold tracking-tight tabular-nums',
           tones[tone],
         )}
       >

@@ -155,40 +155,50 @@ export default function EngagementsPage() {
         </EmptyState>
       ) : (
         <div className="space-y-5">
-          <div
+          <section
             aria-label="Engagement register summary"
-            className="grid grid-cols-2 gap-px overflow-hidden rounded-[--radius-panel] border border-ink-700 bg-ink-700 sm:grid-cols-4"
+            className="grid gap-2 sm:grid-cols-4"
           >
             {[
               {
                 label: 'Engagements',
                 value: summaries.length,
-                cls: 'text-ink-50',
+                tone: 'neutral' as const,
               },
               {
                 label: 'Active',
                 value: summaries.filter((s) => s.engagement.status === 'Active').length,
-                cls: 'text-brand-400',
+                tone: 'brand' as const,
               },
               {
                 label: 'Completed',
                 value: summaries.filter((s) => s.engagement.status === 'Completed').length,
-                cls: 'text-safe-400',
+                tone: 'safe' as const,
               },
               {
                 label: 'Vulnerable records',
                 value: summaries.reduce((n, s) => n + s.vulnerable, 0),
-                cls: summaries.some((s) => s.vulnerable > 0) ? 'text-vuln-400' : 'text-ink-400',
+                tone: summaries.some((s) => s.vulnerable > 0) ? ('vuln' as const) : ('neutral' as const),
               },
             ].map((cell) => (
-              <div key={cell.label} className="bg-ink-900 px-4 py-3">
+              <div key={cell.label} className="metric-tile">
                 <p className="text-micro font-medium tracking-wider text-ink-400 uppercase">
                   {cell.label}
                 </p>
-                <p className={`mt-0.5 text-xl font-semibold tabular-nums ${cell.cls}`}>{cell.value}</p>
+                <p
+                  className={clsx(
+                    'text-2xl leading-tight font-semibold tracking-tight tabular-nums',
+                    cell.tone === 'brand' && 'text-brand-400',
+                    cell.tone === 'safe' && 'text-safe-400',
+                    cell.tone === 'vuln' && 'text-vuln-400',
+                    cell.tone === 'neutral' && 'text-ink-50',
+                  )}
+                >
+                  {cell.value}
+                </p>
               </div>
             ))}
-          </div>
+          </section>
 
           <ul className="grid list-none gap-4 md:grid-cols-2 xl:grid-cols-3">
           {filtered.map(({ engagement, applicable, resolved, vulnerable, completion }, index) => (

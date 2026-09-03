@@ -364,26 +364,27 @@ export default function NewEngagementPage() {
       {/* Step 3 — context --------------------------------------------------- */}
       {step === 3 && (
         <div className="animate-in space-y-5">
-          <Card className="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <p className="text-sm font-medium text-ink-100">
+          <section className="cmd-band flex flex-wrap items-center justify-between gap-4 p-4 sm:p-5">
+            <div className="min-w-0">
+              <p className="section-kicker mb-1">Assessment context</p>
+              <p className="text-base font-semibold text-ink-50">
                 {completeness.answered} of {completeness.total}{' '}
                 {showAllFacts ? 'questions' : 'key questions'} answered
               </p>
-              <p className="mt-0.5 text-xs text-ink-500">
+              <p className="mt-1 text-xs text-ink-400">
                 Follow-up questions appear only when they are relevant. Anything left unknown keeps
                 its tests in scope.
               </p>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="w-40">
+            <div className="flex shrink-0 items-center gap-4">
+              <div className="w-44">
                 <ProgressBar value={completeness.ratio} label="Context questions answered" />
               </div>
               <Button size="sm" variant="subtle" onClick={() => setShowAllFacts((v) => !v)}>
                 {showAllFacts ? 'Key questions only' : 'Show all questions'}
               </Button>
             </div>
-          </Card>
+          </section>
 
           <ContextForm
             context={context}
@@ -520,7 +521,7 @@ export default function NewEngagementPage() {
                 </Button>
               }
             />
-            <div className="max-h-96 overflow-x-auto overflow-y-auto rounded-[--radius-control] border border-ink-700">
+            <div className="table-shell max-h-96">
               <table className="w-full min-w-[46rem] text-left text-sm">
                 <caption className="sr-only">
                   Tests that will be seeded as applicable for this engagement

@@ -193,9 +193,22 @@ export function ContextForm({
 
   return (
     <div className="space-y-5">
-      {sections.map(({ section, facts }) => (
+      {sections.map(({ section, facts }, index) => (
         <Card key={section.id} className="space-y-3">
-          <SectionHeading title={section.title} description={section.description} />
+          <SectionHeading
+            title={
+              <span className="flex items-center gap-2.5">
+                <span
+                  aria-hidden="true"
+                  className="flex h-6 w-6 shrink-0 items-center justify-center rounded-[--radius-control] border border-brand-500/40 bg-brand-500/10 font-mono text-micro text-brand-400"
+                >
+                  {index + 1}
+                </span>
+                {section.title}
+              </span>
+            }
+            description={section.description}
+          />
           <div className="space-y-2">
             {facts.map((fact) => (
               <FactRow key={fact.key} fact={fact} context={context} onChange={onChange} />

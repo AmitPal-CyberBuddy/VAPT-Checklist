@@ -164,6 +164,53 @@ export default function LibraryPage() {
         <Stat label="High" value={stats.byPriority.High} tone="warn" />
       </div>
 
+      {/* Category navigation: jump to a domain or filter by it. Counts are
+          read live from the library so the strip never drifts. */}
+      <nav aria-label="Library categories" className="flex flex-wrap items-center gap-1.5">
+        <button
+          type="button"
+          aria-pressed={category === 'all'}
+          onClick={() => {
+            setCategory('all');
+            setSubcategory('all');
+          }}
+          className={clsx(
+            'inline-flex items-center gap-1.5 rounded-[--radius-control] border px-2.5 py-1 text-xs transition-colors duration-150',
+            category === 'all'
+              ? 'border-brand-500/60 bg-brand-500/15 text-brand-400'
+              : 'border-ink-700 bg-ink-900 text-ink-300 hover:border-ink-500 hover:text-ink-100',
+          )}
+        >
+          All categories
+          <span className="rounded bg-ink-800 px-1.5 font-mono text-micro tabular-nums text-ink-300">
+            {stats.total}
+          </span>
+        </button>
+        {CATEGORIES.map((c) => (
+          <button
+            key={c.id}
+            type="button"
+            aria-pressed={category === c.id}
+            onClick={() => {
+              setCategory(category === c.id ? 'all' : c.id);
+              setSubcategory('all');
+            }}
+            className={clsx(
+              'inline-flex items-center gap-1.5 rounded-[--radius-control] border px-2.5 py-1 text-xs transition-colors duration-150',
+              category === c.id
+                ? 'border-brand-500/60 bg-brand-500/15 text-brand-400'
+                : 'border-ink-700 bg-ink-900 text-ink-300 hover:border-ink-500 hover:text-ink-100',
+            )}
+          >
+            <span className="text-brand-500/70">{CATEGORY_ICON[c.id]}</span>
+            {c.name}
+            <span className="rounded bg-ink-800 px-1.5 font-mono text-micro tabular-nums text-ink-300">
+              {stats.byCategory[c.id] ?? 0}
+            </span>
+          </button>
+        ))}
+      </nav>
+
       <Card className="flex flex-wrap items-center gap-2">
         <div className="relative min-w-56 flex-1">
           <IconSearch
@@ -299,23 +346,28 @@ export default function LibraryPage() {
                     <button
                       onClick={() => setOpen(expanded ? null : t.id)}
                       aria-expanded={expanded}
-                      className="flex w-full items-center gap-3 py-2 pr-4 pl-3 text-left transition-colors duration-150 hover:bg-ink-850/70"
+                      className="group flex w-full items-center gap-3 py-2.5 pr-4 pl-3 text-left transition-colors duration-150 hover:bg-ink-850/70"
                     >
                       <IconChevron
                         size={14}
                         className={clsx(
-                          'shrink-0 text-ink-500 transition-transform duration-150',
-                          expanded && 'rotate-90',
+                          'row-open shrink-0 text-ink-500 transition-transform duration-150',
+                          expanded && 'rotate-90 text-brand-400',
                         )}
                       />
-                      <span className="w-16 shrink-0 font-mono text-micro text-ink-500">
-                        {t.id}
-                      </span>
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-medium text-ink-100">
+                        {/* The vulnerability name is the primary element. */}
+                        <span
+                          className={clsx(
+                            'block truncate text-base leading-snug',
+                            expanded ? 'font-semibold text-ink-50' : 'font-medium text-ink-100',
+                          )}
+                        >
                           {t.vulnerabilityName}
                         </span>
                         <span className="mt-0.5 flex flex-wrap items-center gap-x-2 text-micro text-ink-500">
+                          <span className="font-mono">{t.id}</span>
+                          <span aria-hidden="true">·</span>
                           <span>{t.subcategory}</span>
                           <span aria-hidden="true">·</span>
                           <span>{categoryName(t.category)}</span>
@@ -327,16 +379,12 @@ export default function LibraryPage() {
                       <div className="animate-in grid gap-5 border-t border-ink-800 bg-ink-950/40 px-4 py-4 pl-[3.6rem] lg:grid-cols-2 lg:gap-8">
                         <div className="space-y-4">
                           <div>
-                            <p className="mb-1 flex items-center gap-2 text-micro font-medium tracking-wider text-ink-400 uppercase">
-                              Description
-                            </p>
+                            <p className="section-kicker mb-1">Description</p>
                             <p className="text-sm leading-relaxed text-ink-200">{t.description}</p>
                           </div>
                           {t.aliases && t.aliases.length > 0 && (
                             <div>
-                              <p className="mb-1 flex items-center gap-2 text-micro font-medium tracking-wider text-ink-400 uppercase">
-                                Also known as
-                              </p>
+                              <p className="section-kicker mb-1">Also known as</p>
                               <div className="flex flex-wrap gap-1.5">
                                 {t.aliases.map((alias) => (
                                   <Badge key={alias} tone="neutral">
@@ -347,18 +395,14 @@ export default function LibraryPage() {
                             </div>
                           )}
                           <div>
-                            <p className="mb-1 flex items-center gap-2 text-micro font-medium tracking-wider text-ink-400 uppercase">
-                              Applicability rule
-                            </p>
+                            <p className="section-kicker mb-1">Applicability rule</p>
                             <code className="rounded-md border border-ink-600 bg-ink-900 px-2 py-1 text-xs text-ink-300">
                               {describeRule(t.applicability)}
                             </code>
                           </div>
                           {((t.owasp && t.owasp.length > 0) || (t.cwe && t.cwe.length > 0)) && (
                             <div>
-                              <p className="mb-1 flex items-center gap-2 text-micro font-medium tracking-wider text-ink-400 uppercase">
-                                Standards mapping
-                              </p>
+                              <p className="section-kicker mb-1">Standards mapping</p>
                               <p className="font-mono text-xs text-ink-400">
                                 {t.owasp && t.owasp.length > 0 && `OWASP ${t.owasp.join(', ')}`}
                                 {t.owasp && t.owasp.length > 0 && t.cwe && t.cwe.length > 0 && ' · '}
@@ -369,9 +413,7 @@ export default function LibraryPage() {
                         </div>
                         <div className="space-y-4">
                           <div>
-                            <p className="mb-1 flex items-center gap-2 text-micro font-medium tracking-wider text-ink-400 uppercase">
-                              Testing guidance
-                            </p>
+                            <p className="section-kicker mb-1">Testing guidance</p>
                             <ol className="panel-inset space-y-2 p-3 text-sm text-ink-200">
                               {t.testingGuidance.map((g, i) => (
                                 <li key={i} className="flex gap-2.5">
@@ -384,9 +426,7 @@ export default function LibraryPage() {
                             </ol>
                           </div>
                           <div>
-                            <p className="mb-1 flex items-center gap-2 text-micro font-medium tracking-wider text-ink-400 uppercase">
-                              References
-                            </p>
+                            <p className="section-kicker mb-1">References</p>
                             <div className="flex flex-wrap gap-1.5">
                               {resolveReferences(t).map((reference) => (
                                 <a

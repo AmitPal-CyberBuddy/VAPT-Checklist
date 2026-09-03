@@ -159,6 +159,11 @@ function TestListRowInner({
         !s.applicable && 'opacity-60',
       )}
     >
+      {/* The active test: a solid brand rail plus a viewing notch, so the
+          selected row is identifiable at a glance even mid-scroll. */}
+      {active && (
+        <span aria-hidden="true" className="absolute top-0 bottom-0 left-0 w-0.5 bg-brand-400/90" />
+      )}
       <div className="flex items-start gap-2">
         {selectionMode && (
           <input

@@ -76,157 +76,158 @@ export default function DashboardPage() {
   );
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {/* 1 — command band: identity + progress ---------------------------- */}
-      <div className="grid gap-3 lg:grid-cols-[1.7fr_1fr]">
-        <Card
-          as="section"
-          aria-labelledby="engagement-info"
-          className="panel-accent space-y-3"
-        >
-          <h2 id="engagement-info" className="sr-only">
-            Engagement information
-          </h2>
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-micro text-ink-400">
-              <span className="font-mono tracking-wide uppercase">
-                {engagement.status} engagement
-              </span>
-              {engagement.clientName && (
-                <>
-                  <span aria-hidden="true">·</span>
-                  <span>{engagement.clientName}</span>
-                </>
-              )}
-              {engagement.testerName && (
-                <>
-                  <span aria-hidden="true">·</span>
-                  <span>{engagement.testerName}</span>
-                </>
-              )}
-            </p>
-            {c.vulnerable > 0 ? (
-              <Badge tone="vulnerable" glyph="▲">
-                {c.vulnerable} vulnerable
-              </Badge>
-            ) : (
-              <Badge tone="safe" glyph="✓">
-                No vulnerable tests
-              </Badge>
-            )}
-          </div>
-          <dl className="grid gap-3 sm:grid-cols-3">
-            <div className="min-w-0">
-              <dt className="text-micro tracking-wider text-ink-400 uppercase">Engagement</dt>
-              <dd className="mt-0.5 truncate text-sm font-semibold text-ink-50">
-                {engagement.name}
-              </dd>
-            </div>
-            <div className="min-w-0">
-              <dt className="text-micro tracking-wider text-ink-400 uppercase">Application URL</dt>
-              <dd className="mt-0.5 truncate font-mono text-xs text-ink-200">
-                {!engagement.applicationUrl ? (
-                  <span className="text-ink-400">Not recorded</span>
-                ) : safeUrl ? (
-                  <a
-                    href={safeUrl}
-                    target="_blank"
-                    rel="noreferrer noopener"
-                    className="inline-flex max-w-full items-center gap-1 truncate hover:text-brand-400"
-                  >
-                    {engagement.applicationUrl}
-                    <IconExternal size={11} aria-hidden="true" />
-                    <span className="sr-only">(opens in a new tab)</span>
-                  </a>
-                ) : (
-                  // Unsupported scheme (javascript:, data:…) — shown, never linked.
-                  <span className="break-all" title="Not a linkable http(s) URL">
-                    {engagement.applicationUrl}
-                  </span>
-                )}
-              </dd>
-            </div>
-            <div className="min-w-0">
-              <dt className="text-micro tracking-wider text-ink-400 uppercase">Application type</dt>
-              <dd className="mt-0.5 text-sm text-ink-200">
-                <span className="flex flex-wrap items-center gap-1.5">
-                  {applicationTypeName(engagement.applicationType)}
-                  {supportLevel(engagement.applicationType) === 'limited' && (
-                    <Badge tone="warn" glyph="◐" title="Coverage for this domain is limited">
-                      Limited
-                    </Badge>
-                  )}
-                </span>
-                {surfaceLabel(engagement) !== applicationTypeName(engagement.applicationType) && (
-                  <span className="mt-0.5 block text-micro text-ink-400">
-                    Surfaces: {surfaceLabel(engagement)}
-                  </span>
-                )}
-              </dd>
-            </div>
-          </dl>
-          {engagement.scope.length > 0 && (
-              <p className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-ink-800 pt-3 text-micro text-ink-400">
-                <span className="min-w-0 truncate font-mono">
-                  Extra targets: {engagement.scope.join(' · ')}
-                </span>
-              </p>
-            )}
-        </Card>
+      <section
+        aria-labelledby="engagement-info"
+        className="cmd-band space-y-5 p-4 sm:p-6"
+      >
+        <h2 id="engagement-info" className="sr-only">
+          Engagement information
+        </h2>
 
-        <Card
-          as="section"
-          aria-labelledby="progress-heading"
-          className="cmd-hero flex flex-col justify-center p-4"
-        >
-          <div className="flex items-baseline justify-between">
-            <h2
-              id="progress-heading"
-              className="text-micro font-medium tracking-wider text-ink-400 uppercase"
-            >
-              Overall progress
-            </h2>
-            <span
-              className={clsx(
-                'text-2xl font-semibold tracking-tight tabular-nums',
-                metrics.completion === 1 ? 'text-safe-400' : 'text-brand-400',
-              )}
-            >
-              {Math.round(metrics.completion * 100)}%
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-micro text-ink-400">
+            <span className="font-mono tracking-wide uppercase">
+              {engagement.status} engagement
             </span>
-          </div>
-          <ProgressBar
-            className="mt-2.5"
-            height="lg"
-            label="Overall assessment progress"
-            value={metrics.completion}
-            tone={metrics.completion === 1 ? 'safe' : 'brand'}
-          />
-          <p className="mt-2 text-xs tabular-nums text-ink-400">
-            <strong className="text-ink-100">{completed}</strong> completed (Tested {c.tested} + N/A{' '}
-            {c.na}) of <strong className="text-ink-100">{c.applicable}</strong> applicable tests
-            {outstandingCount > 0 && (
-              <span className="text-warn-300"> · {outstandingCount} still Not Tested</span>
+            {engagement.clientName && (
+              <>
+                <span aria-hidden="true">·</span>
+                <span>{engagement.clientName}</span>
+              </>
+            )}
+            {engagement.testerName && (
+              <>
+                <span aria-hidden="true">·</span>
+                <span>{engagement.testerName}</span>
+              </>
             )}
           </p>
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            <LinkButton
-              to={`/e/${engagementId}/workspace`}
-              variant="primary"
-              icon={<IconList size={15} />}
-            >
-              Open testing workspace
-            </LinkButton>
-            <LinkButton
-              to={`/e/${engagementId}/export`}
-              variant="subtle"
-              icon={<IconDownload size={15} />}
-            >
-              Export assessment
-            </LinkButton>
+          {c.vulnerable > 0 ? (
+            <Badge tone="vulnerable" glyph="▲">
+              {c.vulnerable} vulnerable
+            </Badge>
+          ) : (
+            <Badge tone="safe" glyph="✓">
+              No vulnerable tests
+            </Badge>
+          )}
+        </div>
+
+        <div className="grid items-center gap-6 lg:grid-cols-[1.6fr_1fr]">
+          <div className="min-w-0 space-y-4">
+            <p className="text-2xl leading-tight font-semibold tracking-tight text-ink-50">
+              {engagement.name}
+            </p>
+            <dl className="grid gap-x-6 gap-y-2.5 sm:grid-cols-3">
+              <div className="min-w-0">
+                <dt className="text-micro tracking-wider text-ink-400 uppercase">Application URL</dt>
+                <dd className="mt-0.5 truncate font-mono text-xs text-ink-200">
+                  {!engagement.applicationUrl ? (
+                    <span className="text-ink-400">Not recorded</span>
+                  ) : safeUrl ? (
+                    <a
+                      href={safeUrl}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                      className="inline-flex max-w-full items-center gap-1 truncate hover:text-brand-400"
+                    >
+                      {engagement.applicationUrl}
+                      <IconExternal size={11} aria-hidden="true" />
+                      <span className="sr-only">(opens in a new tab)</span>
+                    </a>
+                  ) : (
+                    // Unsupported scheme (javascript:, data:…) — shown, never linked.
+                    <span className="break-all" title="Not a linkable http(s) URL">
+                      {engagement.applicationUrl}
+                    </span>
+                  )}
+                </dd>
+              </div>
+              <div className="min-w-0">
+                <dt className="text-micro tracking-wider text-ink-400 uppercase">
+                  Application type
+                </dt>
+                <dd className="mt-0.5 text-sm text-ink-200">
+                  <span className="flex flex-wrap items-center gap-1.5">
+                    {applicationTypeName(engagement.applicationType)}
+                    {supportLevel(engagement.applicationType) === 'limited' && (
+                      <Badge tone="warn" glyph="◐" title="Coverage for this domain is limited">
+                        Limited
+                      </Badge>
+                    )}
+                  </span>
+                  {surfaceLabel(engagement) !==
+                    applicationTypeName(engagement.applicationType) && (
+                    <span className="mt-0.5 block text-micro text-ink-400">
+                      Surfaces: {surfaceLabel(engagement)}
+                    </span>
+                  )}
+                </dd>
+              </div>
+              <div className="min-w-0">
+                <dt className="text-micro tracking-wider text-ink-400 uppercase">Targets</dt>
+                <dd className="mt-0.5 truncate font-mono text-xs text-ink-300">
+                  {engagement.scope.length > 0
+                    ? engagement.scope.join(' · ')
+                    : engagement.applicationUrl || 'Primary target only'}
+                </dd>
+              </div>
+            </dl>
           </div>
-        </Card>
-      </div>
+
+          <div className="rounded-[--radius-panel] border border-ink-700 bg-ink-950/50 p-4 shadow-[inset_0_1px_0_rgb(141_156_178/0.05)]">
+            <div className="flex items-baseline justify-between gap-3">
+              <h2
+                id="progress-heading"
+                className="text-micro font-medium tracking-wider text-ink-400 uppercase"
+              >
+                Overall progress
+              </h2>
+              <span
+                className={clsx(
+                  'metric-hero-value',
+                  metrics.completion === 1 ? 'text-safe-400' : 'text-brand-400',
+                )}
+              >
+                {Math.round(metrics.completion * 100)}%
+              </span>
+            </div>
+            <ProgressBar
+              className="mt-3"
+              height="lg"
+              label="Overall assessment progress"
+              value={metrics.completion}
+              tone={metrics.completion === 1 ? 'safe' : 'brand'}
+            />
+            <p className="mt-2 text-xs tabular-nums text-ink-400">
+              <strong className="text-ink-100">{completed}</strong> completed (Tested {c.tested} +{' '}
+              N/A {c.na}) of <strong className="text-ink-100">{c.applicable}</strong> applicable
+              tests
+              {outstandingCount > 0 && (
+                <span className="text-warn-300"> · {outstandingCount} still Not Tested</span>
+              )}
+            </p>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <LinkButton
+                to={`/e/${engagementId}/workspace`}
+                variant="primary"
+                icon={<IconList size={15} />}
+              >
+                Open testing workspace
+              </LinkButton>
+              <LinkButton
+                to={`/e/${engagementId}/export`}
+                variant="subtle"
+                icon={<IconDownload size={15} />}
+              >
+                Export assessment
+              </LinkButton>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* 2 — the six assessment counts, attention first ------------------- */}
       <section aria-labelledby="stats-heading">
@@ -335,7 +336,7 @@ export default function DashboardPage() {
           />
         ) : (
           <ul className="grid gap-2 md:grid-cols-2">
-            {highValue.map(({ item, rationale, uncertain }) => (
+            {highValue.map(({ item, rationale, uncertain }, index) => (
               <li key={item.definition.id}>
                 <Link
                   to={`/e/${engagementId}/workspace?test=${item.definition.id}`}
@@ -344,6 +345,9 @@ export default function DashboardPage() {
                     uncertain ? 'rail-warn' : 'rail-brand',
                   )}
                 >
+                  <span className="mt-0.5 font-mono text-micro text-ink-500 tabular-nums">
+                    {String(index + 1).padStart(2, '0')}
+                  </span>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-medium text-ink-100">
                       {item.definition.vulnerabilityName}
@@ -366,7 +370,7 @@ export default function DashboardPage() {
                   <IconChevron
                     size={14}
                     aria-hidden="true"
-                    className="mt-0.5 shrink-0 text-ink-600 transition-colors duration-150 group-hover:text-brand-400"
+                    className="row-open mt-0.5 shrink-0 text-ink-600 group-hover:text-brand-400"
                   />
                 </Link>
               </li>
@@ -376,7 +380,11 @@ export default function DashboardPage() {
       </Card>
 
       {/* 4 — what you found ------------------------------------------------ */}
-      <Card as="section" aria-labelledby="vulnerable-heading" className="space-y-3">
+      <Card
+        as="section"
+        aria-labelledby="vulnerable-heading"
+        className="attn-vuln space-y-3"
+      >
         <SectionHeading
           id="vulnerable-heading"
           title={
@@ -418,7 +426,7 @@ export default function DashboardPage() {
               <li key={definition.id}>
                 <Link
                   to={`/e/${engagementId}/workspace?test=${definition.id}`}
-                  className="rail-vuln flex items-start gap-3 py-2 pl-3 transition-colors duration-150 hover:bg-ink-850/60"
+                  className="rail-vuln group flex items-start gap-3 py-2 pl-3 transition-colors duration-150 hover:bg-ink-850/60"
                 >
                   <span className="min-w-0 flex-1">
                     <span className="block text-sm font-medium text-ink-100">
@@ -437,6 +445,11 @@ export default function DashboardPage() {
                       </span>
                     )}
                   </span>
+                  <IconChevron
+                    size={14}
+                    aria-hidden="true"
+                    className="row-open mt-1 shrink-0 text-ink-600 group-hover:text-vuln-400"
+                  />
                 </Link>
               </li>
             ))}

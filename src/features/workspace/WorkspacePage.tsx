@@ -460,7 +460,11 @@ export default function WorkspacePage() {
       )}
 
       {/* Toolbar ----------------------------------------------------------- */}
-      <Card className="space-y-2 py-3" as="section" aria-labelledby="workspace-filters">
+      <Card
+        className="command-bar space-y-2 py-3"
+        as="section"
+        aria-labelledby="workspace-filters"
+      >
         <h2 id="workspace-filters" className="sr-only">
           Search and filter tests
         </h2>
@@ -515,7 +519,7 @@ export default function WorkspacePage() {
         {filtersOpen && (
           <div
             id="workspace-filter-panel"
-            className="animate-in grid gap-2 border-t border-ink-800 pt-2.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6"
+            className="expand-in grid gap-2 border-t border-ink-800 pt-2.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6"
           >
             <FilterSelect
               label="Applicability"

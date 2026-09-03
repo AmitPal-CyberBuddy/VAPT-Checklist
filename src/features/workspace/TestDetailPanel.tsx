@@ -161,24 +161,41 @@ export function TestDetailPanel({
     timer.current = setTimeout(flushNotes, 350);
   }
 
+  const suggestion = suggestApplicability(d, context);
+  const awaitingChoice = pendingTested && s.status !== 'Tested';
+  const naWithoutReason = s.status === 'N/A' && !notes.trim();
+  const needsEvidence = s.status === 'Tested' && s.result === 'Vulnerable' && !notes.trim();
+
+  /** Subtle in-place confirmation whenever a status/result write lands. */
+  const [savedAt, setSavedAt] = useState<number | null>(null);
+  const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (savedTimer.current) clearTimeout(savedTimer.current);
+    },
+    [],
+  );
+  const confirmSaved = () => {
+    setSavedAt(Date.now());
+    if (savedTimer.current) clearTimeout(savedTimer.current);
+    savedTimer.current = setTimeout(() => setSavedAt(null), 1600);
+  };
+
   function chooseStatus(status: TestStatus) {
     if (status === 'Tested' && !s.result) {
       setPendingTested(true);
       return;
     }
     setPendingTested(false);
-    void recordTestState(engagementId, d.id, { status }, 'Status');
+    void recordTestState(engagementId, d.id, { status }, 'Status').then(confirmSaved);
   }
 
   function chooseResult(result: TestResult) {
     setPendingTested(false);
-    void recordTestState(engagementId, d.id, { status: 'Tested', result }, 'Result');
+    void recordTestState(engagementId, d.id, { status: 'Tested', result }, 'Result').then(
+      confirmSaved,
+    );
   }
-
-  const suggestion = suggestApplicability(d, context);
-  const awaitingChoice = pendingTested && s.status !== 'Tested';
-  const naWithoutReason = s.status === 'N/A' && !notes.trim();
-  const needsEvidence = s.status === 'Tested' && s.result === 'Vulnerable' && !notes.trim();
 
   return (
     <article className="flex h-full min-h-0 flex-col" aria-label={d.vulnerabilityName}>
@@ -199,17 +216,16 @@ export function TestDetailPanel({
                 All tests
               </Button>
             )}
-            {/* 1 — the vulnerability name is the largest thing on the screen */}
+            {/* 0 — category eyebrow; 1 — the vulnerability name, largest on screen */}
+            <p className="section-kicker mb-1 truncate">
+              {categoryName(d.category)} · {d.subcategory}
+            </p>
             <h2 className="text-base leading-tight font-semibold text-ink-50 sm:text-lg">
               {d.vulnerabilityName}
             </h2>
             <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-micro text-ink-400">
               <PriorityBadge priority={d.priority} />
               <span className="font-mono">{d.id}</span>
-              <span aria-hidden="true">·</span>
-              <span>{categoryName(d.category)}</span>
-              <span aria-hidden="true">·</span>
-              <span>{d.subcategory}</span>
               {!s.applicable && <Badge tone="na">Not Applicable</Badge>}
               {s.applicabilitySource === 'manual' && <Badge tone="brand">Manual</Badge>}
             </div>
@@ -260,6 +276,15 @@ export function TestDetailPanel({
             />
           </div>
 
+          {savedAt !== null && (
+            <span
+              aria-live="polite"
+              className="pop-confirm inline-flex items-center gap-1 text-xs font-medium text-safe-400"
+            >
+              <span aria-hidden="true">✓</span> Saved
+            </span>
+          )}
+
           <Button
             size="sm"
             variant={awaitingChoice ? 'subtle' : 'primary'}
@@ -298,7 +323,7 @@ export function TestDetailPanel({
           </InlineAlert>
         )}
 
-        <Section title="Description">
+        <Section title="What to test">
           <p className="text-sm leading-relaxed text-ink-200">{d.description}</p>
           {d.aliases && d.aliases.length > 0 && (
             <p className="mt-2 text-micro text-ink-400">
