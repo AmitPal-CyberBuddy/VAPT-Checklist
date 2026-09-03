@@ -6,16 +6,16 @@ import { useChecklist, useEngagement, useMetrics } from '../../hooks/useData';
 import { repairIntegrity, setEngagementStatus } from '../../persistence/repository';
 import { toast } from '../../ui/toast';
 import { EmptyState, LinkButton } from '../../ui/primitives';
-import { IconAlert } from '../../ui/icons';
+import { IconAlert, IconDownload, IconGauge, IconList, IconTarget } from '../../ui/icons';
 import { effectiveAssetTypes, FACT_BY_KEY } from '../../domain/context';
 import { safeExternalUrl } from '../../domain/untrusted';
 import type { EngagementStatus } from '../../domain/types';
 
 const TABS = [
-  { to: '', label: 'Dashboard', end: true },
-  { to: 'workspace', label: 'Testing Workspace', end: false },
-  { to: 'context', label: 'Application Context', end: false },
-  { to: 'export', label: 'Export', end: false },
+  { to: '', label: 'Dashboard', icon: IconGauge, end: true },
+  { to: 'workspace', label: 'Testing Workspace', icon: IconList, end: false },
+  { to: 'context', label: 'Application Context', icon: IconTarget, end: false },
+  { to: 'export', label: 'Export', icon: IconDownload, end: false },
 ];
 
 export default function EngagementLayout() {
@@ -186,7 +186,10 @@ export default function EngagementLayout() {
         </div>
       </div>
 
-      <nav aria-label="Engagement sections" className="flex gap-1 overflow-x-auto border-b border-ink-800">
+      <nav
+        aria-label="Engagement sections"
+        className="flex gap-1 overflow-x-auto border-b border-ink-800"
+      >
         {TABS.map((tab) => (
           <NavLink
             key={tab.label}
@@ -194,7 +197,7 @@ export default function EngagementLayout() {
             end={tab.end}
             className={({ isActive }) =>
               clsx(
-                '-mb-px shrink-0 border-b-2 px-3 py-2 text-sm whitespace-nowrap transition-colors sm:px-4',
+                'group relative -mb-px flex shrink-0 items-center gap-2 border-b-2 px-3 py-2 text-sm whitespace-nowrap transition-colors sm:px-4',
                 isActive
                   ? 'border-brand-500 font-medium text-ink-50'
                   : 'border-transparent text-ink-300 hover:text-ink-100',
@@ -202,7 +205,19 @@ export default function EngagementLayout() {
             }
             aria-current={undefined}
           >
-            {tab.label}
+            {({ isActive }) => (
+              <>
+                <tab.icon
+                  size={14}
+                  aria-hidden="true"
+                  className={clsx(
+                    'transition-colors',
+                    isActive ? 'text-brand-400' : 'text-ink-500 group-hover:text-ink-300',
+                  )}
+                />
+                {tab.label}
+              </>
+            )}
           </NavLink>
         ))}
       </nav>

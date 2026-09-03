@@ -3,12 +3,10 @@ import { useParams } from 'react-router-dom';
 import {
   Badge,
   Button,
-  Card,
   InlineAlert,
   LoadingPanel,
   Modal,
   ProgressBar,
-  SectionHeading,
 } from '../../ui/primitives';
 import { IconAlert, IconCheck } from '../../ui/icons';
 import { ContextForm, contextCompleteness } from './ContextForm';
@@ -82,14 +80,16 @@ export default function ContextPage() {
 
   return (
     <div className="space-y-5">
-      <Card className="flex flex-wrap items-center justify-between gap-4">
+      <section className="cmd-band flex flex-wrap items-center justify-between gap-4 p-4 sm:p-5">
         <div className="min-w-0">
-          <SectionHeading
-            title="Application context"
-            description="These facts decide which vulnerabilities belong in this engagement. You can override any individual decision in the workspace."
-          />
+          <p className="section-kicker mb-1">Assessment context</p>
+          <h2 className="text-base font-semibold text-ink-50">Application context</h2>
+          <p className="mt-1 text-sm text-ink-400">
+            These facts decide which vulnerabilities belong in this engagement. You can override
+            any individual decision in the workspace.
+          </p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex shrink-0 items-center gap-4">
           <div className="w-44">
             <div className="mb-1 flex justify-between text-micro text-ink-400">
               <span>Recorded</span>
@@ -103,7 +103,7 @@ export default function ContextPage() {
             {dirty ? 'Review & apply changes' : 'No changes'}
           </Button>
         </div>
-      </Card>
+      </section>
 
       {dirty && (
         <InlineAlert tone="warn" icon={<IconAlert size={16} aria-hidden="true" />}>
@@ -193,7 +193,7 @@ function DiffList({
         <p className="text-sm font-medium text-ink-100">{title}</p>
       </div>
       <p className="mb-2 text-xs text-ink-500">{note}</p>
-      <ul className="divide-y divide-ink-800 rounded-[--radius-control] border border-ink-700">
+      <ul className="table-shell divide-y divide-ink-800">
         {diffs.map((d) => (
           <li key={d.testId} className="flex items-center gap-3 px-3 py-1.5 text-sm">
             <span className="font-mono text-micro text-ink-500">{d.testId}</span>
