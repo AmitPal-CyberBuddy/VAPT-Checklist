@@ -10,7 +10,7 @@ import {
   SectionHeading,
   Stat,
 } from '../../ui/primitives';
-import { IconAlert, IconDownload, IconTrash } from '../../ui/icons';
+import { IconAlert, IconCheck, IconDownload, IconTrash } from '../../ui/icons';
 import { DB_NAME, DB_VERSION, estimateUsage } from '../../persistence/db';
 import {
   clearAllData,
@@ -249,18 +249,14 @@ export default function SettingsPage() {
         <dl className="panel-inset px-4 py-1 text-sm">
           <div className="kv-row">
             <dt className="flex items-center gap-2 text-ink-400">
-              <span aria-hidden="true" className="text-safe-400">
-                ✓
-              </span>
+              <IconCheck size={12} strokeWidth={2.5} className="text-safe-400" />
               Mechanism
             </dt>
             <dd className="text-ink-100">IndexedDB (Dexie)</dd>
           </div>
           <div className="kv-row">
             <dt className="flex items-center gap-2 text-ink-400">
-              <span aria-hidden="true" className="text-safe-400">
-                ✓
-              </span>
+              <IconCheck size={12} strokeWidth={2.5} className="text-safe-400" />
               Database
             </dt>
             <dd className="font-mono text-xs text-ink-100">
@@ -269,27 +265,21 @@ export default function SettingsPage() {
           </div>
           <div className="kv-row">
             <dt className="flex items-center gap-2 text-ink-400">
-              <span aria-hidden="true" className="text-safe-400">
-                ✓
-              </span>
+              <IconCheck size={12} strokeWidth={2.5} className="text-safe-400" />
               Network calls
             </dt>
             <dd className="text-safe-400">None</dd>
           </div>
           <div className="kv-row">
             <dt className="flex items-center gap-2 text-ink-400">
-              <span aria-hidden="true" className="text-safe-400">
-                ✓
-              </span>
+              <IconCheck size={12} strokeWidth={2.5} className="text-safe-400" />
               Telemetry
             </dt>
             <dd className="text-safe-400">None</dd>
           </div>
           <div className="kv-row">
             <dt className="flex items-center gap-2 text-ink-400">
-              <span aria-hidden="true" className="text-safe-400">
-                ✓
-              </span>
+              <IconCheck size={12} strokeWidth={2.5} className="text-safe-400" />
               Excel generation
             </dt>
             <dd className="text-ink-100">Client-side (bundled)</dd>

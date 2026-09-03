@@ -13,7 +13,7 @@ import {
   LiveAnnouncement,
   LoadingPanel,
 } from '../../ui/primitives';
-import { IconCheck, IconFilter, IconSearch, IconX } from '../../ui/icons';
+import { IconAlert, IconCheck, IconFilter, IconSearch, IconX } from '../../ui/icons';
 import { TestListRow } from './TestListRow';
 import { TestDetailPanel } from './TestDetailPanel';
 import { CATEGORIES, CATEGORY_BY_ID, categoryName } from '../../data/categories';
@@ -592,7 +592,7 @@ export default function WorkspacePage() {
               className="flex items-center gap-1 rounded border border-vuln-500/35 bg-vuln-500/10 px-1.5 py-0.5 text-vuln-400 transition-colors hover:border-vuln-500/60"
               onClick={() => setResult('Vulnerable')}
             >
-              ▲ {vulnShown} vulnerable
+              <IconAlert size={10} strokeWidth={2.5} aria-hidden="true" /> {vulnShown} vulnerable
             </button>
           )}
           {unconfirmedIds.size > 0 && scope !== 'unconfirmed' && (

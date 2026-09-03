@@ -23,6 +23,13 @@ import type {
   TextareaHTMLAttributes,
 } from 'react';
 import type { Priority, TestResult, TestStatus } from '../domain/types';
+import {
+  IconAlert,
+  IconBan,
+  IconCheck,
+  IconCircle,
+  IconCircleFilled,
+} from './icons';
 
 /* ------------------------------------------------------------------ Button */
 
@@ -159,18 +166,21 @@ type BadgeTone =
   | 'success';
 
 const BADGE_TONES: Record<BadgeTone, string> = {
-  neutral: 'bg-ink-800 text-ink-200 border-ink-600',
-  brand: 'bg-brand-500/12 text-brand-400 border-brand-500/40',
+  // Quiet tint chips — pills, not plaques. Only the two strongest states
+  // (vulnerable, critical) earn a border, so red reads as an event without
+  // the whole surface shouting. Text steps flip with the theme.
+  neutral: 'bg-ink-800/70 text-ink-300',
+  brand: 'bg-brand-500/12 text-brand-400',
   critical: 'bg-vuln-500/15 text-vuln-400 border-vuln-500/45',
-  high: 'bg-high-500/12 text-high-300 border-high-500/40',
-  medium: 'bg-medium-400/12 text-medium-200 border-medium-400/35',
-  low: 'bg-brand-500/10 text-brand-400 border-brand-500/30',
+  high: 'bg-high-500/12 text-high-300',
+  medium: 'bg-medium-400/12 text-medium-200',
+  low: 'bg-ink-800/70 text-ink-400',
   vulnerable: 'bg-vuln-500/15 text-vuln-400 border-vuln-500/45',
-  safe: 'bg-safe-500/12 text-safe-400 border-safe-500/40',
-  na: 'bg-ink-800 text-ink-300 border-ink-600',
-  warn: 'bg-warn-500/12 text-warn-300 border-warn-500/40',
-  success: 'bg-safe-500/12 text-safe-400 border-safe-500/40',
-};
+  safe: 'bg-safe-500/12 text-safe-400',
+  na: 'bg-ink-850 text-ink-400',
+  warn: 'bg-warn-500/12 text-warn-300',
+  success: 'bg-safe-500/12 text-safe-400',
+};;
 
 export function Badge({
   tone = 'neutral',
@@ -183,21 +193,23 @@ export function Badge({
   children: ReactNode;
   className?: string;
   title?: string;
-  /** Decorative shape shown before the label; hidden from assistive tech. */
-  glyph?: string;
+  /** Decorative icon shown before the label; hidden from assistive tech. */
+  glyph?: ReactNode;
 }) {
   return (
     <span
       title={title}
       className={clsx(
-        'inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5',
+        // A pill with a transparent border slot, so bordered (strong) and
+        // borderless (quiet) tones keep identical metrics.
+        'inline-flex items-center gap-1 rounded-full border border-transparent px-2 py-0.5',
         'text-micro leading-4 font-medium whitespace-nowrap',
         BADGE_TONES[tone],
         className,
       )}
     >
       {glyph && (
-        <span aria-hidden="true" className="font-mono text-micro leading-none">
+        <span aria-hidden="true" className="flex shrink-0 items-center leading-none">
           {glyph}
         </span>
       )}
@@ -215,13 +227,40 @@ const PRIORITY_TONE: Record<Priority, BadgeTone> = {
   Low: 'low',
 };
 
-/** Shape encodes severity without relying on hue. */
-const PRIORITY_GLYPH: Record<Priority, string> = {
-  Critical: '▰▰▰',
-  High: '▰▰▱',
-  Medium: '▰▱▱',
-  Low: '▱▱▱',
+/** Bar count encodes severity without relying on hue. */
+const PRIORITY_BARS: Record<Priority, number> = {
+  Critical: 3,
+  High: 2,
+  Medium: 1,
+  Low: 0,
 };
+
+const PRIORITY_BAR_FILL: Record<Priority, string> = {
+  Critical: 'bg-vuln-500',
+  High: 'bg-high-500',
+  Medium: 'bg-medium-400',
+  Low: 'bg-ink-500',
+};
+
+/** A three-bar signal meter — severity at a glance, in shape as well as hue.
+ *  Rendered small enough to sit inside a micro badge. */
+function PriorityMeter({ priority }: { priority: Priority }) {
+  const active = PRIORITY_BARS[priority];
+  return (
+    <span aria-hidden="true" className="flex shrink-0 items-end gap-px">
+      {[1, 2, 3].map((bar) => (
+        <span
+          key={bar}
+          className={clsx(
+            'w-[3px] rounded-[1px]',
+            bar === 1 ? 'h-1.5' : bar === 2 ? 'h-2' : 'h-2.5',
+            bar <= active ? PRIORITY_BAR_FILL[priority] : 'bg-ink-600',
+          )}
+        />
+      ))}
+    </span>
+  );
+}
 
 export const priorityTone = (priority: string): BadgeTone =>
   PRIORITY_TONE[priority as Priority] ?? 'neutral';
@@ -230,7 +269,7 @@ export function PriorityBadge({ priority, className }: { priority: Priority; cla
   return (
     <Badge
       tone={PRIORITY_TONE[priority]}
-      glyph={PRIORITY_GLYPH[priority]}
+      glyph={<PriorityMeter priority={priority} />}
       className={className}
       title={`${priority} priority`}
     >
@@ -239,17 +278,19 @@ export function PriorityBadge({ priority, className }: { priority: Priority; cla
   );
 }
 
-const STATUS_GLYPH: Record<TestStatus, string> = {
-  'Not Tested': '○',
-  Tested: '●',
-  'N/A': '⊘',
+/** Status iconography — one drawn icon per state, stroked heavier for badge
+ *  size. Never colour alone: icon + label + hue together. */
+const STATUS_ICON: Record<TestStatus, ReactNode> = {
+  'Not Tested': <IconCircle size={11} strokeWidth={2.5} />,
+  Tested: <IconCircleFilled size={11} />,
+  'N/A': <IconBan size={11} strokeWidth={2.5} />,
 };
 
 export function StatusBadge({ status, className }: { status: TestStatus; className?: string }) {
   return (
     <Badge
       tone={status === 'Tested' ? 'brand' : status === 'N/A' ? 'na' : 'neutral'}
-      glyph={STATUS_GLYPH[status]}
+      glyph={STATUS_ICON[status]}
       className={className}
       title={`Status: ${status}`}
     >
@@ -258,9 +299,9 @@ export function StatusBadge({ status, className }: { status: TestStatus; classNa
   );
 }
 
-const RESULT_GLYPH: Record<TestResult, string> = {
-  Vulnerable: '▲',
-  'Not Vulnerable': '✓',
+const RESULT_ICON: Record<TestResult, ReactNode> = {
+  Vulnerable: <IconAlert size={11} strokeWidth={2.5} />,
+  'Not Vulnerable': <IconCheck size={11} strokeWidth={3} />,
 };
 
 export function ResultBadge({
@@ -274,7 +315,7 @@ export function ResultBadge({
   return (
     <Badge
       tone={result === 'Vulnerable' ? 'vulnerable' : 'safe'}
-      glyph={RESULT_GLYPH[result]}
+      glyph={RESULT_ICON[result]}
       className={className}
       title={`Result: ${result}`}
     >
@@ -505,23 +546,27 @@ export interface SegmentOption<T extends string> {
   label: ReactNode;
   tone?: 'default' | 'vulnerable' | 'safe' | 'na';
   title?: string;
-  glyph?: string;
+  glyph?: ReactNode;
 }
 
+/* The active segment is a tinted glass chip with its own small halo —
+   defined in styles.css (.seg-on-*) so each theme gets a properly
+   contrasted surface. Solid fills made every choice look like a toy
+   button; the tint reads as a state, which is what a segment is. */
 const SEGMENT_ACTIVE: Record<string, string> = {
-  default: 'bg-brand-500 text-ink-950 border-brand-400',
-  vulnerable: 'bg-vuln-500 text-white border-vuln-400',
-  safe: 'bg-safe-500 text-ink-950 border-safe-400',
-  na: 'bg-ink-600 text-ink-50 border-ink-500',
+  default: 'seg-on-brand',
+  vulnerable: 'seg-on-vuln',
+  safe: 'seg-on-safe',
+  na: 'seg-on-neutral',
 };
 
 /* The active label sits ON the sliding indicator, so it only needs its
    foreground colour — the indicator carries the surface and border. */
 const SEGMENT_ACTIVE_TEXT: Record<string, string> = {
-  default: 'text-ink-950',
-  vulnerable: 'text-white',
-  safe: 'text-ink-950',
-  na: 'text-ink-50',
+  default: 'text-seg-brand',
+  vulnerable: 'text-seg-vuln',
+  safe: 'text-seg-safe',
+  na: 'text-seg-neutral',
 };
 
 export function SegmentedControl<T extends string>({
@@ -592,7 +637,7 @@ export function SegmentedControl<T extends string>({
             )}
           >
             {option.glyph && (
-              <span aria-hidden="true" className="font-mono text-micro leading-none">
+              <span aria-hidden="true" className="flex shrink-0 items-center leading-none">
                 {option.glyph}
               </span>
             )}
@@ -896,7 +941,7 @@ export function Stat({
   hint?: ReactNode;
   tone?: 'neutral' | 'vuln' | 'safe' | 'warn' | 'brand';
   className?: string;
-  glyph?: string;
+  glyph?: ReactNode;
   /** Featured metrics are larger and carry a meaning-tinted surface. */
   featured?: boolean;
 }) {
@@ -938,7 +983,7 @@ export function Stat({
     >
       <p className="flex items-center gap-1.5 text-micro font-medium tracking-wider text-ink-400 uppercase">
         {glyph && (
-          <span aria-hidden="true" className="font-mono text-micro">
+          <span aria-hidden="true" className="flex shrink-0 items-center leading-none">
             {glyph}
           </span>
         )}

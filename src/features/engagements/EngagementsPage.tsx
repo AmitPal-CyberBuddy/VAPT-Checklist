@@ -12,7 +12,7 @@ import {
   PageHeader,
   ProgressBar,
 } from '../../ui/primitives';
-import { IconCopy, IconDownload, IconPlus, IconSearch, IconShield, IconTrash } from '../../ui/icons';
+import { IconAlert, IconCopy, IconDownload, IconPlus, IconSearch, IconShield, IconTrash } from '../../ui/icons';
 import { useEngagementSummaries } from '../../hooks/useData';
 import {
   deleteEngagement,
@@ -239,7 +239,7 @@ export default function EngagementsPage() {
                       {engagement.status}
                     </Badge>
                     {vulnerable > 0 && (
-                      <Badge tone="vulnerable" glyph="▲">
+                      <Badge tone="vulnerable" glyph={<IconAlert size={11} strokeWidth={2.5} />}>
                         {vulnerable} vulnerable
                       </Badge>
                     )}

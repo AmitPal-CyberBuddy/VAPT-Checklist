@@ -332,3 +332,46 @@ export const IconSmartphone = (p: P) => (
     <path d="M11 18.5h2" />
   </Svg>
 );
+
+/* ------------------------------------------ status & result iconography
+ * The instrument set for test states. Drawn at 10–13px with a heavier
+ * stroke (2.5) so they stay crisp at badge size. Every status carries one
+ * of these plus its text label — never colour or shape alone. */
+
+/** Not Tested — an open ring: nothing recorded yet. */
+export const IconCircle = (p: P) => (
+  <Svg {...p}>
+    <circle cx="12" cy="12" r="8" />
+  </Svg>
+);
+
+/** Tested — a filled disc: the test has been performed. */
+export const IconCircleFilled = (p: P) => (
+  <Svg {...p}>
+    <circle cx="12" cy="12" r="6.5" fill="currentColor" stroke="none" />
+  </Svg>
+);
+
+/** N/A — a struck circle: excluded in practice. */
+export const IconBan = (p: P) => (
+  <Svg {...p}>
+    <circle cx="12" cy="12" r="8.5" />
+    <path d="M6.5 6.5l11 11" />
+  </Svg>
+);
+
+/** Limited / partial — a half-filled disc: coverage with gaps. */
+export const IconCircleHalf = (p: P) => (
+  <Svg {...p}>
+    <circle cx="12" cy="12" r="8.5" />
+    <path d="M12 3.5a8.5 8.5 0 0 1 0 17z" fill="currentColor" stroke="none" />
+  </Svg>
+);
+
+/** High value — a four-point spark: worth doing early. */
+export const IconSpark = (p: P) => (
+  <Svg {...p}>
+    <path d="M12 2.5l2.3 7.2 7.2 2.3-7.2 2.3L12 21.5l-2.3-7.2L2.5 12l7.2-2.3z" />
+  </Svg>
+);
+

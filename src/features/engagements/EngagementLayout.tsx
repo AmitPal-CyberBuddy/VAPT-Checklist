@@ -6,7 +6,7 @@ import { useChecklist, useEngagement, useMetrics } from '../../hooks/useData';
 import { repairIntegrity, setEngagementStatus } from '../../persistence/repository';
 import { toast } from '../../ui/toast';
 import { EmptyState, LinkButton } from '../../ui/primitives';
-import { IconAlert, IconDownload, IconGauge, IconList, IconTarget } from '../../ui/icons';
+import { IconAlert, IconBan, IconCheck, IconCircle, IconCircleFilled, IconDownload, IconGauge, IconList, IconTarget } from '../../ui/icons';
 import { effectiveAssetTypes, FACT_BY_KEY } from '../../domain/context';
 import { safeExternalUrl } from '../../domain/untrusted';
 import type { EngagementStatus } from '../../domain/types';
@@ -165,19 +165,19 @@ export default function EngagementLayout() {
 
         <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-ink-800 pt-4">
           <Badge tone="brand">{c.applicable} applicable</Badge>
-          <Badge tone="neutral" glyph="○">
+          <Badge tone="neutral" glyph={<IconCircle size={11} strokeWidth={2.5} />}>
             {c.notTested} Not Tested
           </Badge>
-          <Badge tone="brand" glyph="●">
+          <Badge tone="brand" glyph={<IconCircleFilled size={11} />}>
             {c.tested} Tested
           </Badge>
-          <Badge tone="na" glyph="⊘">
+          <Badge tone="na" glyph={<IconBan size={11} strokeWidth={2.5} />}>
             {c.na} N/A
           </Badge>
-          <Badge tone="vulnerable" glyph="▲">
+          <Badge tone="vulnerable" glyph={<IconAlert size={11} strokeWidth={2.5} />}>
             {c.vulnerable} Vulnerable
           </Badge>
-          <Badge tone="safe" glyph="✓">
+          <Badge tone="safe" glyph={<IconCheck size={11} strokeWidth={3} />}>
             {c.notVulnerable} Not Vulnerable
           </Badge>
           <span className="ml-auto text-micro text-ink-400">

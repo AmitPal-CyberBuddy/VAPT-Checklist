@@ -9,7 +9,7 @@ import {
   SegmentedControl,
   Textarea,
 } from '../../ui/primitives';
-import { IconAlert, IconChevron, IconExternal, IconTarget } from '../../ui/icons';
+import { IconAlert, IconBan, IconCheck, IconChevron, IconCircle, IconCircleFilled, IconExternal, IconTarget } from '../../ui/icons';
 import { categoryName } from '../../data/categories';
 import { resolveReferences } from '../../data/references';
 import { describeRule, suggestApplicability } from '../../domain/applicability';
@@ -30,12 +30,22 @@ import { ApplicabilityExplanation } from './ApplicabilityExplanation';
  */
 
 const STATUS_OPTIONS = [
-  { value: 'Not Tested' as TestStatus, label: 'Not Tested', glyph: '○', title: 'Not performed yet (1)' },
-  { value: 'Tested' as TestStatus, label: 'Tested', glyph: '●', title: 'Performed — a result is required (2)' },
+  {
+    value: 'Not Tested' as TestStatus,
+    label: 'Not Tested',
+    glyph: <IconCircle size={12} strokeWidth={2.5} />,
+    title: 'Not performed yet (1)',
+  },
+  {
+    value: 'Tested' as TestStatus,
+    label: 'Tested',
+    glyph: <IconCircleFilled size={12} />,
+    title: 'Performed — a result is required (2)',
+  },
   {
     value: 'N/A' as TestStatus,
     label: 'N/A',
-    glyph: '⊘',
+    glyph: <IconBan size={12} strokeWidth={2.5} />,
     tone: 'na' as const,
     title: 'Not applicable in practice — no result required (3)',
   },
@@ -45,14 +55,14 @@ const RESULT_OPTIONS = [
   {
     value: 'Vulnerable' as TestResult,
     label: 'Vulnerable',
-    glyph: '▲',
+    glyph: <IconAlert size={12} strokeWidth={2.5} />,
     tone: 'vulnerable' as const,
     title: 'Record as Vulnerable (v)',
   },
   {
     value: 'Not Vulnerable' as TestResult,
     label: 'Not Vulnerable',
-    glyph: '✓',
+    glyph: <IconCheck size={12} strokeWidth={3} />,
     tone: 'safe' as const,
     title: 'Record as Not Vulnerable (b)',
   },
@@ -339,7 +349,7 @@ export function TestDetailPanel({
                     key={reason}
                     type="button"
                     onClick={() => saveNotes(reason)}
-                    className="rounded-md border border-ink-600 bg-ink-900 px-2 py-1 text-micro text-ink-200 transition-colors hover:border-warn-500/50 hover:text-warn-300"
+                    className="rounded-full border border-ink-600 bg-ink-900 px-2.5 py-1 text-micro text-ink-200 transition-[color,border-color,box-shadow] hover:border-warn-500/50 hover:text-warn-300"
                   >
                     {reason}
                   </button>
@@ -449,8 +459,8 @@ export function TestDetailPanel({
 
           <div
             className={clsx(
-              'flex items-center gap-2 rounded-(--radius-control) transition-shadow',
-              awaitingChoice && 'ring-2 ring-warn-400 ring-offset-2 ring-offset-ink-900',
+              'flex items-center gap-2 rounded-(--radius-control) px-1.5 py-0.5 transition-colors',
+              awaitingChoice && 'bg-warn-500/10 ring-1 ring-warn-400/60',
             )}
           >
             <span className="hidden text-micro font-medium tracking-wider text-ink-400 uppercase sm:inline">
@@ -470,7 +480,7 @@ export function TestDetailPanel({
               aria-live="polite"
               className="pop-confirm inline-flex items-center gap-1 text-xs font-medium text-safe-400"
             >
-              <span aria-hidden="true">✓</span> Saved
+              <IconCheck size={12} strokeWidth={3} aria-hidden="true" /> Saved
             </span>
           )}
 

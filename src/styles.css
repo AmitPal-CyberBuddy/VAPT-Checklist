@@ -652,6 +652,84 @@
       inset 0 0 0 1px rgb(14 165 233 / 0.12);
   }
 
+  /* ---------------------------------------------------------------------
+   * Segmented-control active states — tinted glass chips with a faint
+   * halo, not solid fills. A segment marks a state; it is not a button,
+   * and should not read like one. Text colours (.text-seg-*) are kept in
+   * lockstep so the label passes contrast in both themes.
+   * ------------------------------------------------------------------- */
+  .seg-on-brand {
+    background: rgb(14 165 233 / 0.16);
+    border-color: rgb(69 192 249 / 0.4);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.08),
+      0 0 16px -6px rgb(14 165 233 / 0.45);
+  }
+  .seg-on-vuln {
+    background: rgb(244 63 94 / 0.16);
+    border-color: rgb(251 113 133 / 0.4);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.06),
+      0 0 16px -6px rgb(244 63 94 / 0.4);
+  }
+  .seg-on-safe {
+    background: rgb(16 185 129 / 0.16);
+    border-color: rgb(52 211 153 / 0.4);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.08),
+      0 0 16px -6px rgb(16 185 129 / 0.4);
+  }
+  .seg-on-neutral {
+    background: rgb(56 72 100 / 0.45);
+    border-color: rgb(148 163 184 / 0.28);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05);
+  }
+  [data-theme='light'] .seg-on-brand {
+    background: rgb(8 145 178 / 0.12);
+    border-color: rgb(8 145 178 / 0.35);
+    box-shadow: none;
+  }
+  [data-theme='light'] .seg-on-vuln {
+    background: rgb(225 29 72 / 0.1);
+    border-color: rgb(225 29 72 / 0.32);
+    box-shadow: none;
+  }
+  [data-theme='light'] .seg-on-safe {
+    background: rgb(5 150 105 / 0.1);
+    border-color: rgb(5 150 105 / 0.32);
+    box-shadow: none;
+  }
+  [data-theme='light'] .seg-on-neutral {
+    background: rgb(28 26 24 / 0.08);
+    border-color: rgb(28 26 24 / 0.18);
+    box-shadow: none;
+  }
+
+  .text-seg-brand {
+    color: var(--color-brand-300);
+  }
+  .text-seg-vuln {
+    color: var(--color-vuln-400);
+  }
+  .text-seg-safe {
+    color: var(--color-safe-400);
+  }
+  .text-seg-neutral {
+    color: var(--color-ink-100);
+  }
+  [data-theme='light'] .text-seg-brand {
+    color: var(--color-brand-600);
+  }
+  [data-theme='light'] .text-seg-vuln {
+    color: var(--color-vuln-500);
+  }
+  [data-theme='light'] .text-seg-safe {
+    color: var(--color-safe-500);
+  }
+  [data-theme='light'] .text-seg-neutral {
+    color: var(--color-ink-100);
+  }
+
   /* Layered icon tile used by empty states — a soft halo behind a crisp tile. */
   .icon-tile {
     position: relative;

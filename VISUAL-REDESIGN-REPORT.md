@@ -204,3 +204,52 @@ All five variants are now defined in CSS (`styles.css`) as layered surfaces: gra
 - `tsc --noEmit` — exit 0 · `vite build` — success, 693.8 kB / gzip 206.8 kB · `vitest run` — **21 files, 274 passed**
 - Anchors and audited string contracts untouched (visual-layer-only changes; the only JSX diffs are class names and removed decorative spans).
 - Preview re-verified: new tokens (`--ease-out`, `accent-500`) served; `ease-spring` gone.
+
+---
+
+# Round 10 — Instrument-grade status system (the "childish glyphs" purge)
+
+**Verdict addressed:** "the status update thing — vuln or not, tested or not — looks bad and childish… this is for many areas, check the whole tool." Root cause: every state in the product was carried by **mono unicode glyphs** (▲ ✓ ○ ● ⊘ ◐ ▰▰▰ ★) rendered in `font-mono` inside badges and buttons — toy-like, inconsistent across fonts/platforms, and paired with solid-fill buttons and heavy warn rings. This round replaces the entire status vocabulary with a drawn icon set and rebuilds every control that displays a state.
+
+## 1. A real icon set for states (src/ui/icons.tsx)
+
+Five new 24px stroke icons drawn for badge sizes (11–13px, strokeWidth 2.5): `IconCircle` (Not Tested — open ring), `IconCircleFilled` (Tested — filled disc), `IconBan` (N/A — struck circle), `IconCircleHalf` (Limited/partial), `IconSpark` (High value). Together with the existing `IconAlert` (Vulnerable) and `IconCheck` (Not Vulnerable), every state now has one drawn glyph — never colour alone.
+
+## 2. Badge v2 — pills with soft tints
+
+- Shape: `rounded-full` pills with a transparent border slot (bordered and borderless tones keep identical metrics).
+- Tones: soft translucent tint + theme-flipped text step. **Only Vulnerable and Critical earn a border** — red reads as an event without every surface shouting. Low priority dropped its misleading brand-blue for quiet ink.
+- `glyph` is now a `ReactNode` (drawn icon), not a `font-mono` string.
+
+## 3. PriorityBadge — a signal meter
+
+The `▰▰▰` unicode bars became a three-bar **signal meter** (3px rounded bars, height-stepped, filled by level: Critical 3 / High 2 / Medium 1 / Low 0) — severity readable in shape as well as hue, next to the text label.
+
+## 4. The row status control (the specific complaint)
+
+- **Select:** neutral chrome always (no more colour-tinted text). A small **status dot sits inside the control** — hollow ring / cyan disc / grey disc / amber disc — so the state reads at a glance without tinting the whole surface.
+- **Result buttons:** the solid `▲`/`✓` fills are gone. Two compact icon chips (alert-triangle, check) — quiet neutral when inactive; when active a tinted chip with its own border (red / green). Tooltips + `sr-only` names + `aria-pressed` preserved.
+- **Awaiting-result state:** the old flashing `ring-2 ring-warn-400` became a calm amber-tinted group (`border-warn-400/45 bg-warn-500/10`) with an amber dot in the select.
+
+## 5. Segmented controls — states, not toy buttons
+
+The detail panel's status/result segmented controls dropped their solid fills (solid red/green/blue chips) for **tinted glass chips with a faint halo** (`.seg-on-*` + `.text-seg-*` in styles.css, theme-aware for both dark and light). A segment marks a state; it should not read like a button.
+
+## 6. Whole-tool sweep
+
+- **Dashboard:** all Badge/Stat glyphs → icons; the readiness banner (—/✓/◐) → IconBan/IconCheckCircle/IconCircleHalf; `★ High-value tests` and `▲ Vulnerable tests` headings → IconSpark/IconAlert; per-category `▲ n` counts → icon + count.
+- **Engagement layout:** status legend badges → icons. **Engagements page:** vulnerable badge → icon. **Wizard:** support badges (✓/◐/○) → icons.
+- **Workspace:** filter-summary "▲ n vulnerable" chip → icon; detail panel "✓ Saved" → icon; N/A quick-reason chips → pills.
+- **Applicability explanation:** ✓/✕ condition marks → IconCheck/IconX chips (`?` stays text).
+- **Settings:** the five storage-fact ✓s → IconCheck.
+- The landing terminal mock keeps its unicode check marks deliberately — that is what terminal output looks like.
+
+## 7. Test-suite stability (infrastructure, not assertions)
+
+Two journey tests (workflow, final-journey) began deadlocking after "Create engagement": the wizard's ~150-row Dexie write stalls forever if the very next await is RTL's act-wrapped `findBy*` polling (verified deterministic; **reproduced on unchanged HEAD code**, so not a regression from this round). Fix: a `settleWizardWrite()` helper — a 250ms act-scoped sleep before the first post-create query — plus patience bumps (5s find / 20s test budget). **No assertion changed.**
+
+## 8. Gates
+
+- `tsc --noEmit` — exit 0 · `vite build` — success, 696.1 kB / gzip 207.2 kB · `vitest run` — **21 files, 274 passed**
+- Verified in built CSS: `.seg-on-brand`, `.text-seg-vuln`, `.h-6\.5`, `.w-[3px]` all compile.
+- All anchored strings preserved: `Status for X` / `Result for X` / `title="Vulnerable"` on row buttons, radios `Tested`/`N/A`/`Vulnerable`/`Not Vulnerable`, `High value`, `Not Applicable` counts, `Limited` support badges.

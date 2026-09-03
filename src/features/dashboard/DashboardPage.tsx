@@ -14,11 +14,18 @@ import {
   Stat,
 } from '../../ui/primitives';
 import {
+  IconAlert,
+  IconBan,
   IconCheck,
+  IconCheckCircle,
   IconChevron,
+  IconCircle,
+  IconCircleFilled,
+  IconCircleHalf,
   IconDownload,
   IconExternal,
   IconList,
+  IconSpark,
   IconTarget,
 } from '../../ui/icons';
 import { useChecklist, useEngagement, useMetrics } from '../../hooks/useData';
@@ -150,11 +157,11 @@ export default function DashboardPage() {
             )}
           </p>
           {c.vulnerable > 0 ? (
-            <Badge tone="vulnerable" glyph="▲">
+            <Badge tone="vulnerable" glyph={<IconAlert size={11} strokeWidth={2.5} />}>
               {c.vulnerable} vulnerable
             </Badge>
           ) : (
-            <Badge tone="safe" glyph="✓">
+            <Badge tone="safe" glyph={<IconCheck size={11} strokeWidth={3} />}>
               No vulnerable tests
             </Badge>
           )}
@@ -198,7 +205,7 @@ export default function DashboardPage() {
                   <span className="flex flex-wrap items-center gap-1.5">
                     {applicationTypeName(engagement.applicationType)}
                     {supportLevel(engagement.applicationType) === 'limited' && (
-                      <Badge tone="warn" glyph="◐" title="Coverage for this domain is limited">
+                      <Badge tone="warn" glyph={<IconCircleHalf size={11} strokeWidth={2.5} />} title="Coverage for this domain is limited">
                         Limited
                       </Badge>
                     )}
@@ -299,8 +306,14 @@ export default function DashboardPage() {
                       : 'border-warn-500/30 bg-warn-500/5 text-warn-300',
                   )}
                 >
-                  <span aria-hidden="true">
-                    {c.applicable === 0 ? '—' : outstandingCount === 0 ? '✓' : '◐'}
+                  <span aria-hidden="true" className="flex items-center">
+                    {c.applicable === 0 ? (
+                      <IconBan size={13} strokeWidth={2.5} />
+                    ) : outstandingCount === 0 ? (
+                      <IconCheckCircle size={13} strokeWidth={2.25} />
+                    ) : (
+                      <IconCircleHalf size={13} strokeWidth={2.5} />
+                    )}
                   </span>
                   {c.applicable === 0
                     ? 'No applicable tests recorded'
@@ -342,7 +355,7 @@ export default function DashboardPage() {
             featured
             label="Vulnerable"
             value={c.vulnerable}
-            glyph="▲"
+            glyph={<IconAlert size={11} strokeWidth={2.5} />}
             tone={c.vulnerable > 0 ? 'vuln' : 'neutral'}
             hint={c.vulnerable > 0 ? 'needs review' : 'no vulnerable tests recorded'}
           />
@@ -350,7 +363,7 @@ export default function DashboardPage() {
             featured
             label="Not Tested"
             value={c.notTested}
-            glyph="○"
+            glyph={<IconCircle size={11} strokeWidth={2.5} />}
             tone={c.notTested > 0 ? 'warn' : 'safe'}
             hint={c.notTested > 0 ? 'remaining work' : 'all applicable tested'}
           />
@@ -367,9 +380,9 @@ export default function DashboardPage() {
           />
         </div>
         <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
-          <Stat label="Tested" value={c.tested} glyph="●" hint="with a result" />
-          <Stat label="N/A" value={c.na} glyph="⊘" hint="out of scope in practice" />
-          <Stat label="Not Vulnerable" value={c.notVulnerable} glyph="✓" tone="safe" hint="verified clean" />
+          <Stat label="Tested" value={c.tested} glyph={<IconCircleFilled size={11} />} hint="with a result" />
+          <Stat label="N/A" value={c.na} glyph={<IconBan size={11} strokeWidth={2.5} />} hint="out of scope in practice" />
+          <Stat label="Not Vulnerable" value={c.notVulnerable} glyph={<IconCheck size={11} strokeWidth={3} />} tone="safe" hint="verified clean" />
         </div>
       </section>
 
@@ -415,9 +428,7 @@ export default function DashboardPage() {
           id="high-value-heading"
           title={
             <span className="flex items-center gap-2">
-              <span aria-hidden="true" className="text-brand-400">
-                ★
-              </span>
+              <IconSpark size={15} strokeWidth={2} aria-hidden="true" className="text-brand-400" />
               High-value tests
             </span>
           }
@@ -462,7 +473,7 @@ export default function DashboardPage() {
                     </span>
                     <span className="mt-1 flex flex-wrap items-center gap-1.5">
                       <PriorityBadge priority={item.definition.priority} />
-                      <Badge tone="neutral" glyph="○">
+                      <Badge tone="neutral" glyph={<IconCircle size={11} strokeWidth={2.5} />}>
                         Not Tested
                       </Badge>
                     </span>
@@ -497,9 +508,7 @@ export default function DashboardPage() {
           id="vulnerable-heading"
           title={
             <span className="flex items-center gap-2">
-              <span aria-hidden="true" className="text-vuln-400">
-                ▲
-              </span>
+              <IconAlert size={15} strokeWidth={2.25} aria-hidden="true" className="text-vuln-400" />
               Vulnerable tests
             </span>
           }
@@ -560,7 +569,7 @@ export default function DashboardPage() {
                     </span>
                     <span className="mt-1 flex flex-wrap items-center gap-1.5 text-micro text-ink-400">
                       <PriorityBadge priority={definition.priority} />
-                      <Badge tone="vulnerable" glyph="▲">
+                      <Badge tone="vulnerable" glyph={<IconAlert size={11} strokeWidth={2.5} />}>
                         Vulnerable
                       </Badge>
                       <span className="font-mono">{definition.id}</span>
@@ -605,7 +614,7 @@ export default function DashboardPage() {
                   </Link>
                   <span className="flex shrink-0 items-center gap-2 tabular-nums text-ink-400">
                     {group.counts.vulnerable > 0 && (
-                      <span className="text-vuln-400">▲ {group.counts.vulnerable}</span>
+                      <span className="flex items-center gap-1 text-vuln-400"><IconAlert size={10} strokeWidth={2.5} aria-hidden="true" />{group.counts.vulnerable}</span>
                     )}
                     {group.counts.tested + group.counts.na}/{group.counts.applicable}
                   </span>

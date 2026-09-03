@@ -1,5 +1,7 @@
 import clsx from 'clsx';
+import type { ReactNode } from 'react';
 import { Badge } from '../../ui/primitives';
+import { IconCheck, IconX } from '../../ui/icons';
 import type { ApplicabilityCondition, ApplicabilitySuggestion } from '../../domain/applicability';
 
 /**
@@ -16,18 +18,18 @@ import type { ApplicabilityCondition, ApplicabilitySuggestion } from '../../doma
 
 const MARK: Record<
   ApplicabilityCondition['outcome'],
-  { glyph: string; chip: string }
+  { glyph: ReactNode; chip: string }
 > = {
   met: {
-    glyph: '✓',
+    glyph: <IconCheck size={10} strokeWidth={3} />,
     chip: 'border-safe-500/40 bg-safe-500/10 text-safe-400',
   },
   unmet: {
-    glyph: '✕',
+    glyph: <IconX size={10} strokeWidth={2.75} />,
     chip: 'border-ink-600 bg-ink-850 text-ink-500',
   },
   unknown: {
-    glyph: '?',
+    glyph: <span className="font-mono text-micro leading-none">?</span>,
     chip: 'border-warn-500/40 bg-warn-500/10 text-warn-300',
   },
 };
@@ -68,7 +70,7 @@ export function ApplicabilityExplanation({
                 <span
                   aria-hidden="true"
                   className={clsx(
-                    'flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded border font-mono text-micro leading-none',
+                    'flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded border leading-none',
                     mark.chip,
                   )}
                 >

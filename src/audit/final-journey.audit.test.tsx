@@ -2,6 +2,7 @@
 import 'fake-indexeddb/auto';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act } from 'react';
 import App from '../App';
 import { db } from '../persistence/db';
 import { TEST_LIBRARY } from '../data/library';
@@ -19,6 +20,21 @@ import { effectiveContext } from '../domain/context';
 import { suggestApplicability } from '../domain/applicability';
 import { planWorkbook } from '../export/excel';
 import { vi } from 'vitest';
+
+
+/**
+ * After "Create engagement" the wizard writes ~150 checklist rows through
+ * Dexie before navigating. RTL's act-wrapped find-by polling can starve
+ * fake-indexeddb's task queue while that write is in flight (a knife-edge
+ * that shifts with machine speed — observed on unchanged code), so the write
+ * is allowed to settle inside act before the first post-create query. The
+ * assertions themselves are unchanged.
+ */
+async function settleWizardWrite() {
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  });
+}
 
 function setViewport(wide: boolean) {
   window.matchMedia = ((query: string) => ({
@@ -71,7 +87,10 @@ describe('FINAL QA - complete user journey', () => {
   });
   afterEach(cleanup);
 
-  it('walks the whole journey and keeps every screen consistent', async () => {
+  // jsdom + fake-indexeddb under parallel CI load can exceed the 5s default
+  // test budget without anything being wrong (observed on unchanged code).
+  // The assertions are unchanged — only the patience.
+  it('walks the whole journey and keeps every screen consistent', { timeout: 20000 }, async () => {
     render(<App />);
 
     /* ---- Create Engagement ------------------------------------------------ */
@@ -110,6 +129,7 @@ describe('FINAL QA - complete user journey', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Review checklist' }));
     expect(await screen.findByText('Generated checklist')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Create engagement' }));
+    await settleWizardWrite();
 
     /* ---- Dashboard after create ----------------------------------------------- */
     expect(

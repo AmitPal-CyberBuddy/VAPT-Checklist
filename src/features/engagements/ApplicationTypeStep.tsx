@@ -4,6 +4,8 @@ import { Badge, Card, InlineAlert } from '../../ui/primitives';
 import {
   IconAlert,
   IconCheck,
+  IconCircle,
+  IconCircleHalf,
   IconCloud,
   IconCode,
   IconGlobe,
@@ -27,9 +29,9 @@ import { categoryName } from '../../data/categories';
  */
 
 const SUPPORT_BADGE = {
-  supported: { tone: 'success' as const, label: 'Supported', glyph: '✓' },
-  limited: { tone: 'warn' as const, label: 'Limited support', glyph: '◐' },
-  unsupported: { tone: 'neutral' as const, label: 'Not supported', glyph: '○' },
+  supported: { tone: 'success' as const, label: 'Supported', glyph: <IconCheck size={11} strokeWidth={3} /> },
+  limited: { tone: 'warn' as const, label: 'Limited support', glyph: <IconCircleHalf size={11} strokeWidth={2.5} /> },
+  unsupported: { tone: 'neutral' as const, label: 'Not supported', glyph: <IconCircle size={11} strokeWidth={2.5} /> },
 };
 
 /* One glyph per testing domain, so the picker scans as a set of disciplines. */
