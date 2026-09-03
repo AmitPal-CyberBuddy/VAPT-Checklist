@@ -174,7 +174,6 @@ export const CATEGORIES: Category[] = [
       'Query Controls',
       'GraphQL Authorization',
       'GraphQL Injection',
-      'Transport Security',
     ],
   },
   {
@@ -187,7 +186,6 @@ export const CATEGORIES: Category[] = [
       'Response Data Exposure',
       'Artefact Exposure',
       'Metadata & Logs',
-      'Enumeration',
     ],
   },
   {

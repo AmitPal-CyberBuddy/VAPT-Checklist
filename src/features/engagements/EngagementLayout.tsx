@@ -6,16 +6,16 @@ import { useChecklist, useEngagement, useMetrics } from '../../hooks/useData';
 import { repairIntegrity, setEngagementStatus } from '../../persistence/repository';
 import { toast } from '../../ui/toast';
 import { EmptyState, LinkButton } from '../../ui/primitives';
-import { IconAlert } from '../../ui/icons';
+import { IconAlert, IconBan, IconCheck, IconCircle, IconCircleFilled, IconDownload, IconGauge, IconList, IconTarget } from '../../ui/icons';
 import { effectiveAssetTypes, FACT_BY_KEY } from '../../domain/context';
 import { safeExternalUrl } from '../../domain/untrusted';
 import type { EngagementStatus } from '../../domain/types';
 
 const TABS = [
-  { to: '', label: 'Dashboard', end: true },
-  { to: 'workspace', label: 'Testing Workspace', end: false },
-  { to: 'context', label: 'Application Context', end: false },
-  { to: 'export', label: 'Export', end: false },
+  { to: '', label: 'Dashboard', icon: IconGauge, end: true },
+  { to: 'workspace', label: 'Testing Workspace', icon: IconList, end: false },
+  { to: 'context', label: 'Application Context', icon: IconTarget, end: false },
+  { to: 'export', label: 'Export', icon: IconDownload, end: false },
 ];
 
 export default function EngagementLayout() {
@@ -62,7 +62,7 @@ export default function EngagementLayout() {
         icon={<IconAlert size={28} />}
         title="Engagement not found"
         description="It is not in this browser's local database. Engagements are stored per browser — if it was created elsewhere, import its JSON backup from Data & Settings."
-        action={<LinkButton to="/">Back to engagements</LinkButton>}
+        action={<LinkButton to="/engagements">Back to engagements</LinkButton>}
       />
     );
   }
@@ -97,11 +97,11 @@ export default function EngagementLayout() {
 
   return (
     <div className="space-y-5">
-      <div className="panel p-5">
+      <div className="cmd-band p-4 sm:p-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <NavLink to="/" className="text-xs text-ink-500 hover:text-ink-300">
+              <NavLink to="/engagements" className="text-xs text-ink-500 hover:text-ink-300">
                 Engagements
               </NavLink>
               <span className="text-ink-500">/</span>
@@ -165,19 +165,19 @@ export default function EngagementLayout() {
 
         <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-ink-800 pt-4">
           <Badge tone="brand">{c.applicable} applicable</Badge>
-          <Badge tone="neutral" glyph="○">
+          <Badge tone="neutral" glyph={<IconCircle size={11} strokeWidth={2.5} />}>
             {c.notTested} Not Tested
           </Badge>
-          <Badge tone="brand" glyph="●">
+          <Badge tone="brand" glyph={<IconCircleFilled size={11} />}>
             {c.tested} Tested
           </Badge>
-          <Badge tone="na" glyph="⊘">
+          <Badge tone="na" glyph={<IconBan size={11} strokeWidth={2.5} />}>
             {c.na} N/A
           </Badge>
-          <Badge tone="vulnerable" glyph="▲">
+          <Badge tone="vulnerable" glyph={<IconAlert size={11} strokeWidth={2.5} />}>
             {c.vulnerable} Vulnerable
           </Badge>
-          <Badge tone="safe" glyph="✓">
+          <Badge tone="safe" glyph={<IconCheck size={11} strokeWidth={3} />}>
             {c.notVulnerable} Not Vulnerable
           </Badge>
           <span className="ml-auto text-micro text-ink-400">
@@ -186,7 +186,10 @@ export default function EngagementLayout() {
         </div>
       </div>
 
-      <nav aria-label="Engagement sections" className="flex gap-1 overflow-x-auto border-b border-ink-800">
+      <nav
+        aria-label="Engagement sections"
+        className="flex gap-1 overflow-x-auto border-b border-ink-800"
+      >
         {TABS.map((tab) => (
           <NavLink
             key={tab.label}
@@ -194,7 +197,7 @@ export default function EngagementLayout() {
             end={tab.end}
             className={({ isActive }) =>
               clsx(
-                '-mb-px shrink-0 border-b-2 px-3 py-2 text-sm whitespace-nowrap transition-colors sm:px-4',
+                'group relative -mb-px flex shrink-0 items-center gap-2 border-b-2 px-3 py-2 text-sm whitespace-nowrap transition-colors sm:px-4',
                 isActive
                   ? 'border-brand-500 font-medium text-ink-50'
                   : 'border-transparent text-ink-300 hover:text-ink-100',
@@ -202,7 +205,19 @@ export default function EngagementLayout() {
             }
             aria-current={undefined}
           >
-            {tab.label}
+            {({ isActive }) => (
+              <>
+                <tab.icon
+                  size={14}
+                  aria-hidden="true"
+                  className={clsx(
+                    'transition-colors',
+                    isActive ? 'text-brand-400' : 'text-ink-500 group-hover:text-ink-300',
+                  )}
+                />
+                {tab.label}
+              </>
+            )}
           </NavLink>
         ))}
       </nav>

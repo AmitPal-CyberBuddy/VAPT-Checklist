@@ -13,7 +13,7 @@ import {
   LiveAnnouncement,
   LoadingPanel,
 } from '../../ui/primitives';
-import { IconCheck, IconFilter, IconSearch, IconX } from '../../ui/icons';
+import { IconAlert, IconCheck, IconFilter, IconSearch, IconX } from '../../ui/icons';
 import { TestListRow } from './TestListRow';
 import { TestDetailPanel } from './TestDetailPanel';
 import { CATEGORIES, CATEGORY_BY_ID, categoryName } from '../../data/categories';
@@ -422,6 +422,7 @@ export default function WorkspacePage() {
   }
 
   const notTestedShown = visible.filter((i) => i.state.status === 'Not Tested').length;
+  const vulnShown = visible.filter((i) => i.state.result === 'Vulnerable').length;
   const applicable = items.filter((i) => i.state.applicable);
   const outstanding = applicable.filter((i) => i.state.status === 'Not Tested').length;
   const checklistComplete = applicable.length > 0 && outstanding === 0;
@@ -459,7 +460,11 @@ export default function WorkspacePage() {
       )}
 
       {/* Toolbar ----------------------------------------------------------- */}
-      <Card className="space-y-2 py-3" as="section" aria-labelledby="workspace-filters">
+      <Card
+        className="command-bar space-y-2 py-3"
+        as="section"
+        aria-labelledby="workspace-filters"
+      >
         <h2 id="workspace-filters" className="sr-only">
           Search and filter tests
         </h2>
@@ -514,7 +519,7 @@ export default function WorkspacePage() {
         {filtersOpen && (
           <div
             id="workspace-filter-panel"
-            className="animate-in grid gap-2 border-t border-ink-800 pt-2.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6"
+            className="expand-in grid gap-2 border-t border-ink-800 pt-2.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6"
           >
             <FilterSelect
               label="Applicability"
@@ -582,6 +587,14 @@ export default function WorkspacePage() {
             <strong className="text-ink-100">{visible.length}</strong> shown ·{' '}
             <strong className="text-ink-200">{notTestedShown}</strong> Not Tested
           </span>
+          {vulnShown > 0 && result !== 'Vulnerable' && (
+            <button
+              className="flex items-center gap-1 rounded border border-vuln-500/35 bg-vuln-500/10 px-1.5 py-0.5 text-vuln-400 transition-colors hover:border-vuln-500/60"
+              onClick={() => setResult('Vulnerable')}
+            >
+              <IconAlert size={10} strokeWidth={2.5} aria-hidden="true" /> {vulnShown} vulnerable
+            </button>
+          )}
           {unconfirmedIds.size > 0 && scope !== 'unconfirmed' && (
             <button
               className="rounded text-warn-400 hover:underline"
@@ -635,7 +648,7 @@ export default function WorkspacePage() {
         <div
           role="toolbar"
           aria-label="Bulk actions"
-          className="panel animate-in sticky top-16 z-30 flex flex-wrap items-center gap-2 border-brand-500/40 p-3"
+          className="panel animate-in sticky top-16 z-30 flex flex-wrap items-center gap-2 border-brand-500/40 p-3 lg:top-3"
         >
           <Badge tone="brand">{selected.size} selected</Badge>
           <Button size="sm" onClick={() => void bulk({ status: 'Not Tested' }, 'Set to Not Tested')}>
@@ -700,7 +713,7 @@ export default function WorkspacePage() {
           }
         />
       ) : (
-        <div className="grid gap-3 lg:grid-cols-[minmax(280px,340px)_1fr]">
+        <div className="grid gap-3 lg:grid-cols-[minmax(300px,360px)_1fr]">
           {showList && (
             <nav
               aria-label="Tests"
@@ -731,7 +744,7 @@ export default function WorkspacePage() {
           )}
 
           {showDetail && active && (
-            <div className="panel max-h-[calc(100vh-15rem)] min-h-[24rem] overflow-hidden p-0">
+            <div className="panel p-0 lg:max-h-[calc(100vh-15rem)] lg:min-h-[24rem] lg:overflow-hidden">
               <TestDetailPanel
                 key={active.definition.id}
                 item={active}

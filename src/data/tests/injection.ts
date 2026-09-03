@@ -293,12 +293,12 @@ export const injectionTests: TestDefinition[] = [
   },
   {
     id: 'INJ-022',
-    vulnerabilityName: 'Web Cache Poisoning',
+    vulnerabilityName: 'Web Cache Poisoning and Cache Deception',
     category: 'input-validation',
     subcategory: 'Protocol & Header Injection',
     priority: 'High',
     description:
-      'A shared cache stores a response influenced by an unkeyed input — a header, a query parameter the cache ignores, or a path the origin and cache normalise differently — so one crafted request serves malicious content to every subsequent visitor. The mirror case, cache deception, tricks the cache into storing an authenticated response under a public key.',
+      'A shared cache serves attacker-influenced responses to other users. Cache poisoning stores a response built from an unkeyed input (a header, a query parameter the cache ignores, or a path the origin and cache normalise differently) so one crafted request reaches every subsequent visitor; cache deception tricks the cache into storing an authenticated private page under a public key, which the attacker then retrieves.',
     testingGuidance: [
       'Identify the cache and its key: compare X-Cache/Age/CF-Cache-Status across repeats, and probe with a cache-buster parameter so tests never poison a live entry.',
       'Fuzz unkeyed inputs (X-Forwarded-Host, X-Forwarded-Scheme, X-Original-URL, X-Host, custom headers) and check whether the reflected value survives into a cached response.',
@@ -309,7 +309,7 @@ export const injectionTests: TestDefinition[] = [
     owasp: ['A05:2021'],
     cwe: ['CWE-349', 'CWE-524'],
     applicability: rule.is('usesCdnOrProxy', true),
-    aliases: ['Cache Poisoning', 'Web Cache Deception', 'Unkeyed Input Poisoning'],
+    aliases: ['Cache Poisoning', 'Web Cache Deception', 'Cache Deception', 'Unkeyed Input Poisoning'],
     tags: ['caching', 'injection'],
   },
   {
@@ -423,24 +423,5 @@ export const injectionTests: TestDefinition[] = [
     applicability: web,
     aliases: ['HPP', 'Parameter Pollution'],
     tags: ['injection'],
-  },
-  {
-    id: 'INJ-021',
-    vulnerabilityName: 'Missing or Weak Server-Side Input Validation',
-    category: 'input-validation',
-    subcategory: 'Data Validation',
-    priority: 'Medium',
-    description:
-      'Type, length, range and format constraints are enforced only in the client, allowing malformed or oversized data to reach business logic and storage.',
-    testingGuidance: [
-      'Bypass the UI and submit out-of-range, wrong-type, oversized and null values directly to the API.',
-      'Test unicode, emoji, NULL bytes and mixed encodings in text fields.',
-      'Record where invalid data is accepted and what downstream effect it has.',
-    ],
-    owasp: ['A03:2021'],
-    cwe: ['CWE-20'],
-    applicability: anyApp,
-    aliases: ['Improper Input Validation', 'Missing Server-Side Validation', 'Client-Side Only Validation'],
-    tags: ['validation'],
   },
 ];

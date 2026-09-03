@@ -127,42 +127,82 @@ export default function NewEngagementPage() {
           </button>
         }
         title="New engagement"
+        eyebrow="New assessment"
         description="Describe the target once. The applicable test list is derived from it — and you stay free to override any decision later."
       />
 
-      <ol className="grid gap-2 sm:grid-cols-3">
-        {STEPS.map((s) => (
-          <li key={s.id}>
-            <button
-              onClick={() => {
-                if (s.id === 1) setStep(1);
-                else if (s.id === 2 && canContinue) setStep(2);
-                else if (s.id > 2 && canReachContext) setStep(s.id);
-              }}
-              disabled={(s.id === 2 && !canContinue) || (s.id > 2 && !canReachContext)}
-              aria-current={step === s.id ? 'step' : undefined}
-              className={clsx(
-                'w-full rounded-[--radius-control] border px-3 py-2 text-left transition-colors disabled:opacity-40',
-                step === s.id
-                  ? 'border-brand-500/50 bg-brand-500/10'
-                  : 'border-ink-700 bg-ink-850 hover:border-ink-600',
-              )}
-            >
-              <span className="flex items-center gap-2">
-                <span
+      <ol className="flex flex-col gap-2 sm:flex-row sm:items-start sm:gap-0">
+        {STEPS.map((s, index) => {
+          const done = step > s.id;
+          const current = step === s.id;
+          const reachable =
+            s.id === 1 || (s.id === 2 && canContinue) || (s.id > 2 && canReachContext);
+          return (
+            <li key={s.id} className="flex flex-1 flex-col gap-0 sm:min-w-0">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    if (s.id === 1) setStep(1);
+                    else if (s.id === 2 && canContinue) setStep(2);
+                    else if (s.id > 2 && canReachContext) setStep(s.id);
+                  }}
+                  disabled={!reachable}
+                  aria-current={current ? 'step' : undefined}
                   className={clsx(
-                    'flex h-5 w-5 items-center justify-center rounded-full text-micro font-semibold',
-                    step >= s.id ? 'bg-brand-500 text-ink-950' : 'bg-ink-700 text-ink-300',
+                    'flex shrink-0 items-center gap-2.5 text-left transition-opacity',
+                    reachable ? 'cursor-pointer opacity-100' : 'cursor-not-allowed opacity-40',
                   )}
                 >
-                  {s.id}
-                </span>
-                <span className="text-sm font-medium text-ink-100">{s.title}</span>
-              </span>
-              <span className="mt-0.5 block pl-7 text-micro text-ink-400">{s.hint}</span>
-            </button>
-          </li>
-        ))}
+                  <span
+                    className={clsx(
+                      'flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold transition-all duration-150',
+                      done
+                        ? 'bg-safe-500 text-ink-950'
+                        : current
+                          ? 'glow-active bg-brand-500 text-ink-950'
+                          : 'border border-ink-600 bg-ink-850 text-ink-400',
+                    )}
+                    aria-hidden="true"
+                  >
+                    {done ? (
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M4.5 12.5l5 5 10-11" />
+                      </svg>
+                    ) : (
+                      s.id
+                    )}
+                  </span>
+                  <span className="min-w-0">
+                    <span
+                      className={clsx(
+                        'block truncate text-sm font-medium',
+                        current ? 'text-ink-50' : done ? 'text-ink-200' : 'text-ink-300',
+                      )}
+                    >
+                      {s.title}
+                    </span>
+                    <span className="block truncate text-micro text-ink-400">{s.hint}</span>
+                  </span>
+                </button>
+                {index < STEPS.length - 1 && (
+                  <div
+                    aria-hidden="true"
+                    className={clsx('step-line mt-3.5 hidden sm:block', done && 'step-line-done')}
+                  />
+                )}
+              </div>
+              {index < STEPS.length - 1 && (
+                <div
+                  aria-hidden="true"
+                  className={clsx(
+                    'ml-3.5 h-4 w-px bg-ink-700 sm:hidden',
+                    done && 'bg-safe-500',
+                  )}
+                />
+              )}
+            </li>
+          );
+        })}
       </ol>
 
       {/* Step 1 — basic information -------------------------------------- */}
@@ -324,26 +364,27 @@ export default function NewEngagementPage() {
       {/* Step 3 — context --------------------------------------------------- */}
       {step === 3 && (
         <div className="animate-in space-y-5">
-          <Card className="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <p className="text-sm font-medium text-ink-100">
+          <section className="cmd-band flex flex-wrap items-center justify-between gap-4 p-4 sm:p-5">
+            <div className="min-w-0">
+              <p className="section-kicker mb-1">Assessment context</p>
+              <p className="text-base font-semibold text-ink-50">
                 {completeness.answered} of {completeness.total}{' '}
                 {showAllFacts ? 'questions' : 'key questions'} answered
               </p>
-              <p className="mt-0.5 text-xs text-ink-500">
+              <p className="mt-1 text-xs text-ink-400">
                 Follow-up questions appear only when they are relevant. Anything left unknown keeps
                 its tests in scope.
               </p>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="w-40">
+            <div className="flex shrink-0 items-center gap-4">
+              <div className="w-44">
                 <ProgressBar value={completeness.ratio} label="Context questions answered" />
               </div>
               <Button size="sm" variant="subtle" onClick={() => setShowAllFacts((v) => !v)}>
                 {showAllFacts ? 'Key questions only' : 'Show all questions'}
               </Button>
             </div>
-          </Card>
+          </section>
 
           <ContextForm
             context={context}
@@ -383,11 +424,77 @@ export default function NewEngagementPage() {
       {/* Step 4 — review -------------------------------------------------- */}
       {step === 4 && (
         <div className="animate-in space-y-5">
+          <Card className="p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-ink-100">Checklist shape</h3>
+              <span className="font-mono text-micro text-ink-400">
+                {preview.applicable.length} of {TEST_LIBRARY.length} tests applicable
+              </span>
+            </div>
+            <div
+              aria-hidden="true"
+              className="flex h-2.5 w-full overflow-hidden rounded-full bg-ink-800"
+            >
+              {(['Critical', 'High', 'Medium', 'Low'] as Priority[]).map((p) =>
+                preview.byPriority[p] > 0 ? (
+                  <span
+                    key={p}
+                    className={clsx(
+                      'h-full',
+                      p === 'Critical' && 'bg-vuln-500',
+                      p === 'High' && 'bg-high-500',
+                      p === 'Medium' && 'bg-medium-400',
+                      p === 'Low' && 'bg-brand-500/70',
+                    )}
+                    style={{
+                      width: `${(preview.byPriority[p] / Math.max(1, preview.applicable.length)) * 100}%`,
+                    }}
+                  />
+                ) : null,
+              )}
+            </div>
+            <div className="mt-2.5 grid grid-cols-2 gap-x-4 gap-y-1.5 sm:grid-cols-5">
+              {(['Critical', 'High', 'Medium', 'Low'] as Priority[]).map((p) => (
+                <div key={p} className="flex items-center gap-2">
+                  <span
+                    aria-hidden="true"
+                    className={clsx(
+                      'h-2 w-2 shrink-0 rounded-full',
+                      p === 'Critical' && 'bg-vuln-500',
+                      p === 'High' && 'bg-high-500',
+                      p === 'Medium' && 'bg-medium-400',
+                      p === 'Low' && 'bg-brand-500/70',
+                    )}
+                  />
+                  <span className="text-xs text-ink-400">{p}</span>
+                  <span className="ml-auto font-mono text-xs tabular-nums text-ink-200">
+                    {preview.byPriority[p]}
+                  </span>
+                </div>
+              ))}
+              <div className="flex items-center gap-2">
+                <span aria-hidden="true" className="h-2 w-2 shrink-0 rounded-full bg-ink-500" />
+                <span className="text-xs text-ink-400">Not applicable</span>
+                <span className="ml-auto font-mono text-xs tabular-nums text-ink-200">
+                  {preview.excluded.length}
+                </span>
+              </div>
+            </div>
+          </Card>
+
           <div className="grid gap-3 sm:grid-cols-5">
             {(['Critical', 'High', 'Medium', 'Low'] as Priority[]).map((p) => (
               <Card key={p} className="py-3">
                 <p className="text-micro tracking-wider text-ink-400 uppercase">{p}</p>
-                <p className="mt-1 text-2xl font-semibold tabular-nums text-ink-50">
+                <p
+                  className={clsx(
+                    'mt-1 text-2xl font-semibold tabular-nums',
+                    p === 'Critical' && 'text-vuln-400',
+                    p === 'High' && 'text-high-300',
+                    p === 'Medium' && 'text-medium-200',
+                    p === 'Low' && 'text-brand-400',
+                  )}
+                >
                   {preview.byPriority[p]}
                 </p>
               </Card>
@@ -414,7 +521,7 @@ export default function NewEngagementPage() {
                 </Button>
               }
             />
-            <div className="max-h-96 overflow-x-auto overflow-y-auto rounded-[--radius-control] border border-ink-700">
+            <div className="table-shell max-h-96">
               <table className="w-full min-w-[46rem] text-left text-sm">
                 <caption className="sr-only">
                   Tests that will be seeded as applicable for this engagement

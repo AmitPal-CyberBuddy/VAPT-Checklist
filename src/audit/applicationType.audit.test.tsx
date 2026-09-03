@@ -155,7 +155,7 @@ describe('scenarios required by the review', () => {
         .map((i) => i.definition.id),
     );
     for (const expected of [
-      'AUTH-001', 'AUTH-007', 'AUTH-008', 'AUTHZ-003', 'AUTHZ-010',
+      'AUTH-001', 'AUTH-007', 'AUTH-008', 'AUTHZ-001', 'AUTHZ-010',
       'FILE-001', 'FILE-002', 'SESS-008', 'SESS-013', 'INJ-004', 'CLI-001', 'CONF-001',
     ]) {
       expect(ids.has(expected), `${expected} missing from Scenario A`).toBe(true);

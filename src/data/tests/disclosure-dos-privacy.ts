@@ -112,7 +112,7 @@ export const disclosureTests: TestDefinition[] = [
     ],
     owasp: ['A02:2021'],
     cwe: ['CWE-212'],
-    applicability: rule.any(rule.is('hasFileUpload', true), rule.is('hasDataExport', true)),
+    applicability: rule.any(rule.is('hasFileUpload', true), rule.is('hasDataExport', true), rule.is('hasFileDownload', true)),
     aliases: ['EXIF Data Leakage', 'Document Metadata Exposure', 'Author Information Disclosure'],
     tags: ['disclosure', 'privacy'],
   },
@@ -134,25 +134,6 @@ export const disclosureTests: TestDefinition[] = [
     applicability: rule.includes('assetTypes', 'web-app'),
     aliases: ['Console Log Leakage', 'Telemetry Data Exposure', 'Session Replay Leakage'],
     tags: ['disclosure', 'privacy'],
-  },
-  {
-    id: 'DISC-008',
-    vulnerabilityName: 'User Enumeration via Response Differences',
-    category: 'disclosure',
-    subcategory: 'Enumeration',
-    priority: 'Medium',
-    description:
-      'Non-authentication features (profile lookup, sharing, invitations, API filters) reveal whether an account, resource or tenant exists.',
-    testingGuidance: [
-      'Compare responses for existing vs non-existing identifiers across non-login features.',
-      'Check status codes, message wording, response length and timing.',
-      'Assess whether enumeration enables targeted attacks at scale.',
-    ],
-    owasp: ['WSTG-IDNT-04'],
-    cwe: ['CWE-204'],
-    applicability: rule.is('hasAuthentication', true),
-    aliases: ['Resource Enumeration', 'Account Existence Disclosure', 'Tenant Enumeration'],
-    tags: ['disclosure'],
   },
 ];
 

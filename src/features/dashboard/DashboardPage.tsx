@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import clsx from 'clsx';
 import {
@@ -12,19 +13,74 @@ import {
   SectionHeading,
   Stat,
 } from '../../ui/primitives';
-import { IconCheck, IconChevron, IconExternal, IconList, IconTarget } from '../../ui/icons';
+import {
+  IconAlert,
+  IconBan,
+  IconCheck,
+  IconCheckCircle,
+  IconChevron,
+  IconCircle,
+  IconCircleFilled,
+  IconCircleHalf,
+  IconDownload,
+  IconExternal,
+  IconList,
+  IconSpark,
+  IconTarget,
+} from '../../ui/icons';
 import { useChecklist, useEngagement, useMetrics } from '../../hooks/useData';
 import { collectFindings, highValueTests } from '../../domain/metrics';
 import { contextCompleteness } from '../context/ContextForm';
 import { effectiveAssetTypes, effectiveContext, FACT_BY_KEY } from '../../domain/context';
 import { suggestApplicability } from '../../domain/applicability';
 import { safeExternalUrl } from '../../domain/untrusted';
-import type { Priority } from '../../domain/types';
+import { PRIORITIES, type Priority } from '../../domain/types';
 import {
   applicationTypeLabel as applicationTypeName,
   type ApplicationTypeId,
 } from '../../domain/applicationType';
 import { supportLevel } from '../../data/typeCoverage';
+
+/** Ring gauge geometry: r = 42 on a 100×100 viewBox. */
+const RING_CIRCUMFERENCE = 2 * Math.PI * 42;
+
+/** Severity fill for the vulnerable-by-priority distribution strip. */
+const SEVERITY_FILL: Record<Priority, string> = {
+  Critical: 'bg-vuln-500',
+  High: 'bg-high-500',
+  Medium: 'bg-medium-400',
+  Low: 'bg-brand-500/60',
+};
+
+/**
+ * A short eased count-up for the headline progress number. Pure presentation —
+ * the stored value is never touched. Instant under prefers-reduced-motion so
+ * the metric still reads correctly for users who disable animation.
+ */
+function useCountUp(target: number, duration = 550): number {
+  const [value, setValue] = useState(target);
+  useEffect(() => {
+    if (
+      typeof window === 'undefined' ||
+      !window.matchMedia ||
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    ) {
+      setValue(target);
+      return;
+    }
+    let raf = 0;
+    const start = performance.now();
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / duration);
+      const eased = 1 - Math.pow(1 - t, 3);
+      setValue(target * eased);
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target, duration]);
+  return value;
+}
 
 function surfaceLabel(engagement: { applicationType: ApplicationTypeId; context: object }): string {
   const options = FACT_BY_KEY.assetTypes.options ?? [];
@@ -43,6 +99,9 @@ export default function DashboardPage() {
   const engagement = useEngagement(engagementId);
   const items = useChecklist(engagementId);
   const metrics = useMetrics(items);
+  // Hoisted above the loading early-return so the hook count stays stable
+  // between the loading and loaded renders.
+  const completionPercent = Math.round(useCountUp(metrics.completion * 100));
 
   if (!items || !engagement) {
     return (
@@ -55,6 +114,7 @@ export default function DashboardPage() {
 
   const c = metrics.counts;
   const completed = c.tested + c.na;
+  const outstandingCount = c.notTested;
   const findings = collectFindings(items);
   const resolved = effectiveContext(engagement);
   const highValue = highValueTests(items, resolved, 6);
@@ -68,140 +128,261 @@ export default function DashboardPage() {
   );
 
   return (
-    <div className="space-y-4">
-      {/* 1 — identity and progress ---------------------------------------- */}
-      <div className="grid gap-3 lg:grid-cols-[2fr_1fr]">
-        <Card as="section" aria-labelledby="engagement-info" className="space-y-3">
-          <h2 id="engagement-info" className="sr-only">
-            Engagement information
-          </h2>
-          <dl className="grid gap-3 sm:grid-cols-3">
-            <div className="min-w-0">
-              <dt className="text-micro tracking-wider text-ink-400 uppercase">Engagement</dt>
-              <dd className="mt-0.5 truncate text-sm font-medium text-ink-50">{engagement.name}</dd>
-            </div>
-            <div className="min-w-0">
-              <dt className="text-micro tracking-wider text-ink-400 uppercase">Application URL</dt>
-              <dd className="mt-0.5 truncate font-mono text-xs text-ink-200">
-                {!engagement.applicationUrl ? (
-                  <span className="text-ink-400">Not recorded</span>
-                ) : safeUrl ? (
-                  <a
-                    href={safeUrl}
-                    target="_blank"
-                    rel="noreferrer noopener"
-                    className="inline-flex max-w-full items-center gap-1 truncate hover:text-brand-400"
-                  >
-                    {engagement.applicationUrl}
-                    <IconExternal size={11} aria-hidden="true" />
-                    <span className="sr-only">(opens in a new tab)</span>
-                  </a>
-                ) : (
-                  // Unsupported scheme (javascript:, data:…) — shown, never linked.
-                  <span className="break-all" title="Not a linkable http(s) URL">
-                    {engagement.applicationUrl}
-                  </span>
-                )}
-              </dd>
-            </div>
-            <div className="min-w-0">
-              <dt className="text-micro tracking-wider text-ink-400 uppercase">Application type</dt>
-              <dd className="mt-0.5 text-sm text-ink-200">
-                <span className="flex flex-wrap items-center gap-1.5">
-                  {applicationTypeName(engagement.applicationType)}
-                  {supportLevel(engagement.applicationType) === 'limited' && (
-                    <Badge tone="warn" glyph="◐" title="Coverage for this domain is limited">
-                      Limited
-                    </Badge>
-                  )}
-                </span>
-                {surfaceLabel(engagement) !== applicationTypeName(engagement.applicationType) && (
-                  <span className="mt-0.5 block text-micro text-ink-400">
-                    Surfaces: {surfaceLabel(engagement)}
-                  </span>
-                )}
-              </dd>
-            </div>
-          </dl>
-          {(engagement.clientName || engagement.testerName || engagement.scope.length > 0) && (
-            <p className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-ink-800 pt-3 text-micro text-ink-400">
-              {engagement.clientName && <span>Client: {engagement.clientName}</span>}
-              {engagement.testerName && <span>Tester: {engagement.testerName}</span>}
-              {engagement.scope.length > 0 && (
-                <span className="min-w-0 truncate font-mono">
-                  Also in scope: {engagement.scope.join(' · ')}
-                </span>
-              )}
-            </p>
-          )}
-        </Card>
+    <div className="space-y-5">
+      {/* 1 — command band: identity + progress ---------------------------- */}
+      <section
+        aria-labelledby="engagement-info"
+        className="cmd-band space-y-5 p-4 sm:p-6"
+      >
+        <h2 id="engagement-info" className="sr-only">
+          Engagement information
+        </h2>
 
-        <Card as="section" aria-labelledby="progress-heading" className="flex flex-col justify-center">
-          <div className="flex items-baseline justify-between">
-            <h2
-              id="progress-heading"
-              className="text-micro font-medium tracking-wider text-ink-400 uppercase"
-            >
-              Overall progress
-            </h2>
-            <span className="text-2xl font-semibold tracking-tight tabular-nums text-ink-50">
-              {Math.round(metrics.completion * 100)}%
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-micro text-ink-400">
+            <span className="font-mono tracking-wide uppercase">
+              {engagement.status} engagement
             </span>
-          </div>
-          <ProgressBar
-            className="mt-2.5"
-            height="lg"
-            label="Overall assessment progress"
-            value={metrics.completion}
-            tone={metrics.completion === 1 ? 'safe' : 'brand'}
-          />
-          <p className="mt-2 text-xs tabular-nums text-ink-400">
-            <strong className="text-ink-200">{completed}</strong> completed (Tested {c.tested} + N/A{' '}
-            {c.na}) of <strong className="text-ink-200">{c.applicable}</strong> applicable tests
+            {engagement.clientName && (
+              <>
+                <span aria-hidden="true">·</span>
+                <span>{engagement.clientName}</span>
+              </>
+            )}
+            {engagement.testerName && (
+              <>
+                <span aria-hidden="true">·</span>
+                <span>{engagement.testerName}</span>
+              </>
+            )}
           </p>
-          <LinkButton
-            to={`/e/${engagementId}/workspace`}
-            variant="primary"
-            full
-            className="mt-3"
-            icon={<IconList size={15} />}
-          >
-            Open testing workspace
-          </LinkButton>
-        </Card>
-      </div>
+          {c.vulnerable > 0 ? (
+            <Badge tone="vulnerable" glyph={<IconAlert size={11} strokeWidth={2.5} />}>
+              {c.vulnerable} vulnerable
+            </Badge>
+          ) : (
+            <Badge tone="safe" glyph={<IconCheck size={11} strokeWidth={3} />}>
+              No vulnerable tests
+            </Badge>
+          )}
+        </div>
 
-      {/* 2 — the six assessment counts ------------------------------------ */}
-      <section aria-labelledby="stats-heading">
+        <div className="grid items-center gap-6 lg:grid-cols-[1.6fr_1fr]">
+          <div className="min-w-0 space-y-4">
+            <p className="text-2xl leading-tight font-semibold tracking-tight text-ink-50">
+              {engagement.name}
+            </p>
+            <dl className="grid gap-x-6 gap-y-2.5 sm:grid-cols-3">
+              <div className="min-w-0">
+                <dt className="text-micro tracking-wider text-ink-400 uppercase">Application URL</dt>
+                <dd className="mt-0.5 truncate font-mono text-xs text-ink-200">
+                  {!engagement.applicationUrl ? (
+                    <span className="text-ink-400">Not recorded</span>
+                  ) : safeUrl ? (
+                    <a
+                      href={safeUrl}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                      className="inline-flex max-w-full items-center gap-1 truncate hover:text-brand-400"
+                    >
+                      {engagement.applicationUrl}
+                      <IconExternal size={11} aria-hidden="true" />
+                      <span className="sr-only">(opens in a new tab)</span>
+                    </a>
+                  ) : (
+                    // Unsupported scheme (javascript:, data:…) — shown, never linked.
+                    <span className="break-all" title="Not a linkable http(s) URL">
+                      {engagement.applicationUrl}
+                    </span>
+                  )}
+                </dd>
+              </div>
+              <div className="min-w-0">
+                <dt className="text-micro tracking-wider text-ink-400 uppercase">
+                  Application type
+                </dt>
+                <dd className="mt-0.5 text-sm text-ink-200">
+                  <span className="flex flex-wrap items-center gap-1.5">
+                    {applicationTypeName(engagement.applicationType)}
+                    {supportLevel(engagement.applicationType) === 'limited' && (
+                      <Badge tone="warn" glyph={<IconCircleHalf size={11} strokeWidth={2.5} />} title="Coverage for this domain is limited">
+                        Limited
+                      </Badge>
+                    )}
+                  </span>
+                  {surfaceLabel(engagement) !==
+                    applicationTypeName(engagement.applicationType) && (
+                    <span className="mt-0.5 block text-micro text-ink-400">
+                      Surfaces: {surfaceLabel(engagement)}
+                    </span>
+                  )}
+                </dd>
+              </div>
+              <div className="min-w-0">
+                <dt className="text-micro tracking-wider text-ink-400 uppercase">Targets</dt>
+                <dd className="mt-0.5 truncate font-mono text-xs text-ink-300">
+                  {engagement.scope.length > 0
+                    ? engagement.scope.join(' · ')
+                    : engagement.applicationUrl || 'Primary target only'}
+                </dd>
+              </div>
+            </dl>
+          </div>
+
+          <div className="rounded-(--radius-panel) border border-ink-700 bg-ink-950/50 p-4 shadow-[inset_0_1px_0_rgb(141_156_178/0.05)]">
+            <div className="flex flex-col gap-4 sm:flex-row-reverse sm:items-center sm:gap-5">
+              {/* The ring: an absolute-progress instrument, animated by the
+                  same eased count-up that drives the percentage. */}
+              <div
+                className="relative mx-auto h-28 w-28 shrink-0 sm:h-32 sm:w-32"
+                aria-hidden="true"
+              >
+                <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90">
+                  <circle cx="50" cy="50" r="42" fill="none" strokeWidth="9" className="stroke-ink-800" />
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r="42"
+                    fill="none"
+                    strokeWidth="9"
+                    strokeLinecap="round"
+                    strokeDasharray={RING_CIRCUMFERENCE}
+                    strokeDashoffset={
+                      RING_CIRCUMFERENCE * (1 - Math.min(1, Math.max(0, completionPercent / 100)))
+                    }
+                    className={metrics.completion === 1 ? 'stroke-safe-500' : 'stroke-brand-500'}
+                    style={{ transition: 'stroke-dashoffset 600ms cubic-bezier(0.22, 1, 0.36, 1)' }}
+                  />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="text-base font-semibold tabular-nums text-ink-50">
+                    {completed}/{c.applicable}
+                  </span>
+                  <span className="font-mono text-micro tracking-widest text-ink-400 uppercase">
+                    done
+                  </span>
+                </div>
+              </div>
+
+              <div className="min-w-0 flex-1">
+                <div className="flex items-baseline justify-between gap-3">
+                  <h2
+                    id="progress-heading"
+                    className="text-micro font-medium tracking-wider text-ink-400 uppercase"
+                  >
+                    Overall progress
+                  </h2>
+                  <span
+                    className={clsx(
+                      'metric-hero-value',
+                      metrics.completion === 1 ? 'text-safe-400' : 'text-brand-400',
+                    )}
+                  >
+                    {completionPercent}%
+                  </span>
+                </div>
+                <ProgressBar
+                  className="mt-3"
+                  height="lg"
+                  label="Overall assessment progress"
+                  value={metrics.completion}
+                  tone={metrics.completion === 1 ? 'safe' : 'brand'}
+                />
+                <p className="mt-2 text-xs tabular-nums text-ink-400">
+                  <strong className="text-ink-100">{completed}</strong> completed (Tested {c.tested}{' '}
+                  + N/A {c.na}) of <strong className="text-ink-100">{c.applicable}</strong>{' '}
+                  applicable tests
+                  {outstandingCount > 0 && (
+                    <span className="text-warn-300"> · {outstandingCount} still Not Tested</span>
+                  )}
+                </p>
+                {/* The one question every tester asks when the checklist closes:
+                    can this assessment be exported as a report? */}
+                <p
+                  className={clsx(
+                    'mt-2 inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs font-medium',
+                    outstandingCount === 0 && c.applicable > 0
+                      ? 'border-safe-500/35 bg-safe-500/10 text-safe-400'
+                      : 'border-warn-500/30 bg-warn-500/5 text-warn-300',
+                  )}
+                >
+                  <span aria-hidden="true" className="flex items-center">
+                    {c.applicable === 0 ? (
+                      <IconBan size={13} strokeWidth={2.5} />
+                    ) : outstandingCount === 0 ? (
+                      <IconCheckCircle size={13} strokeWidth={2.25} />
+                    ) : (
+                      <IconCircleHalf size={13} strokeWidth={2.5} />
+                    )}
+                  </span>
+                  {c.applicable === 0
+                    ? 'No applicable tests recorded'
+                    : outstandingCount === 0
+                      ? 'Assessment ready for export'
+                      : `${outstandingCount} test${outstandingCount === 1 ? '' : 's'} still need attention`}
+                </p>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <LinkButton
+                    to={`/e/${engagementId}/workspace`}
+                    variant="primary"
+                    icon={<IconList size={15} />}
+                  >
+                    Open testing workspace
+                  </LinkButton>
+                  <LinkButton
+                    to={`/e/${engagementId}/export`}
+                    variant="subtle"
+                    icon={<IconDownload size={15} />}
+                  >
+                    Export assessment
+                  </LinkButton>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 2 — the six assessment counts, attention first ------------------- */}
+      <section aria-labelledby="stats-heading" className="scroll-reveal">
         <h2 id="stats-heading" className="sr-only">
           Assessment statistics
         </h2>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
+        {/* Featured row: the three numbers that decide what a tester does
+            next get the visual weight; the rest are a compact strip. */}
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-[1.1fr_1.1fr_1fr]">
           <Stat
+            featured
+            label="Vulnerable"
+            value={c.vulnerable}
+            glyph={<IconAlert size={11} strokeWidth={2.5} />}
+            tone={c.vulnerable > 0 ? 'vuln' : 'neutral'}
+            hint={c.vulnerable > 0 ? 'needs review' : 'no vulnerable tests recorded'}
+          />
+          <Stat
+            featured
+            label="Not Tested"
+            value={c.notTested}
+            glyph={<IconCircle size={11} strokeWidth={2.5} />}
+            tone={c.notTested > 0 ? 'warn' : 'safe'}
+            hint={c.notTested > 0 ? 'remaining work' : 'all applicable tested'}
+          />
+          <Stat
+            featured
             label="Total applicable"
             value={c.applicable}
             hint={
               unconfirmed.length > 0
-                ? `of which ${unconfirmed.length} unconfirmed · ${c.excluded} Not Applicable`
-                : `${c.excluded} Not Applicable of ${c.total}`
+                ? `of which ${unconfirmed.length} unconfirmed · ${c.excluded} excluded`
+                : `of ${c.total} in the library, ${c.excluded} excluded`
             }
             tone="brand"
           />
-          <Stat label="Tested" value={c.tested} glyph="●" />
-          <Stat
-            label="Not Tested"
-            value={c.notTested}
-            glyph="○"
-            tone={c.notTested > 0 ? 'warn' : 'safe'}
-          />
-          <Stat label="N/A" value={c.na} glyph="⊘" />
-          <Stat
-            label="Vulnerable"
-            value={c.vulnerable}
-            glyph="▲"
-            tone={c.vulnerable > 0 ? 'vuln' : 'neutral'}
-          />
-          <Stat label="Not Vulnerable" value={c.notVulnerable} glyph="✓" tone="safe" />
+        </div>
+        <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
+          <Stat label="Tested" value={c.tested} glyph={<IconCircleFilled size={11} />} hint="with a result" />
+          <Stat label="N/A" value={c.na} glyph={<IconBan size={11} strokeWidth={2.5} />} hint="out of scope in practice" />
+          <Stat label="Not Vulnerable" value={c.notVulnerable} glyph={<IconCheck size={11} strokeWidth={3} />} tone="safe" hint="verified clean" />
         </div>
       </section>
 
@@ -242,11 +423,20 @@ export default function DashboardPage() {
       )}
 
       {/* 3 — what to test next -------------------------------------------- */}
-      <Card as="section" aria-labelledby="high-value-heading" className="space-y-3">
+      <Card as="section" aria-labelledby="high-value-heading" className="scroll-reveal space-y-3">
         <SectionHeading
           id="high-value-heading"
-          title="High-value tests"
-          description="Applicable and Not Tested, ranked by priority, how strongly this application's context points at the test, exploitability and what you have already found."
+          title={
+            <span className="flex items-center gap-2">
+              <IconSpark size={15} strokeWidth={2} aria-hidden="true" className="text-brand-400" />
+              High-value tests
+            </span>
+          }
+          description={
+            highValue.length > 0
+              ? `${highValue.length} outstanding · applicable and Not Tested, ranked by priority, how strongly this application's context points at the test, exploitability and what you have already found.`
+              : 'Applicable and Not Tested, ranked by priority, how strongly this application\u2019s context points at the test, exploitability and what you have already found.'
+          }
           actions={
             <Link
               to={`/e/${engagementId}/workspace?status=Not+Tested`}
@@ -265,22 +455,25 @@ export default function DashboardPage() {
           />
         ) : (
           <ul className="grid gap-2 md:grid-cols-2">
-            {highValue.map(({ item, rationale, uncertain }) => (
+            {highValue.map(({ item, rationale, uncertain }, index) => (
               <li key={item.definition.id}>
                 <Link
                   to={`/e/${engagementId}/workspace?test=${item.definition.id}`}
                   className={clsx(
-                    'group flex h-full items-start gap-3 rounded-[--radius-control] border border-ink-700 bg-ink-850 px-3 py-2 transition-colors duration-150 hover:border-brand-500/50 hover:bg-ink-800',
+                    'group flex h-full items-start gap-3 rounded-(--radius-control) border border-ink-700 bg-ink-850 px-3 py-2 transition-colors duration-150 hover:border-brand-500/50 hover:bg-ink-800',
                     uncertain ? 'rail-warn' : 'rail-brand',
                   )}
                 >
+                  <span className="mt-0.5 font-mono text-micro text-ink-500 tabular-nums">
+                    {String(index + 1).padStart(2, '0')}
+                  </span>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-medium text-ink-100">
                       {item.definition.vulnerabilityName}
                     </span>
                     <span className="mt-1 flex flex-wrap items-center gap-1.5">
                       <PriorityBadge priority={item.definition.priority} />
-                      <Badge tone="neutral" glyph="○">
+                      <Badge tone="neutral" glyph={<IconCircle size={11} strokeWidth={2.5} />}>
                         Not Tested
                       </Badge>
                     </span>
@@ -296,7 +489,7 @@ export default function DashboardPage() {
                   <IconChevron
                     size={14}
                     aria-hidden="true"
-                    className="mt-0.5 shrink-0 text-ink-600 transition-colors duration-150 group-hover:text-brand-400"
+                    className="row-open mt-0.5 shrink-0 text-ink-600 group-hover:text-brand-400"
                   />
                 </Link>
               </li>
@@ -306,15 +499,24 @@ export default function DashboardPage() {
       </Card>
 
       {/* 4 — what you found ------------------------------------------------ */}
-      <Card as="section" aria-labelledby="vulnerable-heading" className="space-y-3">
+      <Card
+        as="section"
+        aria-labelledby="vulnerable-heading"
+        className="attn-vuln scroll-reveal space-y-3"
+      >
         <SectionHeading
           id="vulnerable-heading"
-          title="Vulnerable tests"
+          title={
+            <span className="flex items-center gap-2">
+              <IconAlert size={15} strokeWidth={2.25} aria-hidden="true" className="text-vuln-400" />
+              Vulnerable tests
+            </span>
+          }
           description={
             findings.length > 0
-              ? findingsByPriority
+              ? `${findings.length} recorded · ${findingsByPriority
                   .map((p) => `${metrics.findingsByPriority[p]} ${p}`)
-                  .join(' · ')
+                  .join(' · ')}`
               : undefined
           }
           actions={
@@ -336,12 +538,30 @@ export default function DashboardPage() {
             description="A test appears here as soon as you record Tested → Vulnerable."
           />
         ) : (
-          <ul className="divide-y divide-ink-800">
+          <>
+            {/* Severity distribution: the shape of what was found, in one
+                glance — the counts it encodes are spelled out in the section
+                description for non-visual readers. */}
+            <div
+              aria-hidden="true"
+              className="flex h-2 w-full overflow-hidden rounded-full bg-ink-800"
+            >
+              {PRIORITIES.filter((p) => metrics.findingsByPriority[p] > 0).map((p) => (
+                <span
+                  key={p}
+                  className={clsx(SEVERITY_FILL[p], 'h-full transition-[width] duration-500')}
+                  style={{
+                    width: `${(metrics.findingsByPriority[p] / Math.max(1, findings.length)) * 100}%`,
+                  }}
+                />
+              ))}
+            </div>
+            <ul className="divide-y divide-ink-800">
             {findings.map(({ definition, state }) => (
               <li key={definition.id}>
                 <Link
                   to={`/e/${engagementId}/workspace?test=${definition.id}`}
-                  className="rail-vuln flex items-start gap-3 py-2 pl-3 transition-colors duration-150 hover:bg-ink-850/60"
+                  className="rail-vuln group flex items-start gap-3 py-2 pl-3 transition-colors duration-150 hover:bg-ink-850/60"
                 >
                   <span className="min-w-0 flex-1">
                     <span className="block text-sm font-medium text-ink-100">
@@ -349,7 +569,7 @@ export default function DashboardPage() {
                     </span>
                     <span className="mt-1 flex flex-wrap items-center gap-1.5 text-micro text-ink-400">
                       <PriorityBadge priority={definition.priority} />
-                      <Badge tone="vulnerable" glyph="▲">
+                      <Badge tone="vulnerable" glyph={<IconAlert size={11} strokeWidth={2.5} />}>
                         Vulnerable
                       </Badge>
                       <span className="font-mono">{definition.id}</span>
@@ -360,15 +580,21 @@ export default function DashboardPage() {
                       </span>
                     )}
                   </span>
+                  <IconChevron
+                    size={14}
+                    aria-hidden="true"
+                    className="row-open mt-1 shrink-0 text-ink-600 group-hover:text-vuln-400"
+                  />
                 </Link>
               </li>
             ))}
-          </ul>
+            </ul>
+          </>
         )}
       </Card>
 
       {/* 5 — where the remaining work is ----------------------------------- */}
-      <Card as="section" aria-labelledby="coverage-heading" className="space-y-3">
+      <Card as="section" aria-labelledby="coverage-heading" className="scroll-reveal space-y-3">
         <SectionHeading
           id="coverage-heading"
           title="Coverage by category"
@@ -388,7 +614,7 @@ export default function DashboardPage() {
                   </Link>
                   <span className="flex shrink-0 items-center gap-2 tabular-nums text-ink-400">
                     {group.counts.vulnerable > 0 && (
-                      <span className="text-vuln-400">▲ {group.counts.vulnerable}</span>
+                      <span className="flex items-center gap-1 text-vuln-400"><IconAlert size={10} strokeWidth={2.5} aria-hidden="true" />{group.counts.vulnerable}</span>
                     )}
                     {group.counts.tested + group.counts.na}/{group.counts.applicable}
                   </span>

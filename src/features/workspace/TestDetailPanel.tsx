@@ -9,7 +9,7 @@ import {
   SegmentedControl,
   Textarea,
 } from '../../ui/primitives';
-import { IconAlert, IconChevron, IconExternal } from '../../ui/icons';
+import { IconAlert, IconBan, IconCheck, IconChevron, IconCircle, IconCircleFilled, IconExternal, IconTarget } from '../../ui/icons';
 import { categoryName } from '../../data/categories';
 import { resolveReferences } from '../../data/references';
 import { describeRule, suggestApplicability } from '../../domain/applicability';
@@ -30,12 +30,22 @@ import { ApplicabilityExplanation } from './ApplicabilityExplanation';
  */
 
 const STATUS_OPTIONS = [
-  { value: 'Not Tested' as TestStatus, label: 'Not Tested', glyph: '○', title: 'Not performed yet (1)' },
-  { value: 'Tested' as TestStatus, label: 'Tested', glyph: '●', title: 'Performed — a result is required (2)' },
+  {
+    value: 'Not Tested' as TestStatus,
+    label: 'Not Tested',
+    glyph: <IconCircle size={12} strokeWidth={2.5} />,
+    title: 'Not performed yet (1)',
+  },
+  {
+    value: 'Tested' as TestStatus,
+    label: 'Tested',
+    glyph: <IconCircleFilled size={12} />,
+    title: 'Performed — a result is required (2)',
+  },
   {
     value: 'N/A' as TestStatus,
     label: 'N/A',
-    glyph: '⊘',
+    glyph: <IconBan size={12} strokeWidth={2.5} />,
     tone: 'na' as const,
     title: 'Not applicable in practice — no result required (3)',
   },
@@ -45,14 +55,14 @@ const RESULT_OPTIONS = [
   {
     value: 'Vulnerable' as TestResult,
     label: 'Vulnerable',
-    glyph: '▲',
+    glyph: <IconAlert size={12} strokeWidth={2.5} />,
     tone: 'vulnerable' as const,
     title: 'Record as Vulnerable (v)',
   },
   {
     value: 'Not Vulnerable' as TestResult,
     label: 'Not Vulnerable',
-    glyph: '✓',
+    glyph: <IconCheck size={12} strokeWidth={3} />,
     tone: 'safe' as const,
     title: 'Record as Not Vulnerable (b)',
   },
@@ -64,6 +74,15 @@ const NA_REASONS = [
   'Covered by another test',
   'Not reachable in the test environment',
 ];
+
+/* A slim keyline at the top of the pane carries the severity forward, in
+   colour and width — the label stays next to it in the meta row. */
+const PRIORITY_KEYLINE: Record<string, string> = {
+  Critical: 'bg-vuln-500',
+  High: 'bg-high-500',
+  Medium: 'bg-medium-400',
+  Low: 'bg-brand-500/60',
+};
 
 export function TestDetailPanel({
   item,
@@ -99,6 +118,19 @@ export function TestDetailPanel({
   const [pendingTested, setPendingTested] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pending = useRef<string | null>(null);
+  const paneRef = useRef<HTMLElement>(null);
+
+  /**
+   * On a phone the pane is page-scrolled, so switching tests should land the
+   * reader at the top of the new guidance rather than wherever they stopped
+   * on the previous one. Wide screens scroll the pane body internally, which
+   * already resets on the keyed remount.
+   */
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
+    if (window.matchMedia('(min-width: 1024px)').matches) return;
+    paneRef.current?.scrollIntoView?.({ block: 'start' });
+  }, [d.id]);
 
   /**
    * Sync the editor with the stored row — but only when the store genuinely
@@ -152,28 +184,53 @@ export function TestDetailPanel({
     timer.current = setTimeout(flushNotes, 350);
   }
 
+  const suggestion = suggestApplicability(d, context);
+  const awaitingChoice = pendingTested && s.status !== 'Tested';
+  const naWithoutReason = s.status === 'N/A' && !notes.trim();
+  const needsEvidence = s.status === 'Tested' && s.result === 'Vulnerable' && !notes.trim();
+
+  /** Subtle in-place confirmation whenever a status/result write lands. */
+  const [savedAt, setSavedAt] = useState<number | null>(null);
+  const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (savedTimer.current) clearTimeout(savedTimer.current);
+    },
+    [],
+  );
+  const confirmSaved = () => {
+    setSavedAt(Date.now());
+    if (savedTimer.current) clearTimeout(savedTimer.current);
+    savedTimer.current = setTimeout(() => setSavedAt(null), 1600);
+  };
+
   function chooseStatus(status: TestStatus) {
     if (status === 'Tested' && !s.result) {
       setPendingTested(true);
       return;
     }
     setPendingTested(false);
-    void recordTestState(engagementId, d.id, { status }, 'Status');
+    void recordTestState(engagementId, d.id, { status }, 'Status').then(confirmSaved);
   }
 
   function chooseResult(result: TestResult) {
     setPendingTested(false);
-    void recordTestState(engagementId, d.id, { status: 'Tested', result }, 'Result');
+    void recordTestState(engagementId, d.id, { status: 'Tested', result }, 'Result').then(
+      confirmSaved,
+    );
   }
 
-  const suggestion = suggestApplicability(d, context);
-  const awaitingChoice = pendingTested && s.status !== 'Tested';
-  const naWithoutReason = s.status === 'N/A' && !notes.trim();
-
   return (
-    <article className="flex h-full min-h-0 flex-col" aria-label={d.vulnerabilityName}>
-      {/* Sticky header: identity + the two decisions ---------------------- */}
-      <header className="sticky top-0 z-10 space-y-3 border-b border-ink-800 bg-ink-900 px-4 py-3.5 sm:px-5">
+    <article
+      ref={paneRef}
+      className="flex flex-col lg:h-full lg:min-h-0"
+      aria-label={d.vulnerabilityName}
+    >
+      {/* Severity keyline — one glance tells you what this test is. */}
+      <div aria-hidden="true" className={clsx('h-1 w-full', PRIORITY_KEYLINE[d.priority])} />
+      {/* Header: identity. The decisions live in the tray at the bottom,
+          within thumb reach on a phone and always on screen on a laptop. */}
+      <header className="space-y-2 border-b border-ink-800 bg-ink-900 px-4 py-3.5 sm:px-5">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             {onBackToList && (
@@ -187,89 +244,47 @@ export function TestDetailPanel({
                 All tests
               </Button>
             )}
-            {/* 1 — the vulnerability name is the largest thing on the screen */}
+            {/* 0 — category eyebrow; 1 — the vulnerability name, largest on screen */}
+            <p className="section-kicker mb-1 truncate">
+              {categoryName(d.category)} · {d.subcategory}
+            </p>
             <h2 className="text-base leading-tight font-semibold text-ink-50 sm:text-lg">
               {d.vulnerabilityName}
             </h2>
             <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-micro text-ink-400">
               <PriorityBadge priority={d.priority} />
               <span className="font-mono">{d.id}</span>
-              <span aria-hidden="true">·</span>
-              <span>{categoryName(d.category)}</span>
-              <span aria-hidden="true">·</span>
-              <span>{d.subcategory}</span>
               {!s.applicable && <Badge tone="na">Not Applicable</Badge>}
               {s.applicabilitySource === 'manual' && <Badge tone="brand">Manual</Badge>}
             </div>
           </div>
-          <div className="flex shrink-0 items-center gap-1">
-            <span className="mr-1 hidden text-micro tabular-nums text-ink-400 sm:inline">
-              {position} / {total}
-            </span>
-            <IconButton
-              size="sm"
-              label="Previous test"
-              onClick={onPrevious}
-              icon={<IconChevron size={14} className="rotate-180" />}
-            />
-            <IconButton size="sm" label="Next test" onClick={onNext} icon={<IconChevron size={14} />} />
-          </div>
+          <span className="shrink-0 text-micro tabular-nums text-ink-400">
+            {position} / {total}
+          </span>
         </div>
-
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-          <div className="flex items-center gap-2">
-            <span className="text-micro font-medium tracking-wider text-ink-400 uppercase">
-              Status
-            </span>
-            <SegmentedControl
-              label="Testing status"
-              value={awaitingChoice ? 'Tested' : s.status}
-              options={STATUS_OPTIONS}
-              disabled={!s.applicable}
-              onChange={chooseStatus}
-            />
-          </div>
-
-          <div
-            className={clsx(
-              'flex items-center gap-2 rounded-[--radius-control] transition-shadow',
-              awaitingChoice && 'ring-2 ring-warn-400 ring-offset-2 ring-offset-ink-900',
-            )}
-          >
-            <span className="text-micro font-medium tracking-wider text-ink-400 uppercase">
-              Result
-            </span>
-            <SegmentedControl
-              label="Testing result"
-              value={s.result}
-              options={RESULT_OPTIONS}
-              disabled={s.status !== 'Tested' && !awaitingChoice}
-              onChange={chooseResult}
-            />
-          </div>
-
-          <Button
-            size="sm"
-            variant={awaitingChoice ? 'subtle' : 'primary'}
-            className="ml-auto"
-            onClick={onNextUntested}
-            title="Jump to the next test with status Not Tested (Enter)"
-          >
-            Next Not Tested →
-          </Button>
-        </div>
-
-        {awaitingChoice && (
-          <p className="animate-in flex items-center gap-1.5 text-xs text-warn-300">
-            <IconAlert size={13} aria-hidden="true" />
-            Choose Vulnerable or Not Vulnerable — “Tested” is only recorded together with its result.
-          </p>
-        )}
       </header>
 
-      {/* Body -------------------------------------------------------------- */}
-      <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-4 py-5 sm:px-5">
-        <Section title="Description">
+      {/* Body ----------------------------------------------------------------
+              Keyed by the test id so switching tests crossfades the pane
+              instead of flashing. Scrolls internally on wide screens; on a
+              phone the page itself scrolls, with the tray pinned below. */}
+      <div
+        key={d.id}
+        className="animate-page space-y-5 px-4 py-5 sm:px-5 lg:min-h-0 lg:flex-1 lg:overflow-y-auto"
+      >
+        {s.applicable && s.status === 'Not Tested' && !awaitingChoice && (
+          <InlineAlert
+            tone="info"
+            icon={<IconTarget size={15} aria-hidden="true" />}
+            title="Ready to test"
+            className="items-center"
+          >
+            Run the guidance below, then record <strong>Tested</strong> with a result — or mark it{' '}
+            <strong>N/A</strong> if it does not apply here.
+          </InlineAlert>
+        )}
+
+        <Section title="What to test">
           <p className="text-sm leading-relaxed text-ink-200">{d.description}</p>
           {d.aliases && d.aliases.length > 0 && (
             <p className="mt-2 text-micro text-ink-400">
@@ -278,8 +293,8 @@ export function TestDetailPanel({
           )}
         </Section>
 
-        <Section title="Testing guidance">
-          <ol className="space-y-2.5 text-sm text-ink-200">
+        <Section title="Testing guidance" divided>
+          <ol className="space-y-2.5 text-base leading-relaxed text-ink-100">
             {d.testingGuidance.map((step, i) => (
               <li key={i} className="flex gap-2.5">
                 <span
@@ -288,13 +303,24 @@ export function TestDetailPanel({
                 >
                   {i + 1}
                 </span>
-                <span className="leading-relaxed">{step}</span>
+                <span>{step}</span>
               </li>
             ))}
           </ol>
         </Section>
 
-        <Section title="Notes">
+        {needsEvidence && (
+          <InlineAlert
+            tone="warn"
+            icon={<IconAlert size={15} aria-hidden="true" />}
+            title="Record the evidence"
+          >
+            This test is marked Vulnerable with no note. Capture the finding while it is fresh —
+            endpoint, payload, observation, impact — so the report is defensible.
+          </InlineAlert>
+        )}
+
+        <Section title="Notes" divided>
           <Textarea
             ref={notesRef}
             rows={5}
@@ -323,7 +349,7 @@ export function TestDetailPanel({
                     key={reason}
                     type="button"
                     onClick={() => saveNotes(reason)}
-                    className="rounded-md border border-ink-600 bg-ink-900 px-2 py-1 text-micro text-ink-200 transition-colors hover:border-warn-500/50 hover:text-warn-300"
+                    className="rounded-full border border-ink-600 bg-ink-900 px-2.5 py-1 text-micro text-ink-200 transition-[color,border-color,box-shadow] hover:border-warn-500/50 hover:text-warn-300"
                   >
                     {reason}
                   </button>
@@ -333,7 +359,7 @@ export function TestDetailPanel({
           )}
         </Section>
 
-        <Section title="Applicability">
+        <Section title="Applicability" divided>
           <div className="panel-inset space-y-2 p-3">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <ApplicabilityExplanation suggestion={suggestion} className="min-w-0 flex-1" />
@@ -382,7 +408,7 @@ export function TestDetailPanel({
           </div>
         </Section>
 
-        <Section title="References">
+        <Section title="References" divided>
           <div className="flex flex-wrap gap-1.5">
             {resolveReferences(d).map((reference) => (
               <a
@@ -399,24 +425,100 @@ export function TestDetailPanel({
             ))}
           </div>
         </Section>
+      </div>
 
-        <div className="flex items-center justify-between border-t border-ink-800 pt-4">
-          <Button variant="ghost" size="sm" onClick={onPrevious}>
-            ← Previous
-          </Button>
-          <Button variant="secondary" size="sm" onClick={onNext}>
-            Next test →
+      {/* Decision tray -------------------------------------------------------
+          The working loop's control surface: record the status, record the
+          result, move on. Pinned to the bottom of the pane on wide screens
+          and to the bottom of the viewport while testing on a phone — where
+          the thumb already is. */}
+      <footer className="cmd-tray px-4 pt-3 sm:px-5">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2.5">
+          <div className="flex items-center gap-1">
+            <IconButton
+              size="sm"
+              label="Previous test"
+              onClick={onPrevious}
+              icon={<IconChevron size={14} className="rotate-180" />}
+            />
+            <IconButton size="sm" label="Next test" onClick={onNext} icon={<IconChevron size={14} />} />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="hidden text-micro font-medium tracking-wider text-ink-400 uppercase sm:inline">
+              Status
+            </span>
+            <SegmentedControl
+              label="Testing status"
+              value={awaitingChoice ? 'Tested' : s.status}
+              options={STATUS_OPTIONS}
+              disabled={!s.applicable}
+              onChange={chooseStatus}
+            />
+          </div>
+
+          <div
+            className={clsx(
+              'flex items-center gap-2 rounded-(--radius-control) px-1.5 py-0.5 transition-colors',
+              awaitingChoice && 'bg-warn-500/10 ring-1 ring-warn-400/60',
+            )}
+          >
+            <span className="hidden text-micro font-medium tracking-wider text-ink-400 uppercase sm:inline">
+              Result
+            </span>
+            <SegmentedControl
+              label="Testing result"
+              value={s.result}
+              options={RESULT_OPTIONS}
+              disabled={s.status !== 'Tested' && !awaitingChoice}
+              onChange={chooseResult}
+            />
+          </div>
+
+          {savedAt !== null && (
+            <span
+              aria-live="polite"
+              className="pop-confirm inline-flex items-center gap-1 text-xs font-medium text-safe-400"
+            >
+              <IconCheck size={12} strokeWidth={3} aria-hidden="true" /> Saved
+            </span>
+          )}
+
+          <Button
+            size="sm"
+            variant={awaitingChoice ? 'subtle' : 'primary'}
+            className="ml-auto"
+            onClick={onNextUntested}
+            title="Jump to the next test with status Not Tested (Enter)"
+          >
+            Next Not Tested →
           </Button>
         </div>
-      </div>
+
+        {awaitingChoice && (
+          <p className="animate-in mt-2.5 flex items-center gap-1.5 text-xs text-warn-300">
+            <IconAlert size={13} aria-hidden="true" />
+            Choose Vulnerable or Not Vulnerable — “Tested” is only recorded together with its result.
+          </p>
+        )}
+      </footer>
     </article>
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({
+  title,
+  children,
+  divided,
+}: {
+  title: string;
+  children: React.ReactNode;
+  /** Adds the hairline that separates sections under an open pane. */
+  divided?: boolean;
+}) {
   return (
-    <section>
-      <h3 className="mb-1.5 text-micro font-medium tracking-wider text-ink-400 uppercase">
+    <section className={clsx(divided && 'border-t border-ink-800 pt-5')}>
+      <h3 className="mb-1.5 flex items-center gap-2 text-micro font-medium tracking-wider text-ink-400 uppercase">
         {title}
       </h3>
       {children}

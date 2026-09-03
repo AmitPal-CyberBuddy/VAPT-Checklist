@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import clsx from 'clsx';
 import {
   Badge,
   Button,
@@ -11,7 +12,7 @@ import {
   PageHeader,
   ProgressBar,
 } from '../../ui/primitives';
-import { IconCopy, IconDownload, IconPlus, IconSearch, IconShield, IconTrash } from '../../ui/icons';
+import { IconAlert, IconCopy, IconDownload, IconPlus, IconSearch, IconShield, IconTrash } from '../../ui/icons';
 import { useEngagementSummaries } from '../../hooks/useData';
 import {
   deleteEngagement,
@@ -76,6 +77,7 @@ export default function EngagementsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Engagements"
+        eyebrow="Assessment register"
         description="Each engagement pairs an application context with its own copy of the test library. Given this application — what should I test, what have I tested, and what did I find?"
         actions={
           <>
@@ -113,7 +115,7 @@ export default function EngagementsPage() {
         </div>
       ) : filtered.length === 0 ? (
         <EmptyState
-          icon={<IconShield size={32} />}
+          icon={<IconShield size={30} />}
           title={query ? `No engagements match “${query}”` : 'No engagements yet'}
           description={
             query
@@ -131,78 +133,167 @@ export default function EngagementsPage() {
               </Button>
             )
           }
-        />
+        >
+          {!query && (
+            <ol className="mt-4 grid w-full max-w-2xl gap-2 text-left sm:grid-cols-3">
+              {[
+                ['01', 'Record the target', 'Name, application type and URL — the assessment identity.'],
+                ['02', 'Answer the context', 'A few per-domain questions decide which tests are in scope.'],
+                ['03', 'Work the checklist', 'Test, record status and result, and export the assessment.'],
+              ].map(([step, title, text]) => (
+                <li
+                  key={step}
+                  className="panel-inset flex flex-col gap-1 px-3 py-2.5 text-left"
+                >
+                  <span className="font-mono text-micro text-brand-400">{step}</span>
+                  <span className="text-xs font-semibold text-ink-100">{title}</span>
+                  <span className="text-micro leading-relaxed text-ink-400">{text}</span>
+                </li>
+              ))}
+            </ol>
+          )}
+        </EmptyState>
       ) : (
-        <ul className="grid list-none gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {filtered.map(({ engagement, applicable, resolved, vulnerable, completion }) => (
-            <li
-              key={engagement.id}
-              className="panel flex flex-col gap-4 p-4 transition-[border-color,transform] duration-150 hover:-translate-y-0.5 hover:border-brand-500/30"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <Link
-                    to={`/e/${engagement.id}`}
-                    className="block truncate text-base font-semibold text-ink-50 hover:text-brand-400"
-                  >
-                    {engagement.name}
-                  </Link>
+        <div className="space-y-5">
+          <section
+            aria-label="Engagement register summary"
+            className="grid gap-2 sm:grid-cols-4"
+          >
+            {[
+              {
+                label: 'Engagements',
+                value: summaries.length,
+                tone: 'neutral' as const,
+              },
+              {
+                label: 'Active',
+                value: summaries.filter((s) => s.engagement.status === 'Active').length,
+                tone: 'brand' as const,
+              },
+              {
+                label: 'Completed',
+                value: summaries.filter((s) => s.engagement.status === 'Completed').length,
+                tone: 'safe' as const,
+              },
+              {
+                label: 'Vulnerable records',
+                value: summaries.reduce((n, s) => n + s.vulnerable, 0),
+                tone: summaries.some((s) => s.vulnerable > 0) ? ('vuln' as const) : ('neutral' as const),
+              },
+            ].map((cell) => (
+              <div key={cell.label} className="metric-tile">
+                <p className="text-micro font-medium tracking-wider text-ink-400 uppercase">
+                  {cell.label}
+                </p>
+                <p
+                  className={clsx(
+                    'text-2xl leading-tight font-semibold tracking-tight tabular-nums',
+                    cell.tone === 'brand' && 'text-brand-400',
+                    cell.tone === 'safe' && 'text-safe-400',
+                    cell.tone === 'vuln' && 'text-vuln-400',
+                    cell.tone === 'neutral' && 'text-ink-50',
+                  )}
+                >
+                  {cell.value}
+                </p>
+              </div>
+            ))}
+          </section>
+
+          {/* The register: a dense, scannable list rather than a card grid —
+              every row answers name → target → progress → vulnerable → actions
+              in one horizontal scan, like the logs a tester actually keeps. */}
+          <ul className="list-none overflow-hidden rounded-(--radius-panel) border border-ink-700 bg-ink-900 shadow-(--shadow-panel)">
+            {filtered.map(({ engagement, applicable, resolved, vulnerable, completion }, index) => (
+              <li
+                key={engagement.id}
+                style={{ '--d': Math.min(index, 8) } as CSSProperties}
+                className={clsx(
+                  'stagger-item group relative flex flex-col gap-3 border-b border-ink-700/70 p-4 transition-colors duration-150 last:border-b-0 hover:bg-ink-850/70 sm:flex-row sm:items-center sm:gap-5 sm:px-5',
+                  vulnerable > 0
+                    ? 'rail-vuln'
+                    : engagement.status === 'Completed'
+                      ? 'rail-safe'
+                      : engagement.status === 'Active'
+                        ? 'rail-brand'
+                        : '',
+                )}
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+                    <Link
+                      to={`/e/${engagement.id}`}
+                      className="truncate text-base font-semibold tracking-tight text-ink-50 hover:text-brand-400"
+                    >
+                      {engagement.name}
+                    </Link>
+                    <Badge
+                      tone={
+                        engagement.status === 'Active'
+                          ? 'brand'
+                          : engagement.status === 'Completed'
+                            ? 'success'
+                            : 'neutral'
+                      }
+                    >
+                      {engagement.status}
+                    </Badge>
+                    {vulnerable > 0 && (
+                      <Badge tone="vulnerable" glyph={<IconAlert size={11} strokeWidth={2.5} />}>
+                        {vulnerable} vulnerable
+                      </Badge>
+                    )}
+                  </div>
                   <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 truncate text-xs text-ink-400">
                     <span>{applicationTypeLabel(engagement.applicationType)}</span>
                     <span aria-hidden="true">·</span>
                     <span>{engagement.clientName || 'No client recorded'}</span>
                     {engagement.testerName && <span>· {engagement.testerName}</span>}
                   </p>
-                </div>
-                <Badge
-                  tone={
-                    engagement.status === 'Active'
-                      ? 'brand'
-                      : engagement.status === 'Completed'
-                        ? 'success'
-                        : 'neutral'
-                  }
-                >
-                  {engagement.status}
-                </Badge>
-              </div>
-
-              {(engagement.applicationUrl || engagement.scope.length > 0) && (
-                <p className="truncate font-mono text-micro text-ink-500">
-                  {[engagement.applicationUrl, ...engagement.scope].filter(Boolean).join(' · ')}
-                </p>
-              )}
-
-              <div>
-                <div className="mb-1.5 flex items-center justify-between text-xs">
-                  <span className="text-ink-400">
-                    {resolved} of {applicable} applicable tests completed
-                  </span>
-                  <span className="font-medium tabular-nums text-ink-200">
-                    {Math.round(completion * 100)}%
-                  </span>
-                </div>
-                <ProgressBar
-                  value={completion}
-                  label={`${engagement.name} progress`}
-                  tone={completion === 1 ? 'safe' : 'brand'}
-                />
-              </div>
-
-              <div className="flex items-center justify-between border-t border-ink-800 pt-3">
-                <div className="flex items-center gap-2">
-                  {vulnerable > 0 ? (
-                    <Badge tone="vulnerable" glyph="▲">
-                      {vulnerable} vulnerable
-                    </Badge>
-                  ) : (
-                    <Badge tone="neutral">No vulnerable tests</Badge>
+                  {(engagement.applicationUrl || engagement.scope.length > 0) && (
+                    <p className="mt-1 truncate font-mono text-micro text-ink-500">
+                      {[engagement.applicationUrl, ...engagement.scope].filter(Boolean).join(' · ')}
+                    </p>
                   )}
-                  <span className="text-micro text-ink-400">
-                    {new Date(engagement.updatedAt).toLocaleDateString()}
-                  </span>
+                  {engagement.status === 'Active' && completion === 1 && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="mt-1 justify-start text-safe-400"
+                      onClick={() =>
+                        void setEngagementStatus(engagement.id, 'Completed').catch((error: unknown) =>
+                          toast.error(
+                            'Engagement status not saved',
+                            error instanceof Error ? error.message : String(error),
+                          ),
+                        )
+                      }
+                    >
+                      All applicable tests completed — mark engagement as Completed
+                    </Button>
+                  )}
                 </div>
-                <div className="flex items-center gap-1">
+
+                <div className="w-full shrink-0 sm:w-52">
+                  <div className="mb-1 flex items-center justify-between gap-2 text-xs">
+                    <span className="text-ink-400">
+                      {resolved} of {applicable} applicable
+                    </span>
+                    <span className="font-medium tabular-nums text-ink-200">
+                      {Math.round(completion * 100)}%
+                    </span>
+                  </div>
+                  <ProgressBar
+                    value={completion}
+                    label={`${engagement.name} progress`}
+                    tone={completion === 1 ? 'safe' : 'brand'}
+                  />
+                  <p className="mt-1 text-micro text-ink-500">
+                    Updated {new Date(engagement.updatedAt).toLocaleDateString()}
+                  </p>
+                </div>
+
+                <div className="flex shrink-0 items-center gap-1">
                   <IconButton
                     size="sm"
                     label={`Download Excel for ${engagement.name}`}
@@ -223,32 +314,14 @@ export default function EngagementsPage() {
                     className="hover:text-vuln-400"
                     icon={<IconTrash size={14} />}
                   />
-                  <Button size="sm" variant="subtle" onClick={() => navigate(`/e/${engagement.id}`)}>
+                  <Button size="sm" variant="primary" onClick={() => navigate(`/e/${engagement.id}`)}>
                     Open
                   </Button>
                 </div>
-              </div>
-
-              {engagement.status === 'Active' && completion === 1 && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="justify-start text-safe-400"
-                  onClick={() =>
-                    void setEngagementStatus(engagement.id, 'Completed').catch((error: unknown) =>
-                      toast.error(
-                        'Engagement status not saved',
-                        error instanceof Error ? error.message : String(error),
-                      ),
-                    )
-                  }
-                >
-                  All applicable tests completed — mark engagement as Completed
-                </Button>
-              )}
-            </li>
-          ))}
-        </ul>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
 
       <Modal

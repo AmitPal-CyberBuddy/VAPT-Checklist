@@ -2,6 +2,7 @@
 import 'fake-indexeddb/auto';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act } from 'react';
 import App from '../App';
 import { db } from '../persistence/db';
 import { clearAllData, createEngagement, getChecklist, updateTestState } from '../persistence/repository';
@@ -14,6 +15,20 @@ import { computeMetrics, countsAreConsistent } from '../domain/metrics';
  * Nothing here reaches into the domain layer for a shortcut: if a tester
  * cannot do it by clicking, it does not count as working.
  */
+
+/**
+ * After "Create engagement" the wizard writes ~150 checklist rows through
+ * Dexie before navigating. RTL's act-wrapped find-by polling can starve
+ * fake-indexeddb's task queue while that write is in flight (a knife-edge
+ * that shifts with machine speed — observed on unchanged code), so the write
+ * is allowed to settle inside act before the first post-create query. The
+ * assertions themselves are unchanged.
+ */
+async function settleWizardWrite() {
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  });
+}
 
 function setViewport(wide: boolean) {
   window.matchMedia = ((query: string) => ({
@@ -37,7 +52,7 @@ describe('§1 the engagement workflow, end to end', () => {
     await db.open();
     await clearAllData();
     setViewport(true);
-    go('#/');
+    go('#/engagements');
   });
   afterEach(cleanup);
 
@@ -76,9 +91,12 @@ describe('§1 the engagement workflow, end to end', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Review checklist' }));
     expect(await screen.findByText('Generated checklist')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Create engagement' }));
+    await settleWizardWrite();
 
     /* ---- Dashboard, then the workspace ---------------------------------- */
-    expect(await screen.findByRole('heading', { name: 'Audit Engagement' })).toBeTruthy();
+    expect(
+      await screen.findByRole('heading', { name: 'Audit Engagement' }, { timeout: 5000 }),
+    ).toBeTruthy();
     fireEvent.click(await screen.findByRole('link', { name: /Open testing workspace/ }));
 
     /* ---- Test a vulnerability ------------------------------------------- */

@@ -6,10 +6,11 @@ import {
   InlineAlert,
   Modal,
   PageHeader,
+  ProgressBar,
   SectionHeading,
   Stat,
 } from '../../ui/primitives';
-import { IconAlert, IconDownload, IconTrash } from '../../ui/icons';
+import { IconAlert, IconCheck, IconDownload, IconTrash } from '../../ui/icons';
 import { DB_NAME, DB_VERSION, estimateUsage } from '../../persistence/db';
 import {
   clearAllData,
@@ -30,7 +31,7 @@ function ImportPreview({ inspection }: { inspection: BackupInspection }) {
         <InlineAlert tone="error" icon={<IconAlert size={16} aria-hidden="true" />}>
           Nothing was imported and your existing engagements are untouched.
         </InlineAlert>
-        <ul className="max-h-56 space-y-1 overflow-y-auto rounded-[--radius-control] border border-ink-700 p-3 text-xs text-ink-300">
+        <ul className="max-h-56 space-y-1 overflow-y-auto rounded-(--radius-control) border border-ink-700 p-3 text-xs text-ink-300">
           {inspection.issues.map((issue, index) => (
             <li key={index} className="flex gap-2">
               <span aria-hidden="true" className="text-vuln-400">
@@ -50,7 +51,7 @@ function ImportPreview({ inspection }: { inspection: BackupInspection }) {
         <Stat label="Engagements" value={inspection.engagements} tone="brand" />
         <Stat label="Test states" value={inspection.testStates} />
       </div>
-      <ul className="space-y-1 rounded-[--radius-control] border border-ink-700 p-3 text-xs text-ink-300">
+      <ul className="space-y-1 rounded-(--radius-control) border border-ink-700 p-3 text-xs text-ink-300">
         {inspection.names.map((name) => (
           <li key={name} className="truncate break-words">
             {name}
@@ -58,7 +59,7 @@ function ImportPreview({ inspection }: { inspection: BackupInspection }) {
         ))}
       </ul>
       {inspection.warnings.length > 0 && (
-        <ul className="space-y-1 rounded-[--radius-control] border border-warn-500/30 bg-warn-500/5 p-3 text-xs text-warn-300">
+        <ul className="space-y-1 rounded-(--radius-control) border border-warn-500/30 bg-warn-500/5 p-3 text-xs text-warn-300">
           {inspection.warnings.map((warning, index) => (
             <li key={index}>{warning}</li>
           ))}
@@ -162,6 +163,7 @@ export default function SettingsPage() {
     <div className="mx-auto max-w-4xl space-y-5">
       <PageHeader
         title="Data & settings"
+        eyebrow="This installation"
         description="Everything is stored locally in this browser. There is no account, no server and no synchronisation — take backups if the data matters."
       />
 
@@ -176,7 +178,7 @@ export default function SettingsPage() {
         />
       </div>
 
-      <Card className="space-y-4">
+      <Card className="panel-accent scroll-reveal space-y-4">
         <SectionHeading
           title="Backup & restore"
           description="A JSON backup contains every engagement, context and recorded result. Import merges into this browser; duplicate IDs are re-keyed rather than overwritten."
@@ -206,7 +208,7 @@ export default function SettingsPage() {
         </div>
       </Card>
 
-      <Card className="space-y-3">
+      <Card className="scroll-reveal space-y-3">
         <SectionHeading
           title="Test library synchronisation"
           description="When the bundled library gains new tests, existing engagements can adopt them without losing recorded work."
@@ -225,31 +227,67 @@ export default function SettingsPage() {
         )}
       </Card>
 
-      <Card className="space-y-3">
-        <SectionHeading title="Storage details" />
-        <dl className="grid gap-2 text-sm sm:grid-cols-2">
-          <div className="flex justify-between rounded-[--radius-control] border border-ink-700 px-3 py-2">
-            <dt className="text-ink-400">Mechanism</dt>
+      <Card className="scroll-reveal space-y-4">
+        <SectionHeading
+          title="Local data & posture"
+          description="This installation's storage and its local-only guarantees, at a glance."
+        />
+        <div className="panel-inset space-y-2 p-3">
+          <div className="flex items-baseline justify-between gap-3">
+            <span className="text-sm text-ink-200">Storage in use</span>
+            <span className="font-mono text-xs tabular-nums text-ink-300">
+              {usage
+                ? `${(usage.usage / 1024 / 1024).toFixed(1)} MB of ~${(usage.quota / 1024 / 1024 / 1024).toFixed(1)} GB`
+                : 'Measuring…'}
+            </span>
+          </div>
+          <ProgressBar
+            value={usage && usage.quota > 0 ? usage.usage / usage.quota : 0}
+            label="Local storage in use"
+          />
+        </div>
+        <dl className="panel-inset px-4 py-1 text-sm">
+          <div className="kv-row">
+            <dt className="flex items-center gap-2 text-ink-400">
+              <IconCheck size={12} strokeWidth={2.5} className="text-safe-400" />
+              Mechanism
+            </dt>
             <dd className="text-ink-100">IndexedDB (Dexie)</dd>
           </div>
-          <div className="flex justify-between rounded-[--radius-control] border border-ink-700 px-3 py-2">
-            <dt className="text-ink-400">Database</dt>
+          <div className="kv-row">
+            <dt className="flex items-center gap-2 text-ink-400">
+              <IconCheck size={12} strokeWidth={2.5} className="text-safe-400" />
+              Database
+            </dt>
             <dd className="font-mono text-xs text-ink-100">
               {DB_NAME} · v{DB_VERSION}
             </dd>
           </div>
-          <div className="flex justify-between rounded-[--radius-control] border border-ink-700 px-3 py-2">
-            <dt className="text-ink-400">Network calls</dt>
+          <div className="kv-row">
+            <dt className="flex items-center gap-2 text-ink-400">
+              <IconCheck size={12} strokeWidth={2.5} className="text-safe-400" />
+              Network calls
+            </dt>
             <dd className="text-safe-400">None</dd>
           </div>
-          <div className="flex justify-between rounded-[--radius-control] border border-ink-700 px-3 py-2">
-            <dt className="text-ink-400">Excel generation</dt>
+          <div className="kv-row">
+            <dt className="flex items-center gap-2 text-ink-400">
+              <IconCheck size={12} strokeWidth={2.5} className="text-safe-400" />
+              Telemetry
+            </dt>
+            <dd className="text-safe-400">None</dd>
+          </div>
+          <div className="kv-row">
+            <dt className="flex items-center gap-2 text-ink-400">
+              <IconCheck size={12} strokeWidth={2.5} className="text-safe-400" />
+              Excel generation
+            </dt>
             <dd className="text-ink-100">Client-side (bundled)</dd>
           </div>
         </dl>
       </Card>
 
-      <Card className="space-y-3 border-vuln-500/30">
+      <Card className="scroll-reveal space-y-3 border-vuln-500/30">
         <SectionHeading
           title="Danger zone"
           description="Permanently removes every engagement, result and note stored by this application in this browser."

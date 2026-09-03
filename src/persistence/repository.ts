@@ -332,7 +332,7 @@ export async function applyApplicability(
     if (!definition) continue;
     const suggestion = suggestApplicability(definition, resolved);
     const keepManual = state.applicabilitySource === 'manual' && !options.overrideManual;
-    const protectWork = state.status !== 'Not Tested' && !suggestion.applicable;
+    const protectWork = (state.status !== 'Not Tested' || state.notes.trim().length > 0) && !suggestion.applicable;
 
     const next: TestState = {
       ...state,

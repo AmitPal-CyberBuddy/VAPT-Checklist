@@ -16,12 +16,20 @@ import { Link } from 'react-router-dom';
 import clsx from 'clsx';
 import type {
   ButtonHTMLAttributes,
+  CSSProperties,
   InputHTMLAttributes,
   ReactNode,
   SelectHTMLAttributes,
   TextareaHTMLAttributes,
 } from 'react';
 import type { Priority, TestResult, TestStatus } from '../domain/types';
+import {
+  IconAlert,
+  IconBan,
+  IconCheck,
+  IconCircle,
+  IconCircleFilled,
+} from './icons';
 
 /* ------------------------------------------------------------------ Button */
 
@@ -29,11 +37,14 @@ type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'subtle';
 type ButtonSize = 'sm' | 'md' | 'lg';
 
 const BUTTON_VARIANTS: Record<ButtonVariant, string> = {
-  primary: 'bg-brand-500 text-ink-950 hover:bg-brand-400 border border-brand-400/40 font-semibold',
-  secondary: 'bg-ink-800 text-ink-100 hover:bg-ink-700 border border-ink-600',
-  subtle: 'bg-ink-850 text-ink-200 hover:bg-ink-800 border border-ink-700',
-  ghost: 'bg-transparent text-ink-300 hover:bg-ink-800 hover:text-ink-100 border border-transparent',
-  danger: 'bg-vuln-500 text-white hover:bg-vuln-400 border border-vuln-400/30 font-semibold',
+  // Button surfaces live in styles.css (.btn-*) so gradients, borders, halos
+  // and pressed states stay theme-aware in one place. Only the ink (text)
+  // and weight ride along here.
+  primary: 'btn-primary text-ink-950 font-semibold',
+  secondary: 'btn-secondary text-ink-100',
+  subtle: 'btn-subtle text-ink-200',
+  ghost: 'btn-ghost text-ink-300 hover:text-ink-100',
+  danger: 'btn-danger text-white font-semibold',
 };
 
 const BUTTON_SIZES: Record<ButtonSize, string> = {
@@ -50,9 +61,11 @@ export function buttonClass(
   className?: string,
 ) {
   return clsx(
-    'inline-flex items-center justify-center rounded-[--radius-control] whitespace-nowrap',
-    // Hover changes colour; press sinks 1px — the two smallest, clearest cues.
-    'transition-colors duration-150 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-45 disabled:active:translate-y-0',
+    'inline-flex items-center justify-center rounded-(--radius-control) whitespace-nowrap',
+    // Variant surfaces (.btn-*) own the border, shadow, glow and the 1px
+    // press sink; JSX never squeezes, lifts or nudges a button. Disabled
+    // buttons drop their halo (pointer-events gated in styles.css) and dim.
+    'disabled:cursor-not-allowed disabled:opacity-45',
     BUTTON_VARIANTS[variant],
     BUTTON_SIZES[size],
     full && 'w-full',
@@ -153,18 +166,21 @@ type BadgeTone =
   | 'success';
 
 const BADGE_TONES: Record<BadgeTone, string> = {
-  neutral: 'bg-ink-800 text-ink-200 border-ink-600',
-  brand: 'bg-brand-500/12 text-brand-400 border-brand-500/40',
+  // Quiet tint chips — pills, not plaques. Only the two strongest states
+  // (vulnerable, critical) earn a border, so red reads as an event without
+  // the whole surface shouting. Text steps flip with the theme.
+  neutral: 'bg-ink-800/70 text-ink-300',
+  brand: 'bg-brand-500/12 text-brand-400',
   critical: 'bg-vuln-500/15 text-vuln-400 border-vuln-500/45',
-  high: 'bg-high-500/12 text-high-300 border-high-500/40',
-  medium: 'bg-medium-400/12 text-medium-200 border-medium-400/35',
-  low: 'bg-brand-500/10 text-brand-400 border-brand-500/30',
+  high: 'bg-high-500/12 text-high-300',
+  medium: 'bg-medium-400/12 text-medium-200',
+  low: 'bg-ink-800/70 text-ink-400',
   vulnerable: 'bg-vuln-500/15 text-vuln-400 border-vuln-500/45',
-  safe: 'bg-safe-500/12 text-safe-400 border-safe-500/40',
-  na: 'bg-ink-800 text-ink-300 border-ink-600',
-  warn: 'bg-warn-500/12 text-warn-300 border-warn-500/40',
-  success: 'bg-safe-500/12 text-safe-400 border-safe-500/40',
-};
+  safe: 'bg-safe-500/12 text-safe-400',
+  na: 'bg-ink-850 text-ink-400',
+  warn: 'bg-warn-500/12 text-warn-300',
+  success: 'bg-safe-500/12 text-safe-400',
+};;
 
 export function Badge({
   tone = 'neutral',
@@ -177,21 +193,23 @@ export function Badge({
   children: ReactNode;
   className?: string;
   title?: string;
-  /** Decorative shape shown before the label; hidden from assistive tech. */
-  glyph?: string;
+  /** Decorative icon shown before the label; hidden from assistive tech. */
+  glyph?: ReactNode;
 }) {
   return (
     <span
       title={title}
       className={clsx(
-        'inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5',
+        // A pill with a transparent border slot, so bordered (strong) and
+        // borderless (quiet) tones keep identical metrics.
+        'inline-flex items-center gap-1 rounded-full border border-transparent px-2 py-0.5',
         'text-micro leading-4 font-medium whitespace-nowrap',
         BADGE_TONES[tone],
         className,
       )}
     >
       {glyph && (
-        <span aria-hidden="true" className="font-mono text-micro leading-none">
+        <span aria-hidden="true" className="flex shrink-0 items-center leading-none">
           {glyph}
         </span>
       )}
@@ -209,13 +227,40 @@ const PRIORITY_TONE: Record<Priority, BadgeTone> = {
   Low: 'low',
 };
 
-/** Shape encodes severity without relying on hue. */
-const PRIORITY_GLYPH: Record<Priority, string> = {
-  Critical: '▰▰▰',
-  High: '▰▰▱',
-  Medium: '▰▱▱',
-  Low: '▱▱▱',
+/** Bar count encodes severity without relying on hue. */
+const PRIORITY_BARS: Record<Priority, number> = {
+  Critical: 3,
+  High: 2,
+  Medium: 1,
+  Low: 0,
 };
+
+const PRIORITY_BAR_FILL: Record<Priority, string> = {
+  Critical: 'bg-vuln-500',
+  High: 'bg-high-500',
+  Medium: 'bg-medium-400',
+  Low: 'bg-ink-500',
+};
+
+/** A three-bar signal meter — severity at a glance, in shape as well as hue.
+ *  Rendered small enough to sit inside a micro badge. */
+function PriorityMeter({ priority }: { priority: Priority }) {
+  const active = PRIORITY_BARS[priority];
+  return (
+    <span aria-hidden="true" className="flex shrink-0 items-end gap-px">
+      {[1, 2, 3].map((bar) => (
+        <span
+          key={bar}
+          className={clsx(
+            'w-[3px] rounded-[1px]',
+            bar === 1 ? 'h-1.5' : bar === 2 ? 'h-2' : 'h-2.5',
+            bar <= active ? PRIORITY_BAR_FILL[priority] : 'bg-ink-600',
+          )}
+        />
+      ))}
+    </span>
+  );
+}
 
 export const priorityTone = (priority: string): BadgeTone =>
   PRIORITY_TONE[priority as Priority] ?? 'neutral';
@@ -224,7 +269,7 @@ export function PriorityBadge({ priority, className }: { priority: Priority; cla
   return (
     <Badge
       tone={PRIORITY_TONE[priority]}
-      glyph={PRIORITY_GLYPH[priority]}
+      glyph={<PriorityMeter priority={priority} />}
       className={className}
       title={`${priority} priority`}
     >
@@ -233,17 +278,19 @@ export function PriorityBadge({ priority, className }: { priority: Priority; cla
   );
 }
 
-const STATUS_GLYPH: Record<TestStatus, string> = {
-  'Not Tested': '○',
-  Tested: '●',
-  'N/A': '⊘',
+/** Status iconography — one drawn icon per state, stroked heavier for badge
+ *  size. Never colour alone: icon + label + hue together. */
+const STATUS_ICON: Record<TestStatus, ReactNode> = {
+  'Not Tested': <IconCircle size={11} strokeWidth={2.5} />,
+  Tested: <IconCircleFilled size={11} />,
+  'N/A': <IconBan size={11} strokeWidth={2.5} />,
 };
 
 export function StatusBadge({ status, className }: { status: TestStatus; className?: string }) {
   return (
     <Badge
       tone={status === 'Tested' ? 'brand' : status === 'N/A' ? 'na' : 'neutral'}
-      glyph={STATUS_GLYPH[status]}
+      glyph={STATUS_ICON[status]}
       className={className}
       title={`Status: ${status}`}
     >
@@ -252,9 +299,9 @@ export function StatusBadge({ status, className }: { status: TestStatus; classNa
   );
 }
 
-const RESULT_GLYPH: Record<TestResult, string> = {
-  Vulnerable: '▲',
-  'Not Vulnerable': '✓',
+const RESULT_ICON: Record<TestResult, ReactNode> = {
+  Vulnerable: <IconAlert size={11} strokeWidth={2.5} />,
+  'Not Vulnerable': <IconCheck size={11} strokeWidth={3} />,
 };
 
 export function ResultBadge({
@@ -268,7 +315,7 @@ export function ResultBadge({
   return (
     <Badge
       tone={result === 'Vulnerable' ? 'vulnerable' : 'safe'}
-      glyph={RESULT_GLYPH[result]}
+      glyph={RESULT_ICON[result]}
       className={className}
       title={`Result: ${result}`}
     >
@@ -287,15 +334,17 @@ export function Card({
   className,
   as: Tag = 'div',
   padded = true,
+  style,
   ...rest
 }: {
   children: ReactNode;
   className?: string;
   as?: 'div' | 'section' | 'article' | 'aside';
   padded?: boolean;
+  style?: CSSProperties;
 } & { 'aria-labelledby'?: string }) {
   return (
-    <Tag className={clsx('panel', padded && 'p-4', className)} {...rest}>
+    <Tag className={clsx('panel', padded && 'p-4', className)} style={style} {...rest}>
       {children}
     </Tag>
   );
@@ -307,15 +356,23 @@ export function PageHeader({
   description,
   actions,
   breadcrumb,
+  eyebrow,
 }: {
   title: ReactNode;
   description?: ReactNode;
   actions?: ReactNode;
   breadcrumb?: ReactNode;
+  /** Small mono kicker above the title — the screen's section in the tool. */
+  eyebrow?: ReactNode;
 }) {
   return (
     <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
       <div className="min-w-0">
+        {eyebrow && (
+          <p className="mb-1.5 font-mono text-micro tracking-widest text-brand-400 uppercase">
+            {eyebrow}
+          </p>
+        )}
         {breadcrumb && <div className="mb-1 text-xs text-ink-400">{breadcrumb}</div>}
         <h1 className="text-xl font-semibold tracking-tight text-ink-50 sm:text-2xl">{title}</h1>
         {description && <p className="mt-1 max-w-3xl text-sm text-ink-400">{description}</p>}
@@ -341,7 +398,10 @@ export function SectionHeading({
   return (
     <div className={clsx('flex flex-wrap items-start justify-between gap-x-4 gap-y-2', className)}>
       <div className="min-w-0">
-        <h2 id={id} className="text-sm font-semibold tracking-wide text-ink-100 uppercase">
+        <h2
+          id={id}
+          className="flex items-center gap-2 text-sm font-semibold tracking-wide text-ink-100 uppercase"
+        >
           {title}
         </h2>
         {description && <p className="mt-1 text-sm text-ink-400">{description}</p>}
@@ -429,11 +489,12 @@ export function FieldGroup({
 }
 
 const CONTROL =
-  'w-full rounded-[--radius-control] border border-ink-600 bg-ink-950/60 px-3 py-2 text-sm ' +
-  'text-ink-100 placeholder:text-ink-500 transition-colors duration-150 hover:border-ink-500 ' +
-  // Form controls use border + ring as their focus indicator (the global
-  // :focus-visible outline is suppressed on them, so it cannot weaken here).
-  'focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/45 ' +
+  'w-full rounded-(--radius-control) border border-ink-600 bg-ink-950/60 px-3 py-2 text-sm ' +
+  'text-ink-100 placeholder:text-ink-500 transition-[border-color,box-shadow] duration-150 hover:border-ink-500 ' +
+  // Form controls focus with the same halo language as the buttons (the
+  // global :focus-visible outline is suppressed on them, so it cannot weaken
+  // here).
+  'focus:border-brand-400 focus:outline-none focus:shadow-(--glow-brand) ' +
   'disabled:cursor-not-allowed disabled:opacity-50';
 
 export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(
@@ -485,14 +546,27 @@ export interface SegmentOption<T extends string> {
   label: ReactNode;
   tone?: 'default' | 'vulnerable' | 'safe' | 'na';
   title?: string;
-  glyph?: string;
+  glyph?: ReactNode;
 }
 
+/* The active segment is a tinted glass chip with its own small halo —
+   defined in styles.css (.seg-on-*) so each theme gets a properly
+   contrasted surface. Solid fills made every choice look like a toy
+   button; the tint reads as a state, which is what a segment is. */
 const SEGMENT_ACTIVE: Record<string, string> = {
-  default: 'bg-brand-500 text-ink-950 border-brand-400',
-  vulnerable: 'bg-vuln-500 text-white border-vuln-400',
-  safe: 'bg-safe-500 text-ink-950 border-safe-400',
-  na: 'bg-ink-600 text-ink-50 border-ink-500',
+  default: 'seg-on-brand',
+  vulnerable: 'seg-on-vuln',
+  safe: 'seg-on-safe',
+  na: 'seg-on-neutral',
+};
+
+/* The active label sits ON the sliding indicator, so it only needs its
+   foreground colour — the indicator carries the surface and border. */
+const SEGMENT_ACTIVE_TEXT: Record<string, string> = {
+  default: 'text-seg-brand',
+  vulnerable: 'text-seg-vuln',
+  safe: 'text-seg-safe',
+  na: 'text-seg-neutral',
 };
 
 export function SegmentedControl<T extends string>({
@@ -513,16 +587,36 @@ export function SegmentedControl<T extends string>({
   /** Accessible name for the group of choices. */
   label: string;
 }) {
+  const activeIndex = options.findIndex((option) => option.value === value);
+  const segmentWidth = 100 / Math.max(1, options.length);
+
   return (
     <div
       role="radiogroup"
       aria-label={label}
       className={clsx(
-        'inline-flex overflow-hidden rounded-[--radius-control] border border-ink-600 bg-ink-950/60 p-0.5',
+        'relative inline-grid auto-cols-fr grid-flow-col overflow-hidden rounded-(--radius-control) border border-ink-600 bg-ink-950/60 p-0.5',
         disabled && 'pointer-events-none opacity-50',
         className,
       )}
     >
+      {/* The sliding indicator: one surface that travels between the equal
+          segments, so the choice change reads as one motion, not two states.
+          Hidden while no value is set, exactly like the labels. */}
+      {activeIndex >= 0 && (
+        <span
+          aria-hidden="true"
+          className={clsx(
+            'top-0.5 bottom-0.5 rounded-[calc(var(--radius-control)-2px)] border transition-[left] duration-200',
+            SEGMENT_ACTIVE[options[activeIndex].tone ?? 'default'],
+          )}
+          style={{
+            left: `calc(${activeIndex * segmentWidth}% + 2px)`,
+            width: `calc(${segmentWidth}% - 4px)`,
+            transitionTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)',
+          }}
+        />
+      )}
       {options.map((option) => {
         const active = option.value === value;
         return (
@@ -535,16 +629,15 @@ export function SegmentedControl<T extends string>({
             title={option.title}
             onClick={() => onChange(option.value)}
             className={clsx(
-              'inline-flex items-center gap-1 rounded-[calc(var(--radius-control)-2px)] border',
-              'border-transparent font-medium transition-colors duration-150',
+              'relative z-10 inline-flex items-center justify-center gap-1 rounded-[calc(var(--radius-control)-2px)] border border-transparent font-medium transition-[color,background-color] duration-150',
               size === 'sm' ? 'px-2 py-1 text-micro' : 'px-2.5 py-1.5 text-xs',
               active
-                ? SEGMENT_ACTIVE[option.tone ?? 'default']
-                : 'text-ink-300 hover:bg-ink-800 hover:text-ink-100',
+                ? SEGMENT_ACTIVE_TEXT[option.tone ?? 'default']
+                : 'text-ink-300 hover:bg-ink-800/60 hover:text-ink-100',
             )}
           >
             {option.glyph && (
-              <span aria-hidden="true" className="font-mono text-micro leading-none">
+              <span aria-hidden="true" className="flex shrink-0 items-center leading-none">
                 {option.glyph}
               </span>
             )}
@@ -627,7 +720,7 @@ export function ProgressBar({
   return (
     <div
       className={clsx(
-        'w-full overflow-hidden rounded-full bg-ink-800 shadow-[inset_0_1px_2px_rgb(3_6_12/0.5)]',
+        'progress-track w-full overflow-hidden rounded-full',
         height === 'sm' ? 'h-1.5' : height === 'md' ? 'h-2' : 'h-3',
         className,
       )}
@@ -639,7 +732,10 @@ export function ProgressBar({
       aria-valuetext={`${percent}% complete`}
     >
       <div
-        className={clsx('h-full rounded-full transition-[width] duration-500', tones[tone])}
+        className={clsx(
+          'progress-sheen h-full rounded-full transition-[width] duration-500',
+          tones[tone],
+        )}
         style={{ width: `${percent}%` }}
       />
     </div>
@@ -654,24 +750,29 @@ export function EmptyState({
   action,
   icon,
   compact,
+  children,
 }: {
   title: string;
   description?: ReactNode;
   action?: ReactNode;
   icon?: ReactNode;
   compact?: boolean;
+  /** Optional supporting content below the action (e.g. a how-it-works grid). */
+  children?: ReactNode;
 }) {
   return (
     <div
       className={clsx(
-        'animate-in flex flex-col items-center justify-center gap-3 rounded-[--radius-panel]',
-        'border border-dashed border-ink-700 bg-ink-900/50 px-6 text-center',
+        'animate-in flex flex-col items-center justify-center gap-3 rounded-(--radius-panel)',
+        'border border-dashed border-ink-600 bg-ink-900/40 px-6 text-center',
         compact ? 'py-8' : 'py-14',
       )}
     >
       {icon && (
-        <div className="flex h-11 w-11 items-center justify-center rounded-[--radius-control] border border-ink-700 bg-ink-850 text-ink-400">
-          {icon}
+        <div className="icon-tile">
+          <div className="flex h-12 w-12 items-center justify-center rounded-(--radius-control) border border-ink-600 bg-ink-850 text-ink-300 shadow-[inset_0_1px_0_rgb(141_156_178/0.06)]">
+            {icon}
+          </div>
         </div>
       )}
       <div>
@@ -679,6 +780,7 @@ export function EmptyState({
         {description && <p className="mx-auto mt-1 max-w-md text-sm text-ink-400">{description}</p>}
       </div>
       {action}
+      {children}
     </div>
   );
 }
@@ -688,6 +790,14 @@ const ALERT_TONES = {
   warn: 'border-warn-500/30 bg-warn-500/5 text-warn-300',
   error: 'border-vuln-500/35 bg-vuln-500/5 text-vuln-400',
   success: 'border-safe-500/30 bg-safe-500/5 text-safe-400',
+} as const;
+
+/* A 2px accent rail at the scan edge anchors each alert's meaning. */
+const ALERT_RAIL = {
+  info: 'border-l-brand-500/70',
+  warn: 'border-l-warn-500/70',
+  error: 'border-l-vuln-500/70',
+  success: 'border-l-safe-500/70',
 } as const;
 
 export function InlineAlert({
@@ -709,8 +819,9 @@ export function InlineAlert({
     <div
       role={tone === 'error' ? 'alert' : undefined}
       className={clsx(
-        'flex items-start gap-3 rounded-[--radius-panel] border p-3',
+        'flex items-start gap-3 rounded-(--radius-panel) border border-l-2 p-3',
         ALERT_TONES[tone],
+        ALERT_RAIL[tone],
         className,
       )}
     >
@@ -799,7 +910,7 @@ export function Modal({
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className={clsx('panel animate-rise relative w-full p-5 outline-none', widths[width])}
+        className={clsx('panel floating animate-rise relative w-full p-5 outline-none', widths[width])}
       >
         <div className="mb-4">
           <h2 id={titleId} className="text-base font-semibold text-ink-50">
@@ -823,13 +934,16 @@ export function Stat({
   tone = 'neutral',
   className,
   glyph,
+  featured,
 }: {
   label: string;
   value: ReactNode;
   hint?: ReactNode;
   tone?: 'neutral' | 'vuln' | 'safe' | 'warn' | 'brand';
   className?: string;
-  glyph?: string;
+  glyph?: ReactNode;
+  /** Featured metrics are larger and carry a meaning-tinted surface. */
+  featured?: boolean;
 }) {
   const tones = {
     neutral: 'text-ink-50',
@@ -846,17 +960,30 @@ export function Stat({
     warn: 'rail-warn',
     brand: 'rail-brand',
   };
+  const tint = featured
+    ? tone === 'vuln'
+      ? 'tile-vuln'
+      : tone === 'warn'
+        ? 'tile-warn'
+        : tone === 'brand'
+          ? 'tile-brand'
+          : tone === 'safe'
+            ? 'tile-safe'
+            : ''
+    : '';
   return (
     <div
       className={clsx(
-        'panel-inset relative overflow-hidden px-3 py-2',
+        featured ? 'featured-metric' : 'metric-tile',
+        'relative overflow-hidden',
         tone !== 'neutral' && rails[tone],
+        tint,
         className,
       )}
     >
       <p className="flex items-center gap-1.5 text-micro font-medium tracking-wider text-ink-400 uppercase">
         {glyph && (
-          <span aria-hidden="true" className="font-mono text-micro">
+          <span aria-hidden="true" className="flex shrink-0 items-center leading-none">
             {glyph}
           </span>
         )}
@@ -864,7 +991,9 @@ export function Stat({
       </p>
       <p
         className={clsx(
-          'mt-1 text-2xl leading-tight font-semibold tracking-tight tabular-nums',
+          featured
+            ? 'metric-featured-value'
+            : 'text-2xl leading-tight font-semibold tracking-tight tabular-nums',
           tones[tone],
         )}
       >
@@ -878,7 +1007,12 @@ export function Stat({
 /* ---------------------------------------------------------------- Skeleton */
 
 export function Skeleton({ className }: { className?: string }) {
-  return <div className={clsx('animate-pulse rounded bg-ink-800', className)} aria-hidden="true" />;
+  return (
+    <div
+      className={clsx('skeleton-sheen animate-pulse rounded-md bg-ink-800', className)}
+      aria-hidden="true"
+    />
+  );
 }
 
 /** Politely announces a message to screen readers without showing it. */

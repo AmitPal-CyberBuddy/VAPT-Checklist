@@ -192,6 +192,7 @@ export const apiTests: TestDefinition[] = [
       'Retrieve the WSDL and enumerate all operations, including those not used by the client.',
       'Invoke administrative operations directly and test WS-Security enforcement.',
       'Test XML attacks (XXE, XML bombs, signature wrapping) against the endpoint.',
+      'Test SOAPAction header spoofing: send an action name that differs from the SOAP body operation,and check which handler performs the route and whether authorisation is enforced at the routing layer.',
     ],
     owasp: ['API5:2023', 'WSTG-INPV-07'],
     cwe: ['CWE-285', 'CWE-611'],
@@ -353,24 +354,5 @@ export const graphqlTests: TestDefinition[] = [
     applicability: graphql,
     aliases: ['GraphQL Error Leakage', 'Stack Trace in Extensions'],
     tags: ['graphql', 'disclosure'],
-  },
-  {
-    id: 'GQL-007',
-    vulnerabilityName: 'GraphQL Cross-Site Request Forgery',
-    category: 'graphql',
-    subcategory: 'Transport Security',
-    priority: 'Medium',
-    description:
-      'The endpoint accepts mutations over GET or form-encoded POST with cookie authentication, making cross-site forgery possible without CORS restrictions applying.',
-    testingGuidance: [
-      'Attempt a mutation via GET query string and via application/x-www-form-urlencoded.',
-      'Check for CSRF token requirements and SameSite protection on the session cookie.',
-      'Build a proof of concept form posting to the endpoint.',
-    ],
-    owasp: ['A01:2021'],
-    cwe: ['CWE-352'],
-    applicability: graphql,
-    aliases: ['GraphQL CSRF', 'GET-Based Mutation'],
-    tags: ['graphql', 'csrf'],
   },
 ];

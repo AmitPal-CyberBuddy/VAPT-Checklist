@@ -281,7 +281,7 @@ const ASSESSMENT_HEADERS = [
 
 function assessmentRow(item: ChecklistItem, engagement: Engagement): Row {
   const { definition: d, state: s } = item;
-  const suggestion = suggestApplicability(d, engagement.context);
+  const suggestion = suggestApplicability(d, effectiveContext(engagement));
   return [
     text(d.id, { fontWeight: 'bold' }),
     text(d.vulnerabilityName, { fontWeight: 'bold' }),

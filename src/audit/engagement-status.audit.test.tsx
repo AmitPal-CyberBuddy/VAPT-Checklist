@@ -55,7 +55,7 @@ describe('marking an engagement Completed', () => {
     await db.open();
     await clearAllData();
     setViewport(true);
-    window.location.hash = '#/';
+    window.location.hash = '#/engagements';
   });
   afterEach(cleanup);
 

@@ -1,6 +1,8 @@
 import { memo, useEffect, useState } from 'react';
+import type { ReactNode } from 'react';
 import clsx from 'clsx';
 import { Badge, PriorityBadge, ResultBadge, StatusBadge } from '../../ui/primitives';
+import { IconAlert, IconCheck, IconFileText, IconSpark } from '../../ui/icons';
 import type { ChecklistItem, TestResult, TestStatus } from '../../domain/types';
 import { TEST_STATUSES } from '../../domain/types';
 
@@ -18,13 +20,32 @@ import { TEST_STATUSES } from '../../domain/types';
  * your place, and coming back.
  */
 
-const RESULT_OPTIONS: { value: TestResult; label: string; glyph: string; tone: string }[] = [
-  { value: 'Vulnerable', label: 'Vulnerable', glyph: '▲', tone: 'bg-vuln-500 text-white border-vuln-400' },
+/** Status dot rendered inside the select — the state in one glance, in hue
+ *  AND shape (hollow ring / filled disc / grey disc), without tinting the
+ *  whole control like a toy. */
+const STATUS_DOT: Record<string, string> = {
+  'Not Tested': 'border-[1.5px] border-ink-500',
+  Tested: 'bg-brand-400',
+  'N/A': 'bg-ink-600',
+};
+
+const RESULT_OPTIONS: {
+  value: TestResult;
+  label: string;
+  icon: ReactNode;
+  tone: string;
+}[] = [
+  {
+    value: 'Vulnerable',
+    label: 'Vulnerable',
+    icon: <IconAlert size={13} strokeWidth={2.25} />,
+    tone: 'border-vuln-500/50 bg-vuln-500/15 text-vuln-400',
+  },
   {
     value: 'Not Vulnerable',
     label: 'Not Vulnerable',
-    glyph: '✓',
-    tone: 'bg-safe-500 text-ink-950 border-safe-400',
+    icon: <IconCheck size={13} strokeWidth={2.75} />,
+    tone: 'border-safe-500/50 bg-safe-500/15 text-safe-400',
   },
 ];
 
@@ -44,42 +65,49 @@ function RowStatusControl({
 
   const awaitingChoice = pendingTested && s.status !== 'Tested';
   const showResults = awaitingChoice || s.status === 'Tested';
+  const dot = awaitingChoice ? 'bg-warn-400' : (STATUS_DOT[s.status] ?? STATUS_DOT['Not Tested']);
 
   return (
     <div className="flex flex-wrap items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
-      <select
-        aria-label={`Status for ${d.vulnerabilityName}`}
-        value={awaitingChoice ? 'Tested' : s.status}
-        disabled={!s.applicable}
-        onChange={(e) => {
-          const next = e.target.value as TestStatus;
-          if (next === 'Tested' && !s.result) setPendingTested(true);
-          else {
-            setPendingTested(false);
-            onStatus(d.id, next);
-          }
-        }}
-        className={clsx(
-          'select-chevron h-7 cursor-pointer rounded-[--radius-control] border bg-ink-950/60 py-0 pr-6 pl-2',
-          'text-micro text-ink-100 transition-colors hover:border-ink-500',
-          'focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/45 disabled:cursor-not-allowed disabled:opacity-50',
-          awaitingChoice ? 'border-warn-400' : 'border-ink-600',
-        )}
-      >
-        {TEST_STATUSES.map((status) => (
-          <option key={status} value={status}>
-            {status}
-          </option>
-        ))}
-      </select>
+      <span className="relative inline-flex items-center">
+        <span
+          aria-hidden="true"
+          className={clsx('pointer-events-none absolute left-2 h-1.5 w-1.5 rounded-full', dot)}
+        />
+        <select
+          aria-label={`Status for ${d.vulnerabilityName}`}
+          value={awaitingChoice ? 'Tested' : s.status}
+          disabled={!s.applicable}
+          onChange={(e) => {
+            const next = e.target.value as TestStatus;
+            if (next === 'Tested' && !s.result) setPendingTested(true);
+            else {
+              setPendingTested(false);
+              onStatus(d.id, next);
+            }
+          }}
+          className={clsx(
+            'select-chevron h-7 cursor-pointer rounded-(--radius-control) border bg-ink-950/60 py-0 pr-6 pl-6',
+            'text-micro text-ink-200 transition-[border-color,box-shadow] hover:border-ink-500',
+            'focus:border-brand-400 focus:outline-none focus:shadow-(--glow-brand) disabled:cursor-not-allowed disabled:opacity-50',
+            awaitingChoice ? 'border-warn-400/70 bg-warn-500/10' : 'border-ink-600',
+          )}
+        >
+          {TEST_STATUSES.map((status) => (
+            <option key={status} value={status}>
+              {status}
+            </option>
+          ))}
+        </select>
+      </span>
 
       {showResults && (
         <div
           role="group"
           aria-label={`Result for ${d.vulnerabilityName}`}
           className={clsx(
-            'animate-in flex gap-1 rounded-[--radius-control]',
-            awaitingChoice && 'ring-2 ring-warn-400',
+            'animate-in flex items-center gap-1 rounded-(--radius-control) p-0.5',
+            awaitingChoice && 'border border-warn-400/45 bg-warn-500/10',
           )}
         >
           {RESULT_OPTIONS.map((option) => {
@@ -95,15 +123,13 @@ function RowStatusControl({
                   onResult(d.id, option.value);
                 }}
                 className={clsx(
-                  'h-7 rounded-[--radius-control] border px-2 text-micro font-medium transition-colors',
+                  'inline-flex h-6.5 w-6.5 items-center justify-center rounded-[calc(var(--radius-control)-2px)] border transition-[color,border-color,background-color,box-shadow] duration-100',
                   active
                     ? option.tone
-                    : 'border-ink-600 bg-ink-900 text-ink-300 hover:border-ink-500 hover:text-ink-100',
+                    : 'border-ink-600/80 bg-ink-900 text-ink-400 hover:border-ink-500 hover:text-ink-200',
                 )}
               >
-                <span aria-hidden="true" className="font-mono">
-                  {option.glyph}
-                </span>
+                {option.icon}
                 <span className="sr-only">{option.label}</span>
               </button>
             );
@@ -148,15 +174,20 @@ function TestListRowInner({
     <li
       data-test-id={d.id}
       className={clsx(
-        'group border-l-2 pr-2 pl-1.5 transition-colors duration-150',
+        'group relative border-l-2 pr-2 pl-1.5 transition-colors duration-150',
         active
-          ? 'border-l-brand-500 bg-brand-500/10'
+          ? 'glow-active border-l-brand-500 bg-brand-500/10'
           : s.result === 'Vulnerable'
             ? 'border-l-vuln-500/70 hover:bg-ink-850'
             : 'border-l-transparent hover:bg-ink-850',
         !s.applicable && 'opacity-60',
       )}
     >
+      {/* The active test: a solid brand rail plus a viewing notch, so the
+          selected row is identifiable at a glance even mid-scroll. */}
+      {active && (
+        <span aria-hidden="true" className="absolute top-0 bottom-0 left-0 w-0.5 bg-brand-400/90" />
+      )}
       <div className="flex items-start gap-2">
         {selectionMode && (
           <input
@@ -185,22 +216,30 @@ function TestListRowInner({
             {d.vulnerabilityName}
           </span>
 
-          {/* 2 + 3 — status and result, always as labelled badges */}
+          {/* 2 + 3 — status and result, always as labelled badges.
+              Keys force a remount when the value changes so the badges
+              fade in as feedback for exactly the row that changed. */}
           <span className="mt-1 flex flex-wrap items-center gap-1">
-            <StatusBadge status={s.status} />
-            <ResultBadge result={s.result} />
-            {!s.applicable && (
-              <span className="rounded-md border border-ink-600 px-1.5 py-0.5 text-micro text-ink-300">
-                Not Applicable
+            <span key={`${s.status}-${s.id}`} className="animate-in inline-flex">
+              <StatusBadge status={s.status} />
+            </span>
+            {s.result && (
+              <span key={`${s.result}-${s.id}`} className="animate-in inline-flex">
+                <ResultBadge result={s.result} />
               </span>
             )}
+            {!s.applicable && <Badge tone="na">Not Applicable</Badge>}
           </span>
 
           {/* 4 + 5 — priority then supporting metadata */}
           <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-micro text-ink-400">
             <PriorityBadge priority={d.priority} />
             {highValue && s.status === 'Not Tested' && (
-              <Badge tone="brand" glyph="★" title="Among the highest-value tests still outstanding">
+              <Badge
+                tone="brand"
+                glyph={<IconSpark size={10} strokeWidth={2.25} />}
+                title="Among the highest-value tests still outstanding"
+              >
                 High value
               </Badge>
             )}
@@ -211,7 +250,11 @@ function TestListRowInner({
                 Unconfirmed
               </span>
             )}
-            {s.notes.trim() && <span title="Has notes">Note</span>}
+            {s.notes.trim() && (
+              <Badge tone="neutral" glyph={<IconFileText size={10} strokeWidth={2.25} />} title="Has notes">
+                Note
+              </Badge>
+            )}
           </span>
         </button>
 

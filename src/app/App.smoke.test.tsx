@@ -29,7 +29,7 @@ describe('application shell', () => {
   beforeEach(async () => {
     await db.open();
     await clearAllData();
-    window.location.hash = '#/';
+    window.location.hash = '#/engagements';
     setViewport(true);
   });
 
@@ -218,6 +218,56 @@ describe('application shell', () => {
   });
 });
 
+describe('landing page', () => {
+  beforeEach(async () => {
+    await db.open();
+    await clearAllData();
+    window.location.hash = '#/';
+    setViewport(true);
+  });
+
+  afterEach(cleanup);
+
+  it('opens on the landing page and links into the tool', async () => {
+    render(<App />);
+
+    expect(
+      await screen.findByRole('heading', {
+        name: /Penetration testing methodology/,
+        level: 1,
+      }),
+    ).toBeTruthy();
+    // Live library stats, not copy-pasted marketing numbers.
+    expect(screen.getByText('Methodology checks')).toBeTruthy();
+    expect(screen.getByText('One objective per check')).toBeTruthy();
+
+    const start = screen.getByRole('link', { name: 'Start an assessment' });
+    expect(start.getAttribute('href')).toContain('/engagements/new');
+    expect(screen.getByRole('link', { name: 'Explore the test library' }).getAttribute('href')).toContain(
+      '/library',
+    );
+    // The brand is the way back to the landing page; primary nav serves the tool.
+    expect(screen.getByRole('link', { name: 'VAPT Checklist — home' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Engagements' })).toBeTruthy();
+  });
+
+  it('explains how it works and how to connect with the maintainer', async () => {
+    render(<App />);
+
+    await screen.findByRole('heading', { name: /Penetration testing methodology/ });
+    expect(screen.getByRole('heading', { name: 'How it works' })).toBeTruthy();
+    expect(screen.getByText('Export the report')).toBeTruthy();
+
+    const linkedin = screen.getByRole('link', { name: 'Connect on LinkedIn' });
+    expect(linkedin.getAttribute('href')).toBe('https://www.linkedin.com/in/amitpal-wb/');
+    expect(linkedin.getAttribute('target')).toBe('_blank');
+    expect(linkedin.getAttribute('rel')).toContain('noopener');
+
+    const issues = screen.getByRole('link', { name: /Suggest an upgrade or report a problem/ });
+    expect(issues.getAttribute('href')).toContain('VAPT-Checklist/issues');
+  });
+});
+
 describe('keyboard ergonomics', () => {
   beforeEach(async () => {
     await db.open();
@@ -265,7 +315,7 @@ describe('keyboard ergonomics', () => {
   it('traps Tab inside a modal and closes it on Escape', async () => {
     const engagement = await createEngagement({ applicationType: 'web-app',
       name: 'Trap me' });
-    window.location.hash = '#/';
+    window.location.hash = '#/engagements';
     render(<App />);
 
     fireEvent.click(

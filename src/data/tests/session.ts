@@ -176,6 +176,7 @@ export const sessionTests: TestDefinition[] = [
     testingGuidance: [
       'Identify state-changing endpoints and remove or alter the anti-CSRF token; check whether the request still succeeds.',
       'Test token binding: reuse another user\'s token, an empty token and a deleted parameter.',
+      'For GraphQL endpoints, attempt mutations over GET query strings and application/x-www-form-urlencoded — many implementations accept them,and batching amplifies the blast radius.',
       'Check JSON/API endpoints for reliance on Content-Type or custom headers only, and test simple-request bypasses.',
       'Confirm SameSite settings do not mask a missing server-side control.',
     ],
@@ -185,7 +186,7 @@ export const sessionTests: TestDefinition[] = [
       auth,
       rule.any(rule.includes('assetTypes', 'web-app'), cookieSession),
     ),
-    aliases: ['CSRF', 'XSRF', 'Missing Anti-CSRF Token', 'Sea Surf'],
+    aliases: ['CSRF', 'XSRF', 'Missing Anti-CSRF Token', 'Sea Surf', 'GraphQL CSRF', 'GET-Based Mutation'],
     tags: ['session', 'csrf'],
   },
   {
