@@ -291,7 +291,7 @@ export function TestDetailPanel({
         )}
 
         <Section title="What to test">
-          <p className="text-sm leading-relaxed text-ink-200">{d.description}</p>
+          <p className="prose-measure text-sm leading-relaxed text-ink-200">{d.description}</p>
           {d.aliases && d.aliases.length > 0 && (
             <p className="mt-2 text-micro text-ink-400">
               Also known as: <span className="text-ink-300">{d.aliases.join(' · ')}</span>
@@ -300,7 +300,7 @@ export function TestDetailPanel({
         </Section>
 
         <Section title="Testing guidance" divided>
-          <ol className="space-y-2.5 text-base leading-relaxed text-ink-100">
+          <ol className="prose-measure space-y-2.5 text-base leading-relaxed text-ink-100">
             {d.testingGuidance.map((step, i) => (
               <li key={i} className="flex gap-2.5">
                 <span
@@ -335,7 +335,7 @@ export function TestDetailPanel({
             aria-label={`Notes for ${d.vulnerabilityName}`}
             maxLength={TEXT_LIMITS.notes}
             placeholder="Endpoints and parameters tested, payloads used, observations, conclusion…"
-            className="font-mono text-xs"
+            className="prose-measure font-mono text-xs"
           />
           <div className="mt-1.5 flex flex-wrap items-center justify-between gap-2 text-micro text-ink-400">
             <span className={noteError ? 'font-medium text-vuln-400' : undefined}>
@@ -343,7 +343,12 @@ export function TestDetailPanel({
                 ? 'Not saved — this note is only in the editor. Copy it before leaving the page.'
                 : 'Optional · saved automatically'}
             </span>
-            <span>Updated {s.updatedAt.slice(0, 16).replace('T', ' ')}</span>
+            <span className="tabular-nums">
+              {s.testedAt && s.status === 'Tested' && (
+                <span className="text-ink-500">Last tested {s.testedAt.slice(0, 16).replace('T', ' ')} · </span>
+              )}
+              Updated {s.updatedAt.slice(0, 16).replace('T', ' ')}
+            </span>
           </div>
 
           {naWithoutReason && (

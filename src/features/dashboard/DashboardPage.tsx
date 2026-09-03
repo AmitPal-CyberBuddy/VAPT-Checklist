@@ -381,7 +381,7 @@ export default function DashboardPage() {
         </div>
         <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
           <Stat label="Tested" value={c.tested} glyph={<IconCircleFilled size={11} />} hint="with a result" />
-          <Stat label="N/A" value={c.na} glyph={<IconBan size={11} strokeWidth={2.5} />} hint="out of scope in practice" />
+          <Stat label="N/A" value={c.na} glyph={<IconBan size={11} strokeWidth={2.5} />} hint="assessed, target doesn't exercise it" />
           <Stat label="Not Vulnerable" value={c.notVulnerable} glyph={<IconCheck size={11} strokeWidth={3} />} tone="safe" hint="verified clean" />
         </div>
       </section>
