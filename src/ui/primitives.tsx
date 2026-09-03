@@ -29,6 +29,7 @@ import {
   IconCheck,
   IconCircle,
   IconCircleFilled,
+  IconExternal,
 } from './icons';
 
 /* ------------------------------------------------------------------ Button */
@@ -124,6 +125,44 @@ export function LinkButton({
       {icon}
       {children}
     </Link>
+  );
+}
+
+/**
+ * A button for an external URL (a real `href`, opens in a new tab). Same visual
+ * system as `Button`/`LinkButton`, but scrolls off-site instead of navigating
+ * within the app — used for LinkedIn, the issue tracker and other outbound
+ * links that must not look like a second-class control.
+ */
+export function ExternalButton({
+  href,
+  variant = 'secondary',
+  size = 'md',
+  icon,
+  full,
+  className,
+  children,
+}: {
+  href: string;
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  icon?: ReactNode;
+  full?: boolean;
+  className?: string;
+  children: ReactNode;
+}) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer noopener"
+      className={buttonClass(variant, size, full, className)}
+    >
+      {icon}
+      {children}
+      {/* An outbound glyph so a new tab is never a surprise. */}
+      <IconExternal size={13} aria-hidden="true" className="opacity-70" />
+    </a>
   );
 }
 
