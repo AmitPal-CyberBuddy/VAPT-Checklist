@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react';
 import { CATEGORIES } from '../../data/categories';
 import { LIBRARY_VERSION, TEST_LIBRARY } from '../../data/library';
-import { Card, LinkButton, PriorityBadge, SectionHeading, Stat, StatusBadge } from '../../ui/primitives';
+import { Card, LinkButton, PriorityBadge, SectionHeading, StatusBadge } from '../../ui/primitives';
 import {
   IconArrowRight,
   IconBook,
@@ -59,6 +59,26 @@ const METHODOLOGY = [
 /** Real tests pulled from the library, shown as a sample of what ships. */
 const FEATURED_IDS = ['INJ-001', 'AUTHZ-002', 'SESS-010', 'INJ-022'];
 
+/** The capability ticker — real checks from the library, nothing invented. */
+const MARQUEE_IDS = [
+  'INJ-001',
+  'INJ-004',
+  'INJ-010',
+  'INJ-007',
+  'INJ-016',
+  'INJ-015',
+  'INJ-022',
+  'INJ-003',
+  'INJ-014',
+  'AUTHZ-001',
+  'AUTHZ-002',
+  'AUTHZ-004',
+  'SESS-001',
+  'API-001',
+  'API-002',
+  'CLOUD-002',
+];
+
 /** The assessment lifecycle, made explicit — the workstation's spine. */
 const PIPELINE = [
   { label: 'Engagement', icon: IconGrid },
@@ -73,55 +93,105 @@ export default function LandingPage() {
   const featured = FEATURED_IDS.map((id) => TEST_LIBRARY.find((t) => t.id === id)).filter(
     (t): t is NonNullable<typeof t> => Boolean(t),
   );
+  const marquee = MARQUEE_IDS.map((id) => TEST_LIBRARY.find((t) => t.id === id)).filter(
+    (t): t is NonNullable<typeof t> => Boolean(t),
+  );
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-8">
       {/* ------------------------------------------------------------ Hero */}
-      <section className="hero-stage panel-accent space-y-6 rounded-[--radius-panel] border p-6 sm:p-10">
-        <div className="grid items-start gap-8 lg:grid-cols-[1.15fr_0.85fr]">
-          <div className="space-y-4">
-            <p
-              className="stagger-item font-mono text-micro font-medium tracking-[0.18em] text-brand-400 uppercase"
-              style={{ '--d': 0 } as CSSProperties}
+      <section className="hero-stage panel-accent space-y-7 rounded-[--radius-panel] border p-6 sm:p-10">
+        <div className="space-y-5">
+          <p
+            className="stagger-item flex flex-wrap items-center gap-2.5 font-mono text-micro font-medium tracking-[0.18em] text-brand-400 uppercase"
+            style={{ '--d': 0 } as CSSProperties}
+          >
+            <span aria-hidden="true" className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-safe-400 opacity-50" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-safe-400" />
+            </span>
+            Local-first · OWASP-aligned · No account required
+          </p>
+          <h1 className="stagger-item display-hero" style={{ '--d': 1 } as CSSProperties}>
+            <span className="text-ink-50">Penetration testing methodology,</span>{' '}
+            <span className="gradient-heading">every check your assessment needs.</span>
+          </h1>
+          <p
+            className="stagger-item max-w-2xl text-sm leading-relaxed text-ink-300 sm:text-base"
+            style={{ '--d': 2 } as CSSProperties}
+          >
+            A few scoping answers become a complete, prioritised checklist —{' '}
+            {TEST_LIBRARY.length} security objectives across {CATEGORIES.length} categories —
+            tracked from first probe to a five-sheet report. Everything runs in your browser;
+            nothing is uploaded.
+          </p>
+          <div
+            className="stagger-item flex flex-wrap items-center gap-3 pt-1"
+            style={{ '--d': 3 } as CSSProperties}
+          >
+            <LinkButton
+              to="/engagements/new"
+              variant="primary"
+              size="lg"
+              icon={<IconArrowRight size={16} aria-hidden="true" />}
             >
-              Local-first · OWASP-aligned · No account required
-            </p>
-            <h1
-              className="stagger-item gradient-heading text-2xl font-semibold tracking-tight"
-              style={{ '--d': 1 } as CSSProperties}
+              Start an assessment
+            </LinkButton>
+            <LinkButton
+              to="/library"
+              variant="secondary"
+              size="lg"
+              icon={<IconBook size={16} aria-hidden="true" />}
             >
-              Penetration testing methodology, tailored to every engagement.
-            </h1>
-            <p
-              className="stagger-item max-w-2xl text-sm leading-relaxed text-ink-300 sm:text-base"
-              style={{ '--d': 2 } as CSSProperties}
-            >
-              VAPT Checklist turns a few scoping answers into a complete,
-              prioritised testing checklist — {TEST_LIBRARY.length} distinct
-              security objectives across {CATEGORIES.length} categories — and
-              tracks each one to a professional report. Everything runs in your
-              browser; nothing is uploaded.
-            </p>
-            <div
-              className="stagger-item flex flex-wrap items-center gap-3 pt-1"
-              style={{ '--d': 3 } as CSSProperties}
-            >
-              <LinkButton
-                to="/engagements/new"
-                variant="primary"
-                size="lg"
-                icon={<IconArrowRight size={16} aria-hidden="true" />}
-              >
-                Start an assessment
-              </LinkButton>
-              <LinkButton
-                to="/library"
-                variant="secondary"
-                size="lg"
-                icon={<IconBook size={16} aria-hidden="true" />}
-              >
-                Explore the test library
-              </LinkButton>
+              Explore the test library
+            </LinkButton>
+          </div>
+        </div>
+
+        <div className="grid items-stretch gap-4 lg:grid-cols-[1.05fr_0.95fr]">
+          {/* A session, told the way the tool actually behaves — the console
+              is decorative (aria-hidden) so no fake statuses reach a screen
+              reader. */}
+          <div
+            className="stagger-item terminal corner-frame"
+            style={{ '--d': 4 } as CSSProperties}
+            aria-hidden="true"
+          >
+            <div className="flex items-center gap-2 border-b border-ink-800/70 px-4 py-2.5">
+              <span className="flex gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-vuln-500/80" />
+                <span className="h-2 w-2 rounded-full bg-warn-400/80" />
+                <span className="h-2 w-2 rounded-full bg-safe-500/80" />
+              </span>
+              <span className="font-mono text-micro tracking-widest text-ink-500 uppercase">
+                vapt-checklist · local session
+              </span>
+            </div>
+            <div className="space-y-2.5 px-4 py-4 font-mono text-xs leading-relaxed sm:px-5 sm:text-sm">
+              <p>
+                <span className="text-brand-400">$</span>{' '}
+                <span className="text-ink-100">vapt new "ACME Portal" --type web-app</span>
+              </p>
+              <p className="text-safe-400">
+                ✓ engagement created — 68 of {TEST_LIBRARY.length} checks applicable
+              </p>
+              <p>
+                <span className="text-brand-400">$</span>{' '}
+                <span className="text-ink-100">vapt status</span>
+              </p>
+              <p className="text-ink-300">
+                ▌ testing <span className="font-semibold text-ink-50">42/68</span> ·{' '}
+                <span className="text-vuln-400">3 vulnerable</span> ·{' '}
+                <span className="text-warn-300">23 not tested</span>
+              </p>
+              <p>
+                <span className="text-brand-400">$</span>{' '}
+                <span className="text-ink-100">vapt export --xlsx</span>
+              </p>
+              <p className="text-safe-400">
+                ✓ acme-portal-assessment.xlsx — 5 sheets, written locally
+                <span className="terminal-cursor" />
+              </p>
             </div>
           </div>
 
@@ -130,7 +200,7 @@ export default function LandingPage() {
           <aside
             aria-label="Sample checks from the library"
             className="stagger-item panel glow-border scan-edge overflow-hidden"
-            style={{ '--d': 4 } as CSSProperties}
+            style={{ '--d': 5 } as CSSProperties}
           >
             <div className="flex items-center gap-2 border-b border-ink-800 bg-ink-850/60 px-4 py-2">
               <IconCheckCircle size={14} aria-hidden="true" className="text-safe-400" />
@@ -156,16 +226,57 @@ export default function LandingPage() {
           </aside>
         </div>
 
+        {/* The headline numbers, read live from the library — a bold band,
+            not four small cards. */}
         <dl
-          className="stagger-item grid grid-cols-2 gap-3 lg:grid-cols-4"
-          style={{ '--d': 5 } as CSSProperties}
+          className="stagger-item grid grid-cols-2 gap-px overflow-hidden rounded-[--radius-control] border border-ink-700 bg-ink-700 lg:grid-cols-4"
+          style={{ '--d': 6 } as CSSProperties}
         >
-          <Stat label="Methodology checks" value={TEST_LIBRARY.length} hint="one objective per check" />
-          <Stat label="Categories" value={CATEGORIES.length} hint="recon to cloud & mobile" />
-          <Stat label="Library version" value={LIBRARY_VERSION} hint="mapped to OWASP & CWE" />
-          <Stat label="Report sheets" value="5" hint="in the Excel export" />
+          <div className="bg-ink-900 p-4">
+            <dt className="font-mono text-micro font-medium tracking-widest text-ink-400 uppercase">
+              Methodology checks
+            </dt>
+            <dd className="stat-band-value mt-1 text-ink-50">{TEST_LIBRARY.length}</dd>
+            <p className="mt-1 text-micro text-ink-500">one objective per check</p>
+          </div>
+          <div className="bg-ink-900 p-4">
+            <dt className="font-mono text-micro font-medium tracking-widest text-ink-400 uppercase">
+              Categories
+            </dt>
+            <dd className="stat-band-value mt-1 text-ink-50">{CATEGORIES.length}</dd>
+            <p className="mt-1 text-micro text-ink-500">recon to cloud &amp; mobile</p>
+          </div>
+          <div className="bg-ink-900 p-4">
+            <dt className="font-mono text-micro font-medium tracking-widest text-ink-400 uppercase">
+              Library version
+            </dt>
+            <dd className="stat-band-value mt-1 text-brand-400">{LIBRARY_VERSION}</dd>
+            <p className="mt-1 text-micro text-ink-500">mapped to OWASP &amp; CWE</p>
+          </div>
+          <div className="bg-ink-900 p-4">
+            <dt className="font-mono text-micro font-medium tracking-widest text-ink-400 uppercase">
+              Report sheets
+            </dt>
+            <dd className="stat-band-value mt-1 text-ink-50">5</dd>
+            <p className="mt-1 text-micro text-ink-500">in the Excel export</p>
+          </div>
         </dl>
       </section>
+
+      {/* --------------------------------------------- Capability ticker */}
+      <div className="marquee" aria-hidden="true">
+        <div className="marquee-track">
+          {[...marquee, ...marquee].map((t, index) => (
+            <span
+              key={`${t.id}-${index}`}
+              className="mr-3 inline-flex items-center gap-1.5 rounded-full border border-ink-700 bg-ink-900 px-2.5 py-1 font-mono text-micro whitespace-nowrap text-ink-300"
+            >
+              <span className="text-brand-500/80">◆</span>
+              {t.vulnerabilityName}
+            </span>
+          ))}
+        </div>
+      </div>
 
       {/* --------------------------------------------- Assessment pipeline */}
       <section
@@ -216,6 +327,16 @@ export default function LandingPage() {
               explains why it is here ({'Applicable because…'}). Facts you have
               not answered keep their checks in the checklist, flagged as unconfirmed.
             </p>
+            <p className="flex flex-wrap gap-1.5 pt-1">
+              {['application type', 'context facts', 'applicability rules'].map((tag) => (
+                <span
+                  key={tag}
+                  className="rounded-full border border-ink-700 bg-ink-900 px-2 py-0.5 font-mono text-micro text-ink-400"
+                >
+                  {tag}
+                </span>
+              ))}
+            </p>
           </Card>
           <Card
             className="stagger-item scan-edge card-lift space-y-3 p-5"
@@ -231,6 +352,16 @@ export default function LandingPage() {
               what to observe and what counts as vulnerable. No duplicated
               methodology to grind through twice.
             </p>
+            <p className="flex flex-wrap gap-1.5 pt-1">
+              {['CWE', 'OWASP WSTG', 'testing guidance'].map((tag) => (
+                <span
+                  key={tag}
+                  className="rounded-full border border-ink-700 bg-ink-900 px-2 py-0.5 font-mono text-micro text-ink-400"
+                >
+                  {tag}
+                </span>
+              ))}
+            </p>
           </Card>
           <Card
             className="stagger-item scan-edge card-lift space-y-3 p-5"
@@ -244,6 +375,16 @@ export default function LandingPage() {
               Record status, result and evidence notes per check; the dashboard
               surfaces high-value work next. Export a five-sheet Excel workbook —
               summary, assessment, vulnerable tests, not-applicable and coverage.
+            </p>
+            <p className="flex flex-wrap gap-1.5 pt-1">
+              {['status · result · notes', 'Excel workbook', 'JSON backup'].map((tag) => (
+                <span
+                  key={tag}
+                  className="rounded-full border border-ink-700 bg-ink-900 px-2 py-0.5 font-mono text-micro text-ink-400"
+                >
+                  {tag}
+                </span>
+              ))}
             </p>
           </Card>
         </div>

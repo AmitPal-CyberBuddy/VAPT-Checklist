@@ -124,3 +124,33 @@ The product now reads as precision assessment equipment — an instrument panel 
 
 - `vitest run` — **21 files, 274 passed** (one environmental timing flake in a first run did not reproduce across two subsequent full runs)
 - `tsc --noEmit` — exit 0 · `vite build` — success · deployment-artifact audit — 12/12 · bundle 689.7 kB / gzip 206.1 kB
+
+---
+
+# Round 8 — Console aesthetic (parity pass with CyberBuddy / ScriptSentry)
+
+**Theme:** the reference tools were studied directly and their visual vocabulary adopted where it fits: display-scale headlines, a mock terminal session, a capability marquee, a bold mono stat band, and tag-chip cards. Still zero new dependencies; landing-first because that is the first impression.
+
+## 1. Hero, rebuilt as a console
+
+- **Display typography:** `.display-hero` (clamp 2rem → 3.4rem, 700 weight, balanced wrap) — the H1 was previously capped at 24px by the audited UI scale; display sizes now live in CSS alongside `metric-hero-value`, keeping the JSX scale audited.
+- **Punchy two-tone headline:** "Penetration testing methodology, *every check your assessment needs.*" — the phrase anchors (H1 regex, CTAs, stat labels) are preserved for the smoke tests.
+- **Live status line:** pulsing safe-green dot + the local-first kicker, in the style of ScriptSentry's "Private by default" banner.
+- **Terminal session mock:** a CRT-styled console (`.terminal` — scan-line texture, traffic-dot title bar, brand prompt, blinking block cursor, HUD corner brackets via `.corner-frame`) walking `vapt new → vapt status → vapt export`. Decorative: `aria-hidden`, honest numbers (library total read live).
+
+## 2. Capability marquee
+
+- A seamless ticker (`.marquee` + `-track`, masked edges, hover-to-pause) streaming 16 **real** checks from the library — SQL Injection, IDOR/BOLA, SSRF, XXE, request smuggling, cloud metadata exposure… `aria-hidden`; reduced motion freezes it.
+
+## 3. Stat band
+
+- The four headline numbers (checks / categories / library version / report sheets) moved from small tiles to a divided band with oversized mono values (`.stat-band-value`). Labels and hints unchanged for the smoke tests.
+
+## 4. Tool-card energy
+
+- "What it does" cards gain tag-chip rows (application type · context facts · applicability rules / CWE · OWASP WSTG · testing guidance / status · result · notes · Excel workbook · JSON backup) — the same scanning affordance CyberBuddy's tool cards carry.
+
+## 5. Tests / build
+
+- `vitest run` — **21 files, 274 passed** · `tsc --noEmit` — exit 0 · `vite build` — success · bundle 694.5 kB / gzip 206.9 kB
+- All landing anchors preserved: H1 regex, `Start an assessment` / `Explore the test library` links, `Methodology checks`, `How it works`, `Export the report`, maintainer links.
