@@ -16,6 +16,7 @@ import { Link } from 'react-router-dom';
 import clsx from 'clsx';
 import type {
   ButtonHTMLAttributes,
+  CSSProperties,
   InputHTMLAttributes,
   ReactNode,
   SelectHTMLAttributes,
@@ -29,7 +30,9 @@ type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'subtle';
 type ButtonSize = 'sm' | 'md' | 'lg';
 
 const BUTTON_VARIANTS: Record<ButtonVariant, string> = {
-  primary: 'bg-brand-500 text-ink-950 hover:bg-brand-400 border border-brand-400/40 font-semibold',
+  // The primary surface is defined in styles.css (.btn-primary) so its
+  // gradient highlight and pressed state stay theme-aware in one place.
+  primary: 'btn-primary text-ink-950 border border-brand-600/50 font-semibold',
   secondary: 'bg-ink-800 text-ink-100 hover:bg-ink-700 border border-ink-600',
   subtle: 'bg-ink-850 text-ink-200 hover:bg-ink-800 border border-ink-700',
   ghost: 'bg-transparent text-ink-300 hover:bg-ink-800 hover:text-ink-100 border border-transparent',
@@ -79,7 +82,13 @@ export function Button({
 }: ButtonProps) {
   return (
     <button type={type} className={buttonClass(variant, size, full, className)} {...rest}>
-      {icon}
+      {icon && variant === 'primary' ? (
+        <span className="btn-nudge" aria-hidden="true">
+          {icon}
+        </span>
+      ) : (
+        icon
+      )}
       {children}
     </button>
   );
@@ -108,7 +117,13 @@ export function LinkButton({
 }) {
   return (
     <Link to={to} className={buttonClass(variant, size, full, className)}>
-      {icon}
+      {icon && variant === 'primary' ? (
+        <span className="btn-nudge" aria-hidden="true">
+          {icon}
+        </span>
+      ) : (
+        icon
+      )}
       {children}
     </Link>
   );
@@ -287,15 +302,17 @@ export function Card({
   className,
   as: Tag = 'div',
   padded = true,
+  style,
   ...rest
 }: {
   children: ReactNode;
   className?: string;
   as?: 'div' | 'section' | 'article' | 'aside';
   padded?: boolean;
+  style?: CSSProperties;
 } & { 'aria-labelledby'?: string }) {
   return (
-    <Tag className={clsx('panel', padded && 'p-4', className)} {...rest}>
+    <Tag className={clsx('panel', padded && 'p-4', className)} style={style} {...rest}>
       {children}
     </Tag>
   );
@@ -307,15 +324,23 @@ export function PageHeader({
   description,
   actions,
   breadcrumb,
+  eyebrow,
 }: {
   title: ReactNode;
   description?: ReactNode;
   actions?: ReactNode;
   breadcrumb?: ReactNode;
+  /** Small mono kicker above the title — the screen's section in the tool. */
+  eyebrow?: ReactNode;
 }) {
   return (
     <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
       <div className="min-w-0">
+        {eyebrow && (
+          <p className="mb-1.5 font-mono text-micro tracking-widest text-brand-400 uppercase">
+            {eyebrow}
+          </p>
+        )}
         {breadcrumb && <div className="mb-1 text-xs text-ink-400">{breadcrumb}</div>}
         <h1 className="text-xl font-semibold tracking-tight text-ink-50 sm:text-2xl">{title}</h1>
         {description && <p className="mt-1 max-w-3xl text-sm text-ink-400">{description}</p>}
@@ -627,7 +652,7 @@ export function ProgressBar({
   return (
     <div
       className={clsx(
-        'w-full overflow-hidden rounded-full bg-ink-800 shadow-[inset_0_1px_2px_rgb(3_6_12/0.5)]',
+        'progress-track w-full overflow-hidden rounded-full',
         height === 'sm' ? 'h-1.5' : height === 'md' ? 'h-2' : 'h-3',
         className,
       )}
@@ -639,7 +664,10 @@ export function ProgressBar({
       aria-valuetext={`${percent}% complete`}
     >
       <div
-        className={clsx('h-full rounded-full transition-[width] duration-500', tones[tone])}
+        className={clsx(
+          'progress-sheen h-full rounded-full transition-[width] duration-500',
+          tones[tone],
+        )}
         style={{ width: `${percent}%` }}
       />
     </div>
@@ -654,24 +682,29 @@ export function EmptyState({
   action,
   icon,
   compact,
+  children,
 }: {
   title: string;
   description?: ReactNode;
   action?: ReactNode;
   icon?: ReactNode;
   compact?: boolean;
+  /** Optional supporting content below the action (e.g. a how-it-works grid). */
+  children?: ReactNode;
 }) {
   return (
     <div
       className={clsx(
         'animate-in flex flex-col items-center justify-center gap-3 rounded-[--radius-panel]',
-        'border border-dashed border-ink-700 bg-ink-900/50 px-6 text-center',
+        'border border-dashed border-ink-600 bg-ink-900/40 px-6 text-center',
         compact ? 'py-8' : 'py-14',
       )}
     >
       {icon && (
-        <div className="flex h-11 w-11 items-center justify-center rounded-[--radius-control] border border-ink-700 bg-ink-850 text-ink-400">
-          {icon}
+        <div className="icon-tile">
+          <div className="flex h-12 w-12 items-center justify-center rounded-[--radius-control] border border-ink-600 bg-ink-850 text-ink-300 shadow-[inset_0_1px_0_rgb(141_156_178/0.06)]">
+            {icon}
+          </div>
         </div>
       )}
       <div>
@@ -679,6 +712,7 @@ export function EmptyState({
         {description && <p className="mx-auto mt-1 max-w-md text-sm text-ink-400">{description}</p>}
       </div>
       {action}
+      {children}
     </div>
   );
 }
@@ -688,6 +722,14 @@ const ALERT_TONES = {
   warn: 'border-warn-500/30 bg-warn-500/5 text-warn-300',
   error: 'border-vuln-500/35 bg-vuln-500/5 text-vuln-400',
   success: 'border-safe-500/30 bg-safe-500/5 text-safe-400',
+} as const;
+
+/* A 2px accent rail at the scan edge anchors each alert's meaning. */
+const ALERT_RAIL = {
+  info: 'border-l-brand-500/70',
+  warn: 'border-l-warn-500/70',
+  error: 'border-l-vuln-500/70',
+  success: 'border-l-safe-500/70',
 } as const;
 
 export function InlineAlert({
@@ -709,8 +751,9 @@ export function InlineAlert({
     <div
       role={tone === 'error' ? 'alert' : undefined}
       className={clsx(
-        'flex items-start gap-3 rounded-[--radius-panel] border p-3',
+        'flex items-start gap-3 rounded-[--radius-panel] border border-l-2 p-3',
         ALERT_TONES[tone],
+        ALERT_RAIL[tone],
         className,
       )}
     >
@@ -799,7 +842,7 @@ export function Modal({
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className={clsx('panel animate-rise relative w-full p-5 outline-none', widths[width])}
+        className={clsx('panel floating animate-rise relative w-full p-5 outline-none', widths[width])}
       >
         <div className="mb-4">
           <h2 id={titleId} className="text-base font-semibold text-ink-50">
@@ -849,7 +892,7 @@ export function Stat({
   return (
     <div
       className={clsx(
-        'panel-inset relative overflow-hidden px-3 py-2',
+        'panel-inset relative overflow-hidden px-3 py-2.5 transition-colors',
         tone !== 'neutral' && rails[tone],
         className,
       )}
@@ -878,7 +921,12 @@ export function Stat({
 /* ---------------------------------------------------------------- Skeleton */
 
 export function Skeleton({ className }: { className?: string }) {
-  return <div className={clsx('animate-pulse rounded bg-ink-800', className)} aria-hidden="true" />;
+  return (
+    <div
+      className={clsx('skeleton-sheen animate-pulse rounded-md bg-ink-800', className)}
+      aria-hidden="true"
+    />
+  );
 }
 
 /** Politely announces a message to screen readers without showing it. */

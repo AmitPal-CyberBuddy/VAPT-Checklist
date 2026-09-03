@@ -62,7 +62,7 @@ export default function EngagementLayout() {
         icon={<IconAlert size={28} />}
         title="Engagement not found"
         description="It is not in this browser's local database. Engagements are stored per browser — if it was created elsewhere, import its JSON backup from Data & Settings."
-        action={<LinkButton to="/">Back to engagements</LinkButton>}
+        action={<LinkButton to="/engagements">Back to engagements</LinkButton>}
       />
     );
   }
@@ -101,7 +101,7 @@ export default function EngagementLayout() {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <NavLink to="/" className="text-xs text-ink-500 hover:text-ink-300">
+              <NavLink to="/engagements" className="text-xs text-ink-500 hover:text-ink-300">
                 Engagements
               </NavLink>
               <span className="text-ink-500">/</span>

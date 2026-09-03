@@ -3,9 +3,11 @@ import { AppShell } from './app/AppShell';
 import { ErrorBoundary } from './app/ErrorBoundary';
 import { RoutedErrorBoundary } from './app/RoutedErrorBoundary';
 import { Toaster } from './ui/toast';
+import { ThemeProvider } from './ui/theme';
 import EngagementsPage from './features/engagements/EngagementsPage';
 import NewEngagementPage from './features/engagements/NewEngagementPage';
 import EngagementLayout from './features/engagements/EngagementLayout';
+import LandingPage from './features/landing/LandingPage';
 import DashboardPage from './features/dashboard/DashboardPage';
 import WorkspacePage from './features/workspace/WorkspacePage';
 import ContextPage from './features/context/ContextPage';
@@ -26,10 +28,12 @@ function LegacyChecklistRedirect() {
 export default function App() {
   return (
     <HashRouter>
+      <ThemeProvider>
       <AppShell>
         <RoutedErrorBoundary>
         <Routes>
-          <Route path="/" element={<EngagementsPage />} />
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/engagements" element={<EngagementsPage />} />
           <Route path="/engagements/new" element={<NewEngagementPage />} />
           <Route path="/library" element={<LibraryPage />} />
           <Route path="/settings" element={<SettingsPage />} />
@@ -45,6 +49,7 @@ export default function App() {
         </Routes>
         </RoutedErrorBoundary>
       </AppShell>
+      </ThemeProvider>
       <Toaster />
     </HashRouter>
   );

@@ -6,7 +6,7 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useMemo } from 'react';
 import { db } from '../persistence/db';
-import { getChecklist, listEngagements } from '../persistence/repository';
+import { getChecklist, listEngagements, normaliseEngagement } from '../persistence/repository';
 import { computeMetrics } from '../domain/metrics';
 import type { ChecklistItem, Engagement } from '../domain/types';
 
@@ -15,7 +15,11 @@ export function useEngagements(): Engagement[] | undefined {
 }
 
 export function useEngagement(id: string | undefined): Engagement | undefined | null {
-  return useLiveQuery(async () => (id ? ((await db.engagements.get(id)) ?? null) : null), [id]);
+  return useLiveQuery(async () => {
+    if (!id) return null;
+    const engagement = await db.engagements.get(id);
+    return engagement ? normaliseEngagement(engagement) : null;
+  }, [id]);
 }
 
 export function useChecklist(engagementId: string | undefined): ChecklistItem[] | undefined {

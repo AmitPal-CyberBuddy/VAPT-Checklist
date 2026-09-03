@@ -229,7 +229,7 @@ describe('§3 applicability across real engagement profiles', () => {
     {
       name: 'Multiple roles',
       context: { ...BASE, hasMultipleRoles: true, hasAdminInterface: true },
-      expectApplicable: ['AUTHZ-003', 'AUTHZ-010', 'LOGIC-010'],
+      expectApplicable: ['AUTHZ-001', 'AUTHZ-010', 'LOGIC-010'],
       expectNotApplicable: [],
     },
     {

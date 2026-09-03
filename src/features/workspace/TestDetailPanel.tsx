@@ -9,7 +9,7 @@ import {
   SegmentedControl,
   Textarea,
 } from '../../ui/primitives';
-import { IconAlert, IconChevron, IconExternal } from '../../ui/icons';
+import { IconAlert, IconChevron, IconExternal, IconTarget } from '../../ui/icons';
 import { categoryName } from '../../data/categories';
 import { resolveReferences } from '../../data/references';
 import { describeRule, suggestApplicability } from '../../domain/applicability';
@@ -64,6 +64,15 @@ const NA_REASONS = [
   'Covered by another test',
   'Not reachable in the test environment',
 ];
+
+/* A slim keyline at the top of the pane carries the severity forward, in
+   colour and width — the label stays next to it in the meta row. */
+const PRIORITY_KEYLINE: Record<string, string> = {
+  Critical: 'bg-vuln-500',
+  High: 'bg-high-500',
+  Medium: 'bg-medium-400',
+  Low: 'bg-brand-500/60',
+};
 
 export function TestDetailPanel({
   item,
@@ -169,9 +178,12 @@ export function TestDetailPanel({
   const suggestion = suggestApplicability(d, context);
   const awaitingChoice = pendingTested && s.status !== 'Tested';
   const naWithoutReason = s.status === 'N/A' && !notes.trim();
+  const needsEvidence = s.status === 'Tested' && s.result === 'Vulnerable' && !notes.trim();
 
   return (
     <article className="flex h-full min-h-0 flex-col" aria-label={d.vulnerabilityName}>
+      {/* Severity keyline — one glance tells you what this test is. */}
+      <div aria-hidden="true" className={clsx('h-1 w-full', PRIORITY_KEYLINE[d.priority])} />
       {/* Sticky header: identity + the two decisions ---------------------- */}
       <header className="sticky top-0 z-10 space-y-3 border-b border-ink-800 bg-ink-900 px-4 py-3.5 sm:px-5">
         <div className="flex items-start justify-between gap-3">
@@ -267,8 +279,25 @@ export function TestDetailPanel({
         )}
       </header>
 
-      {/* Body -------------------------------------------------------------- */}
-      <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-4 py-5 sm:px-5">
+      {/* Body --------------------------------------------------------------
+              Keyed by the test id so switching tests crossfades the pane
+              instead of flashing. */}
+      <div
+        key={d.id}
+        className="animate-page min-h-0 flex-1 space-y-5 overflow-y-auto px-4 py-5 sm:px-5"
+      >
+        {s.applicable && s.status === 'Not Tested' && !awaitingChoice && (
+          <InlineAlert
+            tone="info"
+            icon={<IconTarget size={15} aria-hidden="true" />}
+            title="Ready to test"
+            className="items-center"
+          >
+            Run the guidance below, then record <strong>Tested</strong> with a result — or mark it{' '}
+            <strong>N/A</strong> if it does not apply here.
+          </InlineAlert>
+        )}
+
         <Section title="Description">
           <p className="text-sm leading-relaxed text-ink-200">{d.description}</p>
           {d.aliases && d.aliases.length > 0 && (
@@ -278,7 +307,7 @@ export function TestDetailPanel({
           )}
         </Section>
 
-        <Section title="Testing guidance">
+        <Section title="Testing guidance" divided>
           <ol className="space-y-2.5 text-sm text-ink-200">
             {d.testingGuidance.map((step, i) => (
               <li key={i} className="flex gap-2.5">
@@ -294,7 +323,18 @@ export function TestDetailPanel({
           </ol>
         </Section>
 
-        <Section title="Notes">
+        {needsEvidence && (
+          <InlineAlert
+            tone="warn"
+            icon={<IconAlert size={15} aria-hidden="true" />}
+            title="Record the evidence"
+          >
+            This test is marked Vulnerable with no note. Capture the finding while it is fresh —
+            endpoint, payload, observation, impact — so the report is defensible.
+          </InlineAlert>
+        )}
+
+        <Section title="Notes" divided>
           <Textarea
             ref={notesRef}
             rows={5}
@@ -333,7 +373,7 @@ export function TestDetailPanel({
           )}
         </Section>
 
-        <Section title="Applicability">
+        <Section title="Applicability" divided>
           <div className="panel-inset space-y-2 p-3">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <ApplicabilityExplanation suggestion={suggestion} className="min-w-0 flex-1" />
@@ -382,7 +422,7 @@ export function TestDetailPanel({
           </div>
         </Section>
 
-        <Section title="References">
+        <Section title="References" divided>
           <div className="flex flex-wrap gap-1.5">
             {resolveReferences(d).map((reference) => (
               <a
@@ -413,10 +453,19 @@ export function TestDetailPanel({
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({
+  title,
+  children,
+  divided,
+}: {
+  title: string;
+  children: React.ReactNode;
+  /** Adds the hairline that separates sections under an open pane. */
+  divided?: boolean;
+}) {
   return (
-    <section>
-      <h3 className="mb-1.5 text-micro font-medium tracking-wider text-ink-400 uppercase">
+    <section className={clsx(divided && 'border-t border-ink-800 pt-5')}>
+      <h3 className="mb-1.5 flex items-center gap-2 text-micro font-medium tracking-wider text-ink-400 uppercase">
         {title}
       </h3>
       {children}

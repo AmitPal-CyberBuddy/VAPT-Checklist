@@ -55,12 +55,14 @@ function ToastItem({ item }: { item: Toast }) {
   return (
     <div
       className={clsx(
-        'panel animate-toast flex w-80 max-w-full items-start gap-3 border p-3 pl-3.5',
+        'panel floating animate-toast flex w-80 max-w-full items-start gap-3 border p-3 pl-3.5',
         cls,
         rail,
       )}
     >
-      <Icon size={16} aria-hidden="true" className="mt-0.5 shrink-0" />
+      <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-current bg-ink-900/60">
+        <Icon size={14} aria-hidden="true" />
+      </span>
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium text-ink-100">{item.message}</p>
         {item.detail && <p className="mt-0.5 text-xs break-words text-ink-400">{item.detail}</p>}

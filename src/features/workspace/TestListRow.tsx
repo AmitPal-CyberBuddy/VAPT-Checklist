@@ -63,7 +63,9 @@ function RowStatusControl({
           'select-chevron h-7 cursor-pointer rounded-[--radius-control] border bg-ink-950/60 py-0 pr-6 pl-2',
           'text-micro text-ink-100 transition-colors hover:border-ink-500',
           'focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/45 disabled:cursor-not-allowed disabled:opacity-50',
-          awaitingChoice ? 'border-warn-400' : 'border-ink-600',
+          awaitingChoice
+            ? 'border-warn-400 ring-2 ring-warn-400/35'
+            : 'border-ink-600',
         )}
       >
         {TEST_STATUSES.map((status) => (
@@ -95,7 +97,7 @@ function RowStatusControl({
                   onResult(d.id, option.value);
                 }}
                 className={clsx(
-                  'h-7 rounded-[--radius-control] border px-2 text-micro font-medium transition-colors',
+                  'h-7 rounded-[--radius-control] border px-2 text-micro font-medium transition-all duration-100 active:scale-95',
                   active
                     ? option.tone
                     : 'border-ink-600 bg-ink-900 text-ink-300 hover:border-ink-500 hover:text-ink-100',
@@ -148,9 +150,9 @@ function TestListRowInner({
     <li
       data-test-id={d.id}
       className={clsx(
-        'group border-l-2 pr-2 pl-1.5 transition-colors duration-150',
+        'group relative border-l-2 pr-2 pl-1.5 transition-colors duration-150',
         active
-          ? 'border-l-brand-500 bg-brand-500/10'
+          ? 'glow-active border-l-brand-500 bg-brand-500/10'
           : s.result === 'Vulnerable'
             ? 'border-l-vuln-500/70 hover:bg-ink-850'
             : 'border-l-transparent hover:bg-ink-850',
@@ -185,10 +187,18 @@ function TestListRowInner({
             {d.vulnerabilityName}
           </span>
 
-          {/* 2 + 3 — status and result, always as labelled badges */}
+          {/* 2 + 3 — status and result, always as labelled badges.
+              Keys force a remount when the value changes so the badges
+              fade in as feedback for exactly the row that changed. */}
           <span className="mt-1 flex flex-wrap items-center gap-1">
-            <StatusBadge status={s.status} />
-            <ResultBadge result={s.result} />
+            <span key={`${s.status}-${s.id}`} className="animate-in inline-flex">
+              <StatusBadge status={s.status} />
+            </span>
+            {s.result && (
+              <span key={`${s.result}-${s.id}`} className="animate-in inline-flex">
+                <ResultBadge result={s.result} />
+              </span>
+            )}
             {!s.applicable && (
               <span className="rounded-md border border-ink-600 px-1.5 py-0.5 text-micro text-ink-300">
                 Not Applicable

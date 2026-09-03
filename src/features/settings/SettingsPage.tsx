@@ -162,6 +162,7 @@ export default function SettingsPage() {
     <div className="mx-auto max-w-4xl space-y-5">
       <PageHeader
         title="Data & settings"
+        eyebrow="This installation"
         description="Everything is stored locally in this browser. There is no account, no server and no synchronisation — take backups if the data matters."
       />
 
@@ -176,7 +177,7 @@ export default function SettingsPage() {
         />
       </div>
 
-      <Card className="space-y-4">
+      <Card className="panel-accent space-y-4">
         <SectionHeading
           title="Backup & restore"
           description="A JSON backup contains every engagement, context and recorded result. Import merges into this browser; duplicate IDs are re-keyed rather than overwritten."

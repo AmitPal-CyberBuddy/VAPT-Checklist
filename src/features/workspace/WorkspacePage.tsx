@@ -422,6 +422,7 @@ export default function WorkspacePage() {
   }
 
   const notTestedShown = visible.filter((i) => i.state.status === 'Not Tested').length;
+  const vulnShown = visible.filter((i) => i.state.result === 'Vulnerable').length;
   const applicable = items.filter((i) => i.state.applicable);
   const outstanding = applicable.filter((i) => i.state.status === 'Not Tested').length;
   const checklistComplete = applicable.length > 0 && outstanding === 0;
@@ -582,6 +583,14 @@ export default function WorkspacePage() {
             <strong className="text-ink-100">{visible.length}</strong> shown ·{' '}
             <strong className="text-ink-200">{notTestedShown}</strong> Not Tested
           </span>
+          {vulnShown > 0 && result !== 'Vulnerable' && (
+            <button
+              className="flex items-center gap-1 rounded border border-vuln-500/35 bg-vuln-500/10 px-1.5 py-0.5 text-vuln-400 transition-colors hover:border-vuln-500/60"
+              onClick={() => setResult('Vulnerable')}
+            >
+              ▲ {vulnShown} vulnerable
+            </button>
+          )}
           {unconfirmedIds.size > 0 && scope !== 'unconfirmed' && (
             <button
               className="rounded text-warn-400 hover:underline"
@@ -700,7 +709,7 @@ export default function WorkspacePage() {
           }
         />
       ) : (
-        <div className="grid gap-3 lg:grid-cols-[minmax(280px,340px)_1fr]">
+        <div className="grid gap-3 lg:grid-cols-[minmax(300px,360px)_1fr]">
           {showList && (
             <nav
               aria-label="Tests"

@@ -37,7 +37,7 @@ describe('§1 the engagement workflow, end to end', () => {
     await db.open();
     await clearAllData();
     setViewport(true);
-    go('#/');
+    go('#/engagements');
   });
   afterEach(cleanup);
 

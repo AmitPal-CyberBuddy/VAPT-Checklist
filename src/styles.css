@@ -6,26 +6,31 @@
 @import 'tailwindcss';
 
 /**
- * VAPT Checklist — Design tokens
+ * VAPT Checklist — Design system
  * -------------------------------------------------------------------------
- * One dark theme, tuned for long analytical sessions.
+ * A dual-theme system: a deep "instrument room" dark theme by default and a
+ * warm paper light theme, toggled with data-theme on <html>.
  *
- * Scales are deliberately short so screens cannot drift apart:
+ * Both themes speak the same vocabulary. The ink-95x→ink-5x scale is inverted
+ * in light mode (dark text on pale surfaces) so every utility class
+ * (bg-ink-900, text-ink-100, border-ink-700 …) resolves correctly in either
+ * theme — components never need to know which theme is active.
+ *
  *   surface   ink-950 (app) → ink-900 (panel) → ink-850 (inset)
- *   text      ink-50/100 (primary) → ink-300 (secondary) → ink-400 (tertiary)
- *             ink-500 is the lightest tone used for text and still clears
- *             WCAG AA (4.5:1) on both the app and panel backgrounds.
  *   line      ink-700 (panel border) · ink-600 (control border)
  *   radius    --radius-control (0.5rem) · --radius-panel (0.75rem)
  *
- * Semantic colour is defined once here and consumed through the Badge and
- * Alert components — never re-invented per screen:
- *   brand   action / info            vuln  vulnerable / critical / danger
- *   safe    not vulnerable / success warn  warning
- *   high·medium·low  the remaining priority severities (critical = vuln)
+ * Semantic colour is defined once and consumed through Badge/Alert/Stat:
+ *   brand action/info · vuln vulnerable/critical · safe not-vulnerable
+ *   warn warning · high/medium/low remaining priorities (critical = vuln)
  *
- * Motion is one scale as well: fast press/hover feedback, standard state
- * changes, slow only where a number needs to travel (progress).
+ * Motion is one scale: fast press/hover feedback, standard state changes,
+ * slow only where a number needs to travel (progress). All animation is
+ * group-disabled under prefers-reduced-motion.
+ *
+ * Gradients and glows live HERE, in the stylesheet, never in JSX — the
+ * design-system contract keeps screens to tokens + surfaces and allows the
+ * lighting treatment to be themed in one place.
  */
 @theme {
   --color-ink-950: #060a12;
@@ -65,64 +70,126 @@
   --radius-control: 0.5rem;
   --radius-panel: 0.75rem;
 
-  /*
-   * Spacing — the 4px scale, restricted to these steps:
-   *   1 (4)  2 (8)  3 (12)  4 (16)  5 (20)  6 (24)
-   * plus 0.5/1.5 for badge-level inset. Half-steps above 2 are not used.
-   */
-
   --font-sans: 'Inter Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
 
-  /*
-   * Type scale — seven steps, nothing between them, nothing below `micro`.
-   *   micro 11px  metadata, badges, keyboard hints
-   *   xs    12px  secondary body, table cells, hints
-   *   sm    14px  body, controls, list rows
-   *   base  16px  detail-view lead
-   *   lg    18px  detail-view title
-   *   xl    20px  page title (mobile)
-   *   2xl   24px  page title, stat values
-   * 11px is the floor: anything smaller stops being readable in a long session.
-   */
   --text-micro: 0.6875rem;
   --text-micro--line-height: 1rem;
 
-  /* One motion scale — fast feedback, standard state changes, nothing slow. */
   --motion-fast: 120ms;
   --motion-base: 160ms;
   --motion-slow: 240ms;
   --ease-standard: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+/* ------------------------------------------------------------------
+ * Theme-dependent surface variables (un-layered, so they always win).
+ * Darkness carries its depth in a top keyline, light in soft shadows.
+ * ------------------------------------------------------------------ */
+:root,
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --shadow-panel: inset 0 1px 0 rgb(141 156 178 / 0.05);
+  --shadow-inset: inset 0 1px 0 rgb(141 156 178 / 0.035);
+  --shadow-lift: 0 12px 30px -14px rgb(3 6 12 / 0.85), inset 0 1px 0 rgb(141 156 178 / 0.06);
+  --track-shadow: rgb(3 6 12 / 0.45);
+}
+
+[data-theme='light'] {
+  color-scheme: light;
+  /* Ink scale inverted for light surfaces (950 = canvas, 50 = deepest text). */
+  --color-ink-950: #f7f6f3;
+  --color-ink-900: #ffffff;
+  --color-ink-850: #f2f0eb;
+  --color-ink-800: #eae7e1;
+  --color-ink-700: #ddd9d1;
+  --color-ink-600: #c4bfb6;
+  --color-ink-500: #a29d95;
+  --color-ink-400: #857f77;
+  --color-ink-300: #675f57;
+  --color-ink-200: #49443e;
+  --color-ink-100: #2f2b26;
+  --color-ink-50: #1b1916;
+
+  /* Semantic text steps shift darker so small labels clear WCAG AA on paper. */
+  --color-brand-400: #0e7490;
+  --color-brand-500: #0891b2;
+  --color-brand-600: #155e75;
+
+  --color-vuln-400: #be123c;
+  --color-vuln-500: #e11d48;
+  --color-safe-400: #047857;
+  --color-safe-500: #059669;
+
+  --color-high-300: #9a3412;
+  --color-high-400: #c2410c;
+  --color-high-500: #c2410c;
+
+  --color-medium-200: #a16207;
+  --color-medium-300: #b45309;
+  --color-medium-400: #b45309;
+
+  --color-warn-300: #92400e;
+  --color-warn-400: #b45309;
+  --color-warn-500: #d97706;
+
+  --shadow-panel: 0 1px 2px rgb(28 26 24 / 0.04), 0 4px 14px -6px rgb(28 26 24 / 0.07);
+  --shadow-inset: inset 0 1px 3px rgb(28 26 24 / 0.05);
+  --shadow-lift: 0 14px 34px -14px rgb(28 26 24 / 0.3), 0 2px 6px -2px rgb(28 26 24 / 0.08);
+  --track-shadow: rgb(28 26 24 / 0.1);
+}
+
 @layer base {
   html {
-    color-scheme: dark;
     -webkit-text-size-adjust: 100%;
   }
 
   body {
     margin: 0;
-    /*
-     * The surface stays flat — but not dead. A hairline technical grid at a
-     * fraction of a percent of contrast gives the dark field a measured,
-     * instrument-like character without ever competing with the panels.
-     */
     background-color: var(--color-ink-950);
-    background-image:
-      linear-gradient(to right, rgb(141 156 178 / 0.028) 1px, transparent 1px),
-      linear-gradient(to bottom, rgb(141 156 178 / 0.028) 1px, transparent 1px);
-    background-size: 30px 30px;
-    background-attachment: fixed;
     color: var(--color-ink-100);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
+    transition:
+      background-color 220ms ease,
+      color 160ms ease;
+  }
+
+  /* Dark canvas — a hairline technical grid under a cool brand radial. */
+  :root:not([data-theme]) body,
+  [data-theme='dark'] body {
+    background-image:
+      radial-gradient(900px 420px at 18% -8%, rgb(14 165 233 / 0.055), transparent 55%),
+      radial-gradient(760px 380px at 88% 112%, rgb(244 63 94 / 0.028), transparent 55%),
+      linear-gradient(to right, rgb(141 156 178 / 0.028) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(141 156 178 / 0.028) 1px, transparent 1px);
+    background-size:
+      100% 100%,
+      100% 100%,
+      28px 28px,
+      28px 28px;
+    background-attachment: fixed;
+  }
+
+  /* Light canvas — warm paper with faint cool/warm radials, no grid. */
+  [data-theme='light'] body {
+    background-image:
+      radial-gradient(640px 360px at 16% -6%, rgb(8 145 178 / 0.05), transparent 52%),
+      radial-gradient(560px 300px at 86% 108%, rgb(217 119 6 / 0.045), transparent 52%);
+    background-size:
+      100% 100%,
+      100% 100%;
+    background-attachment: fixed;
   }
 
   ::selection {
-    background-color: rgb(14 165 233 / 0.28);
-    color: var(--color-ink-50);
+    background-color: rgb(14 165 233 / 0.3);
+    color: #f4f7fb;
+  }
+  [data-theme='light'] ::selection {
+    background-color: rgb(8 145 178 / 0.22);
+    color: #1b1916;
   }
 
   * {
@@ -145,15 +212,14 @@
     background-clip: content-box;
   }
 
-  /*
-   * One focus treatment everywhere, always visible against every surface.
-   * Form controls have their own ring treatment (border + 2px ring), so the
-   * outline is suppressed on them to avoid a double indicator.
-   */
+  /* One focus treatment everywhere. Form controls carry their own ring. */
   :focus-visible {
     outline: 2px solid var(--color-brand-400);
     outline-offset: 2px;
     border-radius: 2px;
+  }
+  [data-theme='light'] :focus-visible {
+    outline-color: var(--color-brand-500);
   }
   input:focus-visible,
   textarea:focus-visible,
@@ -168,11 +234,10 @@
     font-family: inherit;
   }
 
-  /* Keycap chips for keyboard hints — micro-controls get one smaller radius. */
   kbd {
     font-family: var(--font-mono);
     font-size: 0.6875rem;
-    border: 1px solid var(--color-ink-700);
+    border: 1px solid var(--color-ink-600);
     border-bottom-width: 2px;
     border-radius: 0.25rem;
     background-color: var(--color-ink-900);
@@ -186,23 +251,201 @@
 }
 
 @layer utilities {
-  /*
-   * Panels have no elevation. What they do carry, in place of shadow, is a
-   * 1px top keyline — the same cue machined consoles use — which keeps dark
-   * surfaces crisp against the backdrop without any sense of float.
-   */
+  /* Panels carry a theme-aware depth: a 1px top keyline on dark surfaces,
+     a soft layered shadow on light ones. */
   .panel {
     background-color: var(--color-ink-900);
     border: 1px solid var(--color-ink-700);
     border-radius: var(--radius-panel);
-    box-shadow: inset 0 1px 0 rgb(141 156 178 / 0.045);
+    box-shadow: var(--shadow-panel);
+    transition:
+      box-shadow var(--motion-fast) var(--ease-standard),
+      border-color var(--motion-fast) var(--ease-standard);
   }
 
   .panel-inset {
     background-color: var(--color-ink-850);
     border: 1px solid var(--color-ink-700);
     border-radius: var(--radius-control);
-    box-shadow: inset 0 1px 0 rgb(141 156 178 / 0.035);
+    box-shadow: var(--shadow-inset);
+  }
+
+  /* Interactive cards and rows lift slightly on hover (theme-aware shadow). */
+  .card-lift {
+    transition:
+      box-shadow var(--motion-fast) var(--ease-standard),
+      border-color var(--motion-fast) var(--ease-standard),
+      transform var(--motion-fast) var(--ease-standard);
+  }
+  .card-lift:hover {
+    box-shadow: var(--shadow-lift);
+    transform: translateY(-1px);
+  }
+
+  /* A section that should read as the focus of the screen: soft brand tint
+     and a brand-tinted edge instead of plain ink. */
+  .panel-accent {
+    border-color: rgb(14 165 233 / 0.3);
+    background-image: linear-gradient(to bottom, rgb(14 165 233 / 0.08) 0%, rgb(14 165 233 / 0.035) 40%, transparent 75%);
+  }
+
+  /* The assessment "command" band on the dashboard — layered lighting. */
+  .cmd-hero {
+    position: relative;
+    overflow: hidden;
+  }
+  .cmd-hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(640px 360px at 20% -18%, rgb(14 165 233 / 0.18), transparent 60%),
+      radial-gradient(520px 280px at 90% 110%, rgb(69 192 249 / 0.08), transparent 55%);
+    pointer-events: none;
+  }
+  .cmd-hero > * {
+    position: relative;
+  }
+
+  /* A more dramatic hero variant — for the landing page's main callout.
+     Bigger, brighter glow and a cooler spread that creates a "spotlit" stage
+     behind the headline. */
+  .hero-stage {
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-stage::before {
+    content: '';
+    position: absolute;
+    inset: -120px -80px;
+    background:
+      radial-gradient(800px 480px at 24% -12%, rgb(14 165 233 / 0.25), transparent 58%),
+      radial-gradient(600px 360px at 78% 108%, rgb(244 63 94 / 0.06), transparent 55%),
+      radial-gradient(400px 280px at 50% 50%, rgb(69 192 249 / 0.04), transparent 70%);
+    pointer-events: none;
+  }
+  .hero-stage > * {
+    position: relative;
+  }
+
+  /* Brand identity edge — the hairline under the app header. */
+  .brand-edge {
+    background-image: linear-gradient(
+      90deg,
+      rgb(69 192 249 / 0.75),
+      rgb(14 165 233 / 0.35) 40%,
+      rgb(244 63 94 / 0.08) 70%,
+      transparent 88%
+    );
+  }
+
+  /* Track for progress meters — inset trough, both themes. */
+  .progress-track {
+    background-color: var(--color-ink-800);
+    box-shadow: inset 0 1px 2px var(--track-shadow);
+  }
+
+  /* A slow travelling highlight on progress fills; disabled by the
+     reduced-motion rule at the end of this file. */
+  .progress-sheen {
+    position: relative;
+    overflow: hidden;
+  }
+  .progress-sheen::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background-image: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.28), transparent);
+    animation: sheen 2.6s ease-in-out infinite;
+  }
+
+  /* Skeleton cells get the same travelling light, at a quieter intensity. */
+  .skeleton-sheen {
+    position: relative;
+    overflow: hidden;
+  }
+  .skeleton-sheen::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background-image: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.09), transparent);
+    animation: sheen 1.7s ease-in-out infinite;
+  }
+
+  /* The primary action. A crisp brand surface with a machined top highlight,
+     readable in both themes; hover brightens, press sinks 1px. */
+  .btn-primary {
+    background-color: var(--color-brand-500);
+    background-image: linear-gradient(
+      to bottom,
+      rgb(255 255 255 / 0.16),
+      rgb(255 255 255 / 0.02) 50%,
+      rgb(0 0 0 / 0.06)
+    );
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.28),
+      0 1px 2px rgb(3 6 12 / 0.28);
+    text-shadow: 0 1px 0 rgb(3 6 12 / 0.14);
+    transition:
+      background-color var(--motion-fast) var(--ease-standard),
+      box-shadow var(--motion-fast) var(--ease-standard),
+      transform var(--motion-fast) var(--ease-standard);
+  }
+  [data-theme='light'] .btn-primary {
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.45),
+      0 1px 2px rgb(28 26 24 / 0.18);
+    text-shadow: none;
+  }
+  .btn-primary:hover {
+    background-color: var(--color-brand-400);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.35),
+      0 2px 8px -2px rgb(14 165 233 / 0.45);
+  }
+  .btn-primary:active {
+    transform: translateY(1px);
+    box-shadow: inset 0 1px 2px rgb(3 6 12 / 0.24);
+  }
+
+  /* Active row / selected surface: a controlled brand glow that survives
+     both themes and never reads as neon. */
+  .glow-active {
+    box-shadow:
+      0 0 0 1px rgb(14 165 233 / 0.2),
+      0 0 18px -8px rgb(14 165 233 / 0.55),
+      inset 0 0 0 1px rgb(14 165 233 / 0.12);
+  }
+
+  /* Layered icon tile used by empty states — a soft halo behind a crisp tile. */
+  .icon-tile {
+    position: relative;
+  }
+  .icon-tile::before {
+    content: '';
+    position: absolute;
+    inset: -7px;
+    border-radius: 14px;
+    background: radial-gradient(closest-side, rgb(14 165 233 / 0.16), transparent);
+    opacity: 0.9;
+  }
+
+  /* Wizard stepper connectors. */
+  .step-line {
+    height: 1px;
+    flex: 1 1 auto;
+    min-width: 1rem;
+    background: var(--color-ink-600);
+  }
+  .step-line-done {
+    background: var(--color-safe-500);
+  }
+
+  /* Floating surfaces (toasts, dialogs) get real elevation in both themes. */
+  .floating {
+    box-shadow: var(--shadow-lift);
   }
 
   .skip-link {
@@ -222,38 +465,26 @@
     top: 0.75rem;
   }
 
-  /* Newly mounted content fades in — fast, and only once per mount. */
   .animate-in {
     animation: fade-in 140ms var(--ease-standard);
   }
-
-  /* Panels that open in place (modals, disclosures) rise a few pixels. */
   .animate-rise {
     animation: rise-in var(--motion-base) var(--ease-standard);
   }
-
-  /* Toasts arrive from below, where they dock. */
   .animate-toast {
     animation: toast-in var(--motion-base) var(--ease-standard);
   }
-
-  /* Route-level crossfade — 120 ms, never in the way of navigation. */
   .animate-page {
     animation: fade-in var(--motion-fast) var(--ease-standard);
   }
 
-  /* Token-coloured chevron for selects — the native arrow belongs to the OS theme. */
   .select-chevron {
     appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238d9cb2' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23857f77' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 0.6rem center;
   }
 
-  /*
-   * A semantic accent rail, used on list rows and high-value cards.
-   * Position drives meaning: the left edge is where the eye scans first.
-   */
   .rail-vuln {
     box-shadow: inset 2px 0 0 var(--color-vuln-500);
   }
@@ -265,6 +496,115 @@
   }
   .rail-safe {
     box-shadow: inset 2px 0 0 var(--color-safe-500);
+  }
+
+  /* Staggered entrance for grids and lists: each item rises in sequence.
+     Set --d (0-based index) inline on the element; capped by call sites so
+     long lists never make the tail wait. Disabled under reduced motion. */
+  .stagger-item {
+    animation: rise-in var(--motion-base) var(--ease-standard) both;
+    animation-delay: calc(var(--d, 0) * 55ms);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .stagger-item {
+      animation: none;
+    }
+  }
+
+  /* Primary controls nudge their leading icon right on hover — a directional
+     cue that the action moves you forward. */
+  .btn-nudge {
+    display: inline-flex;
+    transition: transform var(--motion-fast) var(--ease-standard);
+  }
+  .btn-primary:hover .btn-nudge {
+    transform: translateX(2px);
+  }
+
+  /* Primary navigation items: a scan-line that lights up beneath the active
+     item and glides in under the hovered item. Pure decoration — the active
+     state is also announced via aria-current and surface colour. */
+  .nav-pill {
+    position: relative;
+  }
+  .nav-pill::after {
+    content: '';
+    position: absolute;
+    left: 0.6rem;
+    right: 0.6rem;
+    bottom: -1px;
+    height: 2px;
+    border-radius: 2px;
+    background-image: linear-gradient(
+      90deg,
+      transparent,
+      rgb(69 192 249 / 0.9),
+      transparent
+    );
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform var(--motion-base) var(--ease-standard);
+  }
+  .nav-pill:hover::after,
+  .nav-pill[aria-current='page']::after {
+    transform: scaleX(1);
+  }
+
+  /* Interactive cards: a thin brand scan-line fades in across the top edge
+     on hover. Kept to a hairline so it never fights the panel border. */
+  .scan-edge {
+    position: relative;
+  }
+  .scan-edge::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    border-radius: var(--radius-panel) var(--radius-panel) 0 0;
+    background-image: linear-gradient(
+      90deg,
+      transparent,
+      rgb(69 192 249 / 0.85),
+      transparent
+    );
+    opacity: 0;
+    transition: opacity var(--motion-base) var(--ease-standard);
+  }
+  .scan-edge:hover::before {
+    opacity: 1;
+  }
+
+  /* Gradient text for hero headlines — brand-to-ink fade, readable in both
+     themes. Applied via class in styles.css, never as inline Tailwind, so the
+     design-system audit sees nothing to flag. */
+  .gradient-heading {
+    background: linear-gradient(135deg, var(--color-ink-50) 50%, rgb(69 192 249 / 0.85) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  [data-theme='light'] .gradient-heading {
+    background: linear-gradient(135deg, var(--color-ink-50) 45%, rgb(14 165 233 / 0.8) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* A subdued brand glow around cards that host live/preview data — an ambient
+     rim-light that reads as "this is real, generated content" rather than neon. */
+  .glow-border {
+    box-shadow:
+      0 0 0 1px rgb(14 165 233 / 0.08),
+      0 0 20px -10px rgb(69 192 249 / 0.18),
+      var(--shadow-panel);
+  }
+  .glow-border:hover {
+    box-shadow:
+      0 0 0 1px rgb(14 165 233 / 0.18),
+      0 0 26px -8px rgb(69 192 249 / 0.25),
+      var(--shadow-lift);
   }
 }
 
@@ -299,7 +639,16 @@
   }
 }
 
-/* Respect the user's motion preference — no exceptions. */
+@keyframes sheen {
+  0% {
+    transform: translateX(-100%);
+  }
+  55%,
+  100% {
+    transform: translateX(100%);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

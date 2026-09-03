@@ -1,9 +1,10 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import clsx from 'clsx';
-import { IconAlert, IconBook, IconGrid, IconSettings, IconShield } from '../ui/icons';
+import { IconAlert, IconBook, IconGrid, IconHome, IconSettings, IconShield, IconSun, IconMoon } from '../ui/icons';
 import { InlineAlert } from '../ui/primitives';
 import { checkStorage, requestPersistentStorage, type StorageStatus } from '../persistence/db';
+import { useTheme } from '../ui/theme';
 import { LIBRARY_VERSION, TEST_LIBRARY } from '../data/library';
 
 /** What the tester should actually do, per failure cause. */
@@ -21,7 +22,8 @@ const STORAGE_ADVICE: Record<string, string> = {
 };
 
 const NAV = [
-  { to: '/', label: 'Engagements', icon: IconGrid, end: true },
+  { to: '/', label: 'Home', icon: IconHome, end: true },
+  { to: '/engagements', label: 'Engagements', icon: IconGrid, end: false },
   { to: '/library', label: 'Test Library', icon: IconBook, end: false },
   { to: '/settings', label: 'Data & Settings', icon: IconSettings, end: false },
 ];
@@ -29,6 +31,7 @@ const NAV = [
 export function AppShell({ children }: { children: ReactNode }) {
   const location = useLocation();
   const [storage, setStorage] = useState<StorageStatus | null>(null);
+  const { theme, toggle: toggleTheme } = useTheme();
 
   useEffect(() => {
     void (async () => {
@@ -48,10 +51,10 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <header className="no-print sticky top-0 z-40 border-b border-ink-800 bg-ink-950/95 backdrop-blur">
         {/* The brand keyline — one controlled accent edge across the console. */}
-        <div aria-hidden="true" className="h-0.5 bg-brand-500/45" />
+        <div aria-hidden="true" className="brand-edge h-0.5" />
         <div className="mx-auto flex h-13 max-w-[1600px] items-center gap-3 px-3 sm:gap-6 sm:px-6">
           <NavLink to="/" className="flex shrink-0 items-center gap-2.5" aria-label="VAPT Checklist — home">
-            <span className="flex h-8 w-8 items-center justify-center rounded-[--radius-control] border border-brand-500/45 bg-brand-500/12 text-brand-400">
+            <span className="flex h-8 w-8 items-center justify-center rounded-[--radius-control] border border-brand-500/50 bg-brand-500/12 text-brand-400 ring-1 ring-brand-500/20">
               <IconShield size={18} />
             </span>
             <span className="hidden leading-tight sm:block">
@@ -77,9 +80,9 @@ export function AppShell({ children }: { children: ReactNode }) {
                   to={to}
                   aria-current={active ? 'page' : undefined}
                   className={clsx(
-                    'flex items-center gap-2 rounded-[--radius-control] border px-2.5 py-1.5 text-sm transition-colors duration-150 sm:px-3',
+                    'nav-pill flex items-center gap-2 rounded-[--radius-control] border px-2.5 py-1.5 text-sm transition-colors duration-150 sm:px-3',
                     active
-                      ? 'border-ink-700 bg-ink-800 text-ink-50'
+                      ? 'border-ink-700 bg-ink-800 text-ink-50 shadow-[inset_0_1px_0_rgb(141_156_178/0.08)]'
                       : 'border-transparent text-ink-300 hover:bg-ink-900 hover:text-ink-100',
                   )}
                 >
@@ -92,6 +95,14 @@ export function AppShell({ children }: { children: ReactNode }) {
           </nav>
 
           <div className="ml-auto flex items-center gap-3 text-micro text-ink-400">
+            <button
+              type="button"
+              onClick={toggleTheme}
+              aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+              className="flex h-7 w-7 items-center justify-center rounded-[--radius-control] border border-ink-700 bg-ink-900 text-ink-400 transition-colors hover:border-ink-500 hover:text-ink-200"
+            >
+              {theme === 'dark' ? <IconSun size={13} /> : <IconMoon size={13} />}
+            </button>
             <span className="hidden font-mono tabular-nums xl:inline">
               {TEST_LIBRARY.length} tests · library v{LIBRARY_VERSION}
             </span>
@@ -143,10 +154,16 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </main>
 
-      <footer className="no-print border-t border-ink-800 px-4 py-4 text-center sm:px-6">
-        <span className="font-mono text-micro tracking-wide text-ink-500">
-          Fully client-side · no backend, no telemetry · engagement data never leaves this browser
-        </span>
+      <footer className="no-print mt-8 border-t border-ink-800 px-4 pt-4 pb-6 sm:px-6">
+        <div className="mx-auto flex max-w-[1600px] flex-col items-center gap-2 text-center">
+          <span className="flex items-center gap-1.5 font-mono text-micro tracking-wide text-ink-500">
+            <IconShield size={11} aria-hidden="true" className="text-brand-500/70" />
+            VAPT Checklist — Assessment Tracker
+          </span>
+          <span className="font-mono text-micro tracking-wide text-ink-500">
+            Fully client-side · no backend, no telemetry · engagement data never leaves this browser
+          </span>
+        </div>
       </footer>
     </div>
   );
