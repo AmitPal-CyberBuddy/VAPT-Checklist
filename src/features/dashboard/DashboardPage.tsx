@@ -182,7 +182,7 @@ export default function DashboardPage() {
                   ) : safeUrl ? (
                     <ExternalLink
                       href={safeUrl}
-                      className="max-w-full truncate hover:text-brand-400"
+                      className="max-w-full truncate text-xs text-ink-200 hover:text-brand-400"
                     >
                       {engagement.applicationUrl}
                     </ExternalLink>
