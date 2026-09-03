@@ -154,3 +154,53 @@ The product now reads as precision assessment equipment — an instrument panel 
 
 - `vitest run` — **21 files, 274 passed** · `tsc --noEmit` — exit 0 · `vite build` — success · bundle 694.5 kB / gzip 206.9 kB
 - All landing anchors preserved: H1 regex, `Start an assessment` / `Explore the test library` links, `Methodology checks`, `How it works`, `Export the report`, maintainer links.
+
+---
+
+# Round 9 — Complete visual makeover: "Luminous Obsidian"
+
+**Verdict addressed:** the shipped state read as 2/10 — "basic buttons, not styled" and "bad bounce animation choices." This round is a from-the-surface-up reskin of the design layer, not a patch on the skeleton: a deeper obsidian canvas lit by a cyan→violet duotone, buttons rebuilt as layered physical objects, and every overshoot/squeeze removed from the motion system.
+
+## 0. The smoking gun (why buttons looked unstyled)
+
+Tailwind v4's old `[--var]` arbitrary shorthand does **not** wrap the value in `var()` — the built CSS contained `.rounded-\[--radius-control\]{border-radius:--radius-control}`, which is invalid CSS that browsers silently discard. All 52 usages rendered with square corners. Fixed by mass-migrating to the v4 paren syntax: `rounded-(--radius-control)`, `rounded-(--radius-panel)`, `shadow-(--shadow-panel)`. **Verified in the rebuilt `dist/` CSS:** `border-radius:var(--radius-control)` and `border-radius:var(--radius-panel)` now emit correctly, and zero invalid `border-radius:--radius-control` remains.
+
+## 1. The palette: obsidian + duotone light
+
+- Ink foundation deepened (`ink-950 #05070f`, cooler mid-steps, new `ink-750`) so lit surfaces have range.
+- **Violet accent duo added as a second voice** (`accent-300/400/500/600`) — used only for gradients, ambient light and identity edges; meaning still rides on brand/vuln/safe/warn. Light theme gets its own darker violet steps for contrast on paper.
+- **Aurora canvas:** the dark body now carries three fixed radials (cyan NW, violet E, cyan SE) over the fine technical grid — atmosphere, not decoration. The light paper gets the same two lights retuned.
+- Radii grew: controls `0.5→0.625rem`, panels `0.75→1rem`.
+
+## 2. Buttons — physical objects, not flat rectangles
+
+All five variants are now defined in CSS (`styles.css`) as layered surfaces: gradient body + machined top highlight + crisp border + coloured halo.
+
+- `.btn-primary` — 135° cyan→blue gradient, `brand-300→600`, inset top light, 24px brand halo; hover brightens and feeds the glow; press sinks exactly 1px.
+- `.btn-secondary` — smoked glass: translucent light gradient over ink, cool hairline, hover picks up a faint brand halo.
+- `.btn-subtle` — recessed glass, quiet sibling, no halo.
+- `.btn-ghost` — borderless until hover.
+- `.btn-danger` — red gradient with its own halo; the only red surface in the UI.
+- Disabled buttons lose halo/filter/transform entirely (pointer-events gated in CSS).
+
+## 3. Motion — de-bounced
+
+- `--ease-spring` **deleted**. New system: `--ease-out` (expo-out — decisive settle) and `--ease-smooth` (glide).
+- `pop-in` / `rise-in` keyframes rewritten as plain rises — no overshoot keyframes, no scale.
+- `pop-confirm` is now a light-up flash (opacity), not a 1.12 scale pulse.
+- Removed: `.btn-nudge` icon nudge, card-lift `scale(1.004)`, button `hover:-translate-y-px` + `active:scale-[0.98]` squeeze, segmented-control `active:scale-95`, nav-pill lift, icon-button `hover:scale-105`, result-button squeeze.
+- Stagger tightened 55→45ms. `prefers-reduced-motion` kill-switch unchanged.
+
+## 4. Surfaces, focus, identity
+
+- `.panel` is glass over obsidian: a faint white gradient wash, cool hairline (`--glass-border`), layered shadow (`--shadow-panel` now includes a top light edge + contact shadow + wide lift). Light theme trades glass for warm paper + soft shadow.
+- **Unified focus language:** inputs and selects focus with `focus:shadow-(--glow-brand)` — the same halo the primary button casts — plus a crisp `brand-400` border.
+- `.gradient-heading` is now a true duotone: ink → cyan → violet. The landing hero span, dashboard headings, etc. all inherit it.
+- `.brand-mark` (header tile) and `.brand-edge` (header keyline) carry the cyan→violet gradient; `.hero-stage` and `.cmd-band` gained violet corner lights.
+- Glow tokens are theme-aware: `--glow-brand/safe/vuln` are luminous halos on dark, tinted halos on light.
+
+## 5. Gates
+
+- `tsc --noEmit` — exit 0 · `vite build` — success, 693.8 kB / gzip 206.8 kB · `vitest run` — **21 files, 274 passed**
+- Anchors and audited string contracts untouched (visual-layer-only changes; the only JSX diffs are class names and removed decorative spans).
+- Preview re-verified: new tokens (`--ease-out`, `accent-500`) served; `ease-spring` gone.

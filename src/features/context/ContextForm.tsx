@@ -41,7 +41,7 @@ function TriControl({
     <div
       role="radiogroup"
       aria-label="Answer"
-      className="inline-flex rounded-[--radius-control] border border-ink-600 bg-ink-950/60 p-0.5"
+      className="inline-flex rounded-(--radius-control) border border-ink-600 bg-ink-950/60 p-0.5"
     >
       {options.map((o) => (
         <button
@@ -85,7 +85,7 @@ function MultiControl({
             }
             aria-pressed={active}
             className={clsx(
-              'rounded-[--radius-control] border px-2.5 py-1 text-xs transition-colors duration-150',
+              'rounded-(--radius-control) border px-2.5 py-1 text-xs transition-colors duration-150',
               active
                 ? 'border-brand-500/60 bg-brand-500/15 text-brand-400'
                 : 'border-ink-600 bg-ink-950/40 text-ink-300 hover:border-ink-500 hover:text-ink-100',
@@ -116,7 +116,7 @@ export function FactRow({
   return (
     <div
       className={clsx(
-        'flex flex-col gap-2 rounded-[--radius-control] border px-3 py-2 transition-colors sm:flex-row sm:items-center sm:justify-between',
+        'flex flex-col gap-2 rounded-(--radius-control) border px-3 py-2 transition-colors sm:flex-row sm:items-center sm:justify-between',
         unknown ? 'border-ink-800 bg-ink-950/30' : 'border-ink-700 bg-ink-850',
       )}
     >
@@ -200,7 +200,7 @@ export function ContextForm({
               <span className="flex items-center gap-2.5">
                 <span
                   aria-hidden="true"
-                  className="flex h-6 w-6 shrink-0 items-center justify-center rounded-[--radius-control] border border-brand-500/40 bg-brand-500/10 font-mono text-micro text-brand-400"
+                  className="flex h-6 w-6 shrink-0 items-center justify-center rounded-(--radius-control) border border-brand-500/40 bg-brand-500/10 font-mono text-micro text-brand-400"
                 >
                   {index + 1}
                 </span>

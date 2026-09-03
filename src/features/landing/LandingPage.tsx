@@ -100,7 +100,7 @@ export default function LandingPage() {
   return (
     <div className="space-y-8">
       {/* ------------------------------------------------------------ Hero */}
-      <section className="hero-stage panel-accent space-y-7 rounded-[--radius-panel] border p-6 sm:p-10">
+      <section className="hero-stage panel-accent space-y-7 rounded-(--radius-panel) border p-6 sm:p-10">
         <div className="space-y-5">
           <p
             className="stagger-item flex flex-wrap items-center gap-2.5 font-mono text-micro font-medium tracking-[0.18em] text-brand-400 uppercase"
@@ -229,7 +229,7 @@ export default function LandingPage() {
         {/* The headline numbers, read live from the library — a bold band,
             not four small cards. */}
         <dl
-          className="stagger-item grid grid-cols-2 gap-px overflow-hidden rounded-[--radius-control] border border-ink-700 bg-ink-700 lg:grid-cols-4"
+          className="stagger-item grid grid-cols-2 gap-px overflow-hidden rounded-(--radius-control) border border-ink-700 bg-ink-700 lg:grid-cols-4"
           style={{ '--d': 6 } as CSSProperties}
         >
           <div className="bg-ink-900 p-4">
@@ -290,7 +290,7 @@ export default function LandingPage() {
         <ol className="flex flex-wrap items-center gap-y-2">
           {PIPELINE.map((stage, index) => (
             <li key={stage.label} className="flex items-center gap-2">
-              <span className="flex items-center gap-2 rounded-[--radius-control] border border-ink-700 bg-ink-850 px-2.5 py-1.5">
+              <span className="flex items-center gap-2 rounded-(--radius-control) border border-ink-700 bg-ink-850 px-2.5 py-1.5">
                 <span aria-hidden="true" className="font-mono text-micro tabular-nums text-brand-400">
                   {String(index + 1).padStart(2, '0')}
                 </span>
@@ -317,7 +317,7 @@ export default function LandingPage() {
             className="stagger-item scan-edge card-lift space-y-3 p-5"
             style={{ '--d': 0 } as CSSProperties}
           >
-            <span className="icon-tile flex h-9 w-9 items-center justify-center rounded-[--radius-control] border border-ink-700 bg-ink-900 text-brand-400">
+            <span className="icon-tile flex h-9 w-9 items-center justify-center rounded-(--radius-control) border border-ink-700 bg-ink-900 text-brand-400">
               <IconTarget size={18} aria-hidden="true" />
             </span>
             <h3 className="text-sm font-semibold tracking-wide text-ink-100">Checklists built from context</h3>
@@ -342,7 +342,7 @@ export default function LandingPage() {
             className="stagger-item scan-edge card-lift space-y-3 p-5"
             style={{ '--d': 1 } as CSSProperties}
           >
-            <span className="icon-tile flex h-9 w-9 items-center justify-center rounded-[--radius-control] border border-ink-700 bg-ink-900 text-brand-400">
+            <span className="icon-tile flex h-9 w-9 items-center justify-center rounded-(--radius-control) border border-ink-700 bg-ink-900 text-brand-400">
               <IconLayers size={18} aria-hidden="true" />
             </span>
             <h3 className="text-sm font-semibold tracking-wide text-ink-100">One objective per check</h3>
@@ -367,7 +367,7 @@ export default function LandingPage() {
             className="stagger-item scan-edge card-lift space-y-3 p-5"
             style={{ '--d': 2 } as CSSProperties}
           >
-            <span className="icon-tile flex h-9 w-9 items-center justify-center rounded-[--radius-control] border border-ink-700 bg-ink-900 text-brand-400">
+            <span className="icon-tile flex h-9 w-9 items-center justify-center rounded-(--radius-control) border border-ink-700 bg-ink-900 text-brand-400">
               <IconDownload size={18} aria-hidden="true" />
             </span>
             <h3 className="text-sm font-semibold tracking-wide text-ink-100">Assessment-grade tracking and reporting</h3>
@@ -401,12 +401,12 @@ export default function LandingPage() {
           {STEPS.map((step, i) => (
             <li
               key={step.title}
-              className="stagger-item panel scan-edge card-lift flex gap-4 rounded-[--radius-panel] p-5"
+              className="stagger-item panel scan-edge card-lift flex gap-4 rounded-(--radius-panel) p-5"
               style={{ '--d': i } as CSSProperties}
             >
               <span
                 aria-hidden="true"
-                className="grid h-8 w-8 shrink-0 place-items-center rounded-[--radius-control] border border-brand-500/40 bg-brand-500/10 font-mono text-sm font-semibold text-brand-400"
+                className="grid h-8 w-8 shrink-0 place-items-center rounded-(--radius-control) border border-brand-500/40 bg-brand-500/10 font-mono text-sm font-semibold text-brand-400"
               >
                 {i + 1}
               </span>
@@ -430,7 +430,7 @@ export default function LandingPage() {
           {METHODOLOGY.map((method) => (
             <span
               key={method}
-              className="inline-flex items-center gap-1.5 rounded-[--radius-control] border border-ink-700 bg-ink-900 px-2.5 py-1 font-mono text-micro text-ink-300 transition-colors duration-150 hover:border-ink-600"
+              className="inline-flex items-center gap-1.5 rounded-(--radius-control) border border-ink-700 bg-ink-900 px-2.5 py-1 font-mono text-micro text-ink-300 transition-colors duration-150 hover:border-ink-600"
             >
               <IconShield size={11} aria-hidden="true" className="text-brand-500/80" />
               {method}
@@ -481,7 +481,7 @@ export default function LandingPage() {
               href="https://www.linkedin.com/in/amitpal-wb/"
               target="_blank"
               rel="noreferrer noopener"
-              className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[--radius-control] border border-ink-600 bg-ink-800 px-3 text-sm text-ink-100 transition-colors duration-150 hover:bg-ink-700 active:translate-y-px"
+              className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-(--radius-control) border border-ink-600 bg-ink-800 px-3 text-sm text-ink-100 transition-colors duration-150 hover:bg-ink-700 active:translate-y-px"
             >
               <IconLinkedIn size={15} aria-hidden="true" />
               Connect on LinkedIn
@@ -491,7 +491,7 @@ export default function LandingPage() {
               href="https://github.com/AmitPal-CyberBuddy/VAPT-Checklist/issues"
               target="_blank"
               rel="noreferrer noopener"
-              className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[--radius-control] border border-ink-600 bg-ink-800 px-3 text-sm text-ink-100 transition-colors duration-150 hover:bg-ink-700 active:translate-y-px"
+              className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-(--radius-control) border border-ink-600 bg-ink-800 px-3 text-sm text-ink-100 transition-colors duration-150 hover:bg-ink-700 active:translate-y-px"
             >
               <IconGithub size={15} aria-hidden="true" />
               Suggest an upgrade or report a problem

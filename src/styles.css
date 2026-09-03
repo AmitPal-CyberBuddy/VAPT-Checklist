@@ -33,22 +33,34 @@
  * lighting treatment to be themed in one place.
  */
 @theme {
-  --color-ink-950: #060a12;
-  --color-ink-900: #0a101c;
-  --color-ink-850: #101827;
-  --color-ink-800: #151f31;
-  --color-ink-700: #212d44;
-  --color-ink-600: #374357;
-  --color-ink-500: #72819b;
+  /* Obsidian foundation — deeper and cooler than the first dark theme, so
+     luminous accents and glass surfaces have real range to sit against. */
+  --color-ink-950: #05070f;
+  --color-ink-900: #0a101e;
+  --color-ink-850: #101a2e;
+  --color-ink-800: #16223a;
+  --color-ink-750: #1b2a44;
+  --color-ink-700: #22304c;
+  --color-ink-600: #384864;
+  --color-ink-500: #74849f;
   --color-ink-400: #8d9cb2;
   --color-ink-300: #acb8ca;
   --color-ink-200: #ccd6e2;
   --color-ink-100: #e3e9f1;
   --color-ink-50: #f4f7fb;
 
+  /* Luminous cyan — the security accent, now with a lighter gradient step. */
+  --color-brand-300: #7dd3fc;
   --color-brand-400: #45c0f9;
   --color-brand-500: #0ea5e9;
   --color-brand-600: #0284c7;
+
+  /* Violet — the second voice of the duotone. Used for gradients and
+     ambient light only; meaning still rides on brand/vuln/safe/warn. */
+  --color-accent-300: #c4b5fd;
+  --color-accent-400: #a78bfa;
+  --color-accent-500: #8b5cf6;
+  --color-accent-600: #7c3aed;
 
   --color-vuln-400: #fb7185;
   --color-vuln-500: #f43f5e;
@@ -67,8 +79,9 @@
   --color-warn-400: #fbbf24;
   --color-warn-500: #f59e0b;
 
-  --radius-control: 0.5rem;
-  --radius-panel: 0.75rem;
+  /* Softer, more confident corners. */
+  --radius-control: 0.625rem;
+  --radius-panel: 1rem;
 
   --font-sans: 'Inter Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
@@ -76,13 +89,14 @@
   --text-micro: 0.6875rem;
   --text-micro--line-height: 1rem;
 
+  /* Motion: one scale, no overshoot anywhere. Entrances settle decisively
+     (expo-out); state changes glide (smooth); nothing bounces. */
   --motion-fast: 120ms;
-  --motion-base: 160ms;
+  --motion-base: 170ms;
   --motion-slow: 240ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-standard: cubic-bezier(0.22, 1, 0.36, 1);
-  /* Overshoot curve for entrance pops — lets cards and CTAs settle with a
-     gentle bounce instead of stopping dead. Disabled by reduced-motion. */
-  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 /* ------------------------------------------------------------------
@@ -92,32 +106,52 @@
 :root,
 :root[data-theme='dark'] {
   color-scheme: dark;
-  --shadow-panel: inset 0 1px 0 rgb(141 156 178 / 0.05);
-  --shadow-inset: inset 0 1px 0 rgb(141 156 178 / 0.035);
-  --shadow-lift: 0 12px 30px -14px rgb(3 6 12 / 0.85), inset 0 1px 0 rgb(141 156 178 / 0.06);
-  --track-shadow: rgb(3 6 12 / 0.45);
+  /* Layered depth: a top light edge, a contact shadow and a wide lift. */
+  --shadow-panel:
+    inset 0 1px 0 rgb(255 255 255 / 0.045),
+    0 1px 2px rgb(2 4 10 / 0.4),
+    0 12px 32px -20px rgb(2 4 10 / 0.65);
+  --shadow-inset: inset 0 1px 2px rgb(2 4 10 / 0.45), inset 0 1px 0 rgb(255 255 255 / 0.025);
+  --shadow-lift:
+    inset 0 1px 0 rgb(255 255 255 / 0.06),
+    0 4px 12px -4px rgb(2 4 10 / 0.55),
+    0 24px 48px -24px rgb(2 4 10 / 0.75);
+  --track-shadow: rgb(2 4 10 / 0.5);
+  /* Luminous accents for interactive states. */
+  --glow-brand: 0 0 0 1px rgb(69 192 249 / 0.22), 0 4px 28px -6px rgb(14 165 233 / 0.5);
+  --glow-safe: 0 0 0 1px rgb(52 211 153 / 0.2), 0 4px 24px -6px rgb(16 185 129 / 0.4);
+  --glow-vuln: 0 0 0 1px rgb(244 63 94 / 0.22), 0 4px 28px -6px rgb(244 63 94 / 0.5);
+  /* Glass edge for translucent surfaces. */
+  --glass-border: rgb(148 163 184 / 0.14);
+  --glass-highlight: rgb(255 255 255 / 0.045);
 }
 
 [data-theme='light'] {
   color-scheme: light;
   /* Ink scale inverted for light surfaces (950 = canvas, 50 = deepest text). */
-  --color-ink-950: #f7f6f3;
+  --color-ink-950: #f6f5f2;
   --color-ink-900: #ffffff;
-  --color-ink-850: #f2f0eb;
-  --color-ink-800: #eae7e1;
-  --color-ink-700: #ddd9d1;
-  --color-ink-600: #c4bfb6;
-  --color-ink-500: #a29d95;
-  --color-ink-400: #857f77;
-  --color-ink-300: #675f57;
-  --color-ink-200: #49443e;
-  --color-ink-100: #2f2b26;
+  --color-ink-850: #f1efe9;
+  --color-ink-800: #e9e6df;
+  --color-ink-700: #dcd8cf;
+  --color-ink-600: #c3bdb2;
+  --color-ink-500: #a09a90;
+  --color-ink-400: #847e75;
+  --color-ink-300: #675f56;
+  --color-ink-200: #49443d;
+  --color-ink-100: #2f2b25;
   --color-ink-50: #1b1916;
 
   /* Semantic text steps shift darker so small labels clear WCAG AA on paper. */
+  --color-brand-300: #67e8f9;
   --color-brand-400: #0e7490;
   --color-brand-500: #0891b2;
   --color-brand-600: #155e75;
+
+  --color-accent-300: #ddd6fe;
+  --color-accent-400: #6d28d9;
+  --color-accent-500: #7c3aed;
+  --color-accent-600: #6d28d9;
 
   --color-vuln-400: #be123c;
   --color-vuln-500: #e11d48;
@@ -136,10 +170,16 @@
   --color-warn-400: #b45309;
   --color-warn-500: #d97706;
 
-  --shadow-panel: 0 1px 2px rgb(28 26 24 / 0.04), 0 4px 14px -6px rgb(28 26 24 / 0.07);
-  --shadow-inset: inset 0 1px 3px rgb(28 26 24 / 0.05);
-  --shadow-lift: 0 14px 34px -14px rgb(28 26 24 / 0.3), 0 2px 6px -2px rgb(28 26 24 / 0.08);
+  --shadow-panel: 0 1px 2px rgb(28 26 24 / 0.05), 0 6px 20px -8px rgb(28 26 24 / 0.1);
+  --shadow-inset: inset 0 1px 3px rgb(28 26 24 / 0.06);
+  --shadow-lift: 0 2px 6px -2px rgb(28 26 24 / 0.1), 0 18px 40px -18px rgb(28 26 24 / 0.28);
   --track-shadow: rgb(28 26 24 / 0.1);
+  /* On paper, "glow" becomes a tinted halo. */
+  --glow-brand: 0 0 0 1px rgb(8 145 178 / 0.2), 0 4px 20px -6px rgb(8 145 178 / 0.35);
+  --glow-safe: 0 0 0 1px rgb(5 150 105 / 0.18), 0 4px 18px -6px rgb(5 150 105 / 0.3);
+  --glow-vuln: 0 0 0 1px rgb(225 29 72 / 0.2), 0 4px 20px -6px rgb(225 29 72 / 0.35);
+  --glass-border: rgb(28 26 24 / 0.12);
+  --glass-highlight: rgb(255 255 255 / 0.7);
 }
 
 @layer base {
@@ -159,15 +199,18 @@
       color 160ms ease;
   }
 
-  /* Dark canvas — a hairline technical grid under a cool brand radial. */
+  /* Dark canvas — an aurora of cyan and violet light over a fine technical
+     grid. Everything is fixed and whisper-quiet: atmosphere, not decoration. */
   :root:not([data-theme]) body,
   [data-theme='dark'] body {
     background-image:
-      radial-gradient(900px 420px at 18% -8%, rgb(14 165 233 / 0.055), transparent 55%),
-      radial-gradient(760px 380px at 88% 112%, rgb(244 63 94 / 0.028), transparent 55%),
-      linear-gradient(to right, rgb(141 156 178 / 0.028) 1px, transparent 1px),
-      linear-gradient(to bottom, rgb(141 156 178 / 0.028) 1px, transparent 1px);
+      radial-gradient(1100px 520px at 14% -12%, rgb(14 165 233 / 0.085), transparent 58%),
+      radial-gradient(900px 480px at 92% 4%, rgb(139 92 246 / 0.06), transparent 55%),
+      radial-gradient(800px 400px at 85% 112%, rgb(14 165 233 / 0.045), transparent 55%),
+      linear-gradient(to right, rgb(141 156 178 / 0.024) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(141 156 178 / 0.024) 1px, transparent 1px);
     background-size:
+      100% 100%,
       100% 100%,
       100% 100%,
       28px 28px,
@@ -175,12 +218,14 @@
     background-attachment: fixed;
   }
 
-  /* Light canvas — warm paper with faint cool/warm radials, no grid. */
+  /* Light canvas — warm paper with the same two lights, retuned. */
   [data-theme='light'] body {
     background-image:
-      radial-gradient(640px 360px at 16% -6%, rgb(8 145 178 / 0.05), transparent 52%),
-      radial-gradient(560px 300px at 86% 108%, rgb(217 119 6 / 0.045), transparent 52%);
+      radial-gradient(900px 460px at 14% -8%, rgb(8 145 178 / 0.06), transparent 55%),
+      radial-gradient(760px 420px at 90% 6%, rgb(124 58 237 / 0.045), transparent 55%),
+      radial-gradient(680px 360px at 86% 110%, rgb(217 119 6 / 0.04), transparent 55%);
     background-size:
+      100% 100%,
       100% 100%,
       100% 100%;
     background-attachment: fixed;
@@ -254,38 +299,53 @@
 }
 
 @layer utilities {
-  /* Panels carry a theme-aware depth: a 1px top keyline on dark surfaces,
-     a soft layered shadow on light ones. */
+  /* Surfaces are glass over obsidian: a faint light gradient, a cool hairline
+     border, and a top light edge. Light theme trades the glass for warm paper
+     and soft shadow. */
   .panel {
     background-color: var(--color-ink-900);
-    border: 1px solid var(--color-ink-700);
+    background-image: linear-gradient(
+      180deg,
+      var(--glass-highlight),
+      rgb(255 255 255 / 0.012) 42%,
+      transparent
+    );
+    border: 1px solid var(--glass-border);
     border-radius: var(--radius-panel);
     box-shadow: var(--shadow-panel);
     transition:
       box-shadow var(--motion-fast) var(--ease-standard),
       border-color var(--motion-fast) var(--ease-standard);
   }
+  [data-theme='light'] .panel {
+    background-image: none;
+  }
 
   .panel-inset {
     background-color: var(--color-ink-850);
-    border: 1px solid var(--color-ink-700);
+    border: 1px solid var(--glass-border);
     border-radius: var(--radius-control);
     box-shadow: var(--shadow-inset);
   }
 
-  /* Interactive cards and rows lift slightly on hover (theme-aware shadow). */
+  /* Interactive cards and rows lift slightly on hover — a shadow move, never
+     a scale. */
   .card-lift {
     transition:
-      box-shadow var(--motion-fast) var(--ease-standard),
-      border-color var(--motion-fast) var(--ease-standard),
-      transform var(--motion-fast) var(--ease-standard);
+      box-shadow var(--motion-base) var(--ease-out),
+      border-color var(--motion-base) var(--ease-out),
+      transform var(--motion-base) var(--ease-out);
   }
   .card-lift:hover {
     box-shadow: var(--shadow-lift);
-    transform: translateY(-1px) scale(1.004);
+    border-color: rgb(148 163 184 / 0.24);
+    transform: translateY(-1px);
   }
   .card-lift:active {
-    transform: translateY(0) scale(0.994);
+    transform: translateY(0);
+  }
+  [data-theme='light'] .card-lift:hover {
+    border-color: rgb(28 26 24 / 0.2);
   }
 
   /* A section that should read as the focus of the screen: soft brand tint
@@ -326,7 +386,8 @@
     inset: -120px -80px;
     background:
       radial-gradient(800px 480px at 24% -12%, rgb(14 165 233 / 0.25), transparent 58%),
-      radial-gradient(600px 360px at 78% 108%, rgb(244 63 94 / 0.06), transparent 55%),
+      radial-gradient(680px 400px at 84% -6%, rgb(139 92 246 / 0.14), transparent 55%),
+      radial-gradient(600px 360px at 78% 108%, rgb(244 63 94 / 0.05), transparent 55%),
       radial-gradient(400px 280px at 50% 50%, rgb(69 192 249 / 0.04), transparent 70%);
     pointer-events: none;
   }
@@ -338,19 +399,19 @@
   .brand-edge {
     background-image: linear-gradient(
       90deg,
-      rgb(69 192 249 / 0.75),
-      rgb(14 165 233 / 0.35) 40%,
-      rgb(244 63 94 / 0.08) 70%,
-      transparent 88%
+      rgb(69 192 249 / 0.8),
+      rgb(14 165 233 / 0.4) 34%,
+      rgb(139 92 246 / 0.34) 62%,
+      transparent 92%
     );
   }
   [data-theme='light'] .brand-edge {
     background-image: linear-gradient(
       90deg,
       rgb(8 145 178 / 0.75),
-      rgb(14 116 144 / 0.4) 45%,
-      rgb(225 29 72 / 0.14) 72%,
-      transparent 90%
+      rgb(8 145 178 / 0.38) 38%,
+      rgb(109 40 217 / 0.3) 68%,
+      transparent 92%
     );
   }
 
@@ -389,41 +450,196 @@
     animation: sheen 1.7s ease-in-out infinite;
   }
 
-  /* The primary action. A crisp brand surface with a machined top highlight,
-     readable in both themes; hover brightens, press sinks 1px. */
+  /* ---------------------------------------------------------------------
+   * Buttons — the action system. Every variant is a layered surface:
+   * a gradient body, a machined top highlight, a crisp border and a
+   * coloured halo. Hover feeds the light; press sinks 1px. No bounce,
+   * no squeeze, no icon nudge — weight and glow do the reacting.
+   * ------------------------------------------------------------------- */
   .btn-primary {
     background-color: var(--color-brand-500);
     background-image: linear-gradient(
-      to bottom,
-      rgb(255 255 255 / 0.16),
-      rgb(255 255 255 / 0.02) 50%,
-      rgb(0 0 0 / 0.06)
+      135deg,
+      var(--color-brand-300) 0%,
+      var(--color-brand-500) 42%,
+      var(--color-brand-600) 100%
     );
+    border: 1px solid rgb(125 211 252 / 0.5);
     box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.28),
-      0 1px 2px rgb(3 6 12 / 0.28);
-    text-shadow: 0 1px 0 rgb(3 6 12 / 0.14);
+      inset 0 1px 0 rgb(255 255 255 / 0.4),
+      inset 0 -1px 0 rgb(3 6 12 / 0.18),
+      0 1px 2px rgb(2 4 10 / 0.4),
+      0 6px 24px -8px rgb(14 165 233 / 0.65);
+    text-shadow: 0 1px 1px rgb(3 6 12 / 0.28);
     transition:
-      background-color var(--motion-fast) var(--ease-standard),
-      box-shadow var(--motion-fast) var(--ease-standard),
-      transform var(--motion-fast) var(--ease-standard);
-  }
-  [data-theme='light'] .btn-primary {
-    box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.45),
-      0 1px 2px rgb(28 26 24 / 0.18);
-    text-shadow: none;
+      box-shadow var(--motion-base) var(--ease-out),
+      filter var(--motion-base) var(--ease-out),
+      transform var(--motion-fast) var(--ease-smooth);
   }
   .btn-primary:hover {
-    background-color: var(--color-brand-400);
+    filter: brightness(1.09) saturate(1.05);
     box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.35),
-      0 2px 8px -2px rgb(14 165 233 / 0.45);
-    transform: translateY(-1px) scale(1.01);
+      inset 0 1px 0 rgb(255 255 255 / 0.5),
+      inset 0 -1px 0 rgb(3 6 12 / 0.18),
+      0 2px 4px rgb(2 4 10 / 0.4),
+      0 10px 36px -8px rgb(14 165 233 / 0.8);
   }
   .btn-primary:active {
-    transform: translateY(1px) scale(0.98);
-    box-shadow: inset 0 1px 2px rgb(3 6 12 / 0.24);
+    transform: translateY(1px);
+    filter: brightness(0.96);
+    box-shadow:
+      inset 0 2px 4px rgb(3 6 12 / 0.35),
+      0 1px 2px rgb(2 4 10 / 0.4);
+  }
+  [data-theme='light'] .btn-primary {
+    text-shadow: 0 1px 0 rgb(255 255 255 / 0.25);
+  }
+
+  /* Secondary — smoked glass: translucent light over ink, cool hairline. */
+  .btn-secondary {
+    background-color: var(--color-ink-800);
+    background-image: linear-gradient(
+      180deg,
+      rgb(255 255 255 / 0.09),
+      rgb(255 255 255 / 0.03) 55%,
+      rgb(255 255 255 / 0.01)
+    );
+    border: 1px solid rgb(148 163 184 / 0.22);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.08),
+      0 1px 2px rgb(2 4 10 / 0.35);
+    transition:
+      box-shadow var(--motion-base) var(--ease-out),
+      border-color var(--motion-base) var(--ease-out),
+      background-color var(--motion-base) var(--ease-out),
+      transform var(--motion-fast) var(--ease-smooth);
+  }
+  .btn-secondary:hover {
+    border-color: rgb(148 163 184 / 0.4);
+    background-color: var(--color-ink-750, var(--color-ink-800));
+    background-image: linear-gradient(
+      180deg,
+      rgb(255 255 255 / 0.12),
+      rgb(255 255 255 / 0.04) 55%,
+      rgb(255 255 255 / 0.015)
+    );
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.1),
+      0 2px 10px -2px rgb(2 4 10 / 0.5),
+      0 4px 20px -8px rgb(14 165 233 / 0.3);
+  }
+  .btn-secondary:active {
+    transform: translateY(1px);
+    box-shadow: inset 0 2px 4px rgb(2 4 10 / 0.4);
+  }
+  [data-theme='light'] .btn-secondary {
+    background-image: linear-gradient(180deg, rgb(255 255 255 / 0.9), rgb(255 255 255 / 0.55));
+    border-color: rgb(28 26 24 / 0.16);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.8),
+      0 1px 2px rgb(28 26 24 / 0.12);
+  }
+  [data-theme='light'] .btn-secondary:hover {
+    border-color: rgb(28 26 24 / 0.3);
+    background-image: linear-gradient(180deg, rgb(255 255 255 / 1), rgb(255 255 255 / 0.7));
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.9),
+      0 4px 16px -6px rgb(28 26 24 / 0.25);
+  }
+
+  /* Subtle — the quiet sibling: recessed glass, no halo. */
+  .btn-subtle {
+    background-color: var(--color-ink-850);
+    background-image: linear-gradient(180deg, rgb(255 255 255 / 0.05), transparent);
+    border: 1px solid rgb(148 163 184 / 0.16);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
+    transition:
+      box-shadow var(--motion-base) var(--ease-out),
+      border-color var(--motion-base) var(--ease-out),
+      background-color var(--motion-base) var(--ease-out),
+      transform var(--motion-fast) var(--ease-smooth);
+  }
+  .btn-subtle:hover {
+    background-color: var(--color-ink-800);
+    border-color: rgb(148 163 184 / 0.32);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.06),
+      0 2px 10px -4px rgb(2 4 10 / 0.5);
+  }
+  .btn-subtle:active {
+    transform: translateY(1px);
+    box-shadow: inset 0 2px 4px rgb(2 4 10 / 0.35);
+  }
+  [data-theme='light'] .btn-subtle {
+    background-image: none;
+    border-color: rgb(28 26 24 / 0.12);
+  }
+
+  /* Ghost — borderless until hover, then smoked glass. */
+  .btn-ghost {
+    background-color: transparent;
+    border: 1px solid transparent;
+    transition:
+      background-color var(--motion-base) var(--ease-out),
+      border-color var(--motion-base) var(--ease-out),
+      box-shadow var(--motion-base) var(--ease-out),
+      transform var(--motion-fast) var(--ease-smooth);
+  }
+  .btn-ghost:hover {
+    background-color: var(--color-ink-850);
+    background-image: linear-gradient(180deg, rgb(255 255 255 / 0.05), transparent);
+    border-color: rgb(148 163 184 / 0.18);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05);
+  }
+  .btn-ghost:active {
+    transform: translateY(1px);
+  }
+
+  /* Danger — a red gradient with its own halo; the only red surface. */
+  .btn-danger {
+    background-color: var(--color-vuln-500);
+    background-image: linear-gradient(
+      135deg,
+      rgb(253 164 175 / 0.9) 0%,
+      var(--color-vuln-500) 45%,
+      rgb(190 18 60 / 0.95) 100%
+    );
+    border: 1px solid rgb(253 164 175 / 0.4);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.32),
+      inset 0 -1px 0 rgb(3 6 12 / 0.2),
+      0 1px 2px rgb(2 4 10 / 0.4),
+      0 6px 24px -8px rgb(244 63 94 / 0.6);
+    text-shadow: 0 1px 1px rgb(3 6 12 / 0.3);
+    transition:
+      box-shadow var(--motion-base) var(--ease-out),
+      filter var(--motion-base) var(--ease-out),
+      transform var(--motion-fast) var(--ease-smooth);
+  }
+  .btn-danger:hover {
+    filter: brightness(1.08);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.4),
+      inset 0 -1px 0 rgb(3 6 12 / 0.2),
+      0 2px 4px rgb(2 4 10 / 0.4),
+      0 10px 32px -8px rgb(244 63 94 / 0.75);
+  }
+  .btn-danger:active {
+    transform: translateY(1px);
+    filter: brightness(0.96);
+    box-shadow: inset 0 2px 4px rgb(3 6 12 / 0.35);
+  }
+
+  /* Disabled buttons lose their halo and hover light entirely. */
+  .btn-primary:disabled,
+  .btn-secondary:disabled,
+  .btn-subtle:disabled,
+  .btn-ghost:disabled,
+  .btn-danger:disabled {
+    pointer-events: none;
+    box-shadow: none;
+    filter: none;
+    transform: none;
   }
 
   /* Active row / selected surface: a controlled brand glow that survives
@@ -485,13 +701,13 @@
     animation: fade-in 140ms var(--ease-standard);
   }
   .animate-rise {
-    animation: rise-in var(--motion-base) var(--ease-spring);
+    animation: rise-in var(--motion-base) var(--ease-out);
   }
   .animate-toast {
-    animation: toast-in var(--motion-base) var(--ease-spring);
+    animation: toast-in var(--motion-base) var(--ease-out);
   }
   .animate-page {
-    animation: page-in var(--motion-fast) var(--ease-standard);
+    animation: page-in 200ms var(--ease-out);
   }
 
   .select-chevron {
@@ -514,28 +730,18 @@
     box-shadow: inset 2px 0 0 var(--color-safe-500);
   }
 
-  /* Staggered entrance for grids and lists: each item rises in sequence with
-     a gentle overshoot settle (spring, not dead-stop). Set --d (0-based index)
-     inline on the element; capped by call sites so long lists never make the
-     tail wait. Disabled under reduced motion. */
+  /* Staggered entrance for grids and lists: each item rises in sequence and
+     settles decisively — no overshoot, ever. Set --d (0-based index) inline
+     on the element; capped by call sites so long lists never make the tail
+     wait. Disabled under reduced motion. */
   .stagger-item {
-    animation: pop-in var(--motion-base) var(--ease-spring) both;
-    animation-delay: calc(var(--d, 0) * 55ms);
+    animation: pop-in var(--motion-base) var(--ease-out) both;
+    animation-delay: calc(var(--d, 0) * 45ms);
   }
   @media (prefers-reduced-motion: reduce) {
     .stagger-item {
       animation: none;
     }
-  }
-
-  /* Primary controls nudge their leading icon right on hover — a directional
-     cue that the action moves you forward. */
-  .btn-nudge {
-    display: inline-flex;
-    transition: transform var(--motion-fast) var(--ease-standard);
-  }
-  .btn-primary:hover .btn-nudge {
-    transform: translateX(2px);
   }
 
   /* Primary navigation items: a scan-line that lights up beneath the active
@@ -646,13 +852,23 @@
      themes. Applied via class in styles.css, never as inline Tailwind, so the
      design-system audit sees nothing to flag. */
   .gradient-heading {
-    background: linear-gradient(135deg, var(--color-ink-50) 50%, rgb(69 192 249 / 0.85) 100%);
+    background: linear-gradient(
+      135deg,
+      var(--color-ink-50) 42%,
+      var(--color-brand-300) 68%,
+      var(--color-accent-400) 100%
+    );
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
   [data-theme='light'] .gradient-heading {
-    background: linear-gradient(135deg, var(--color-ink-50) 45%, rgb(14 165 233 / 0.8) 100%);
+    background: linear-gradient(
+      135deg,
+      var(--color-ink-50) 38%,
+      var(--color-brand-500) 66%,
+      var(--color-accent-400) 100%
+    );
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -705,6 +921,7 @@
     inset: 0;
     background:
       radial-gradient(560px 260px at 12% -30%, rgb(14 165 233 / 0.16), transparent 60%),
+      radial-gradient(480px 260px at 96% -18%, rgb(139 92 246 / 0.1), transparent 58%),
       radial-gradient(420px 220px at 96% 120%, rgb(244 63 94 / 0.05), transparent 55%);
     pointer-events: none;
   }
@@ -809,19 +1026,31 @@
     font-variant-numeric: tabular-nums;
   }
 
-  /* The brand mark in the header — a machined brand tile with a soft
-     top-light and restrained halo. Pure identity, no neon. */
+  /* The brand mark in the header — a machined duotone tile (cyan into
+     violet) with a top-light and restrained halo. Pure identity, no neon. */
   .brand-mark {
-    background-image: linear-gradient(140deg, rgb(14 165 233 / 0.3), rgb(14 165 233 / 0.08) 55%, transparent);
+    background-image: linear-gradient(
+      140deg,
+      rgb(14 165 233 / 0.38),
+      rgb(14 165 233 / 0.1) 44%,
+      rgb(139 92 246 / 0.24) 100%
+    );
     box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.1),
-      0 0 16px -8px rgb(14 165 233 / 0.55);
+      inset 0 1px 0 rgb(255 255 255 / 0.14),
+      0 0 18px -6px rgb(14 165 233 / 0.55),
+      0 0 12px -4px rgb(139 92 246 / 0.35);
   }
   [data-theme='light'] .brand-mark {
-    background-image: linear-gradient(140deg, rgb(8 145 178 / 0.22), rgb(8 145 178 / 0.05) 60%, transparent);
+    background-image: linear-gradient(
+      140deg,
+      rgb(8 145 178 / 0.26),
+      rgb(8 145 178 / 0.06) 48%,
+      rgb(109 40 217 / 0.18) 100%
+    );
     box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.6),
-      0 0 14px -8px rgb(8 145 178 / 0.5);
+      inset 0 1px 0 rgb(255 255 255 / 0.65),
+      0 0 16px -6px rgb(8 145 178 / 0.5),
+      0 0 10px -4px rgb(109 40 217 / 0.3);
   }
 
   /* Section keyline — the hairline that separates a section heading
@@ -851,11 +1080,11 @@
     border-bottom: 0;
   }
 
-  /* Status flash: a one-shot pop used to confirm a recorded change in
+  /* Status flash: a one-shot light-up used to confirm a recorded change in
      place (status badge, result badge, metric). Runs on remount so the
-     element can replay it on every change. */
+     element can replay it on every change. A flash, not a pulse. */
   .pop-confirm {
-    animation: pop-confirm var(--motion-base) var(--ease-spring);
+    animation: pop-confirm var(--motion-slow) var(--ease-out);
   }
 
   /* Rows that open a detail (workspace list, findings, high-value):
@@ -932,7 +1161,7 @@
       var(--shadow-lift),
       0 0 0 1px rgb(3 6 12 / 0.22);
     overflow: hidden;
-    animation: rise-in var(--motion-base) var(--ease-spring);
+    animation: rise-in var(--motion-base) var(--ease-out);
   }
   /* A brand keyline across the top — the same identity edge as the shell. */
   .palette-panel::before {
@@ -1183,25 +1412,22 @@
 }
 
 @keyframes pop-confirm {
-  0% {
-    transform: scale(1);
+  from {
+    opacity: 0.2;
   }
-  45% {
-    transform: scale(1.12);
-  }
-  100% {
-    transform: scale(1);
+  to {
+    opacity: 1;
   }
 }
 
 @keyframes expand-in {
   from {
     opacity: 0;
-    transform: translateY(-4px) scaleY(0.98);
+    transform: translateY(-4px);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scaleY(1);
+    transform: translateY(0);
   }
 }
 
@@ -1214,34 +1440,27 @@
   }
 }
 
+/* Entrance: a decisive rise that settles exactly on target — expo-out, no
+   overshoot, no scale tricks. */
 @keyframes rise-in {
   from {
     opacity: 0;
-    transform: translateY(8px) scale(0.985);
-  }
-  65% {
-    opacity: 1;
-    transform: translateY(-1px) scale(1.004);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
   }
 }
 
-/* The stagger/pop entrance — a quick rise with a spring overshoot. */
 @keyframes pop-in {
   from {
     opacity: 0;
-    transform: translateY(8px) scale(0.985);
-  }
-  62% {
-    opacity: 1;
-    transform: translateY(-2px) scale(1.006);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
   }
 }
 

@@ -31,7 +31,7 @@ function ImportPreview({ inspection }: { inspection: BackupInspection }) {
         <InlineAlert tone="error" icon={<IconAlert size={16} aria-hidden="true" />}>
           Nothing was imported and your existing engagements are untouched.
         </InlineAlert>
-        <ul className="max-h-56 space-y-1 overflow-y-auto rounded-[--radius-control] border border-ink-700 p-3 text-xs text-ink-300">
+        <ul className="max-h-56 space-y-1 overflow-y-auto rounded-(--radius-control) border border-ink-700 p-3 text-xs text-ink-300">
           {inspection.issues.map((issue, index) => (
             <li key={index} className="flex gap-2">
               <span aria-hidden="true" className="text-vuln-400">
@@ -51,7 +51,7 @@ function ImportPreview({ inspection }: { inspection: BackupInspection }) {
         <Stat label="Engagements" value={inspection.engagements} tone="brand" />
         <Stat label="Test states" value={inspection.testStates} />
       </div>
-      <ul className="space-y-1 rounded-[--radius-control] border border-ink-700 p-3 text-xs text-ink-300">
+      <ul className="space-y-1 rounded-(--radius-control) border border-ink-700 p-3 text-xs text-ink-300">
         {inspection.names.map((name) => (
           <li key={name} className="truncate break-words">
             {name}
@@ -59,7 +59,7 @@ function ImportPreview({ inspection }: { inspection: BackupInspection }) {
         ))}
       </ul>
       {inspection.warnings.length > 0 && (
-        <ul className="space-y-1 rounded-[--radius-control] border border-warn-500/30 bg-warn-500/5 p-3 text-xs text-warn-300">
+        <ul className="space-y-1 rounded-(--radius-control) border border-warn-500/30 bg-warn-500/5 p-3 text-xs text-warn-300">
           {inspection.warnings.map((warning, index) => (
             <li key={index}>{warning}</li>
           ))}

@@ -90,7 +90,7 @@ export class ErrorBoundary extends Component<Props, State> {
             <summary className="cursor-pointer text-xs text-ink-400 hover:text-ink-200">
               Technical detail
             </summary>
-            <pre className="mt-2 max-h-56 overflow-auto rounded-[--radius-control] border border-ink-700 bg-ink-950 p-3 text-micro whitespace-pre-wrap text-ink-300">
+            <pre className="mt-2 max-h-56 overflow-auto rounded-(--radius-control) border border-ink-700 bg-ink-950 p-3 text-micro whitespace-pre-wrap text-ink-300">
               {error.message}
               {componentStack}
             </pre>

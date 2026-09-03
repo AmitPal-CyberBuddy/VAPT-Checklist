@@ -449,7 +449,7 @@ export function TestDetailPanel({
 
           <div
             className={clsx(
-              'flex items-center gap-2 rounded-[--radius-control] transition-shadow',
+              'flex items-center gap-2 rounded-(--radius-control) transition-shadow',
               awaitingChoice && 'ring-2 ring-warn-400 ring-offset-2 ring-offset-ink-900',
             )}
           >

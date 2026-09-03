@@ -182,7 +182,7 @@ export default function LibraryPage() {
       <div className="grid gap-4 lg:grid-cols-[230px_minmax(0,1fr)]">
         <aside aria-label="Library navigation" className="min-w-0">
           {/* Desktop tree */}
-          <nav className="sticky top-16 hidden max-h-[calc(100vh-6rem)] flex-col gap-0.5 overflow-y-auto rounded-[--radius-panel] border border-ink-700 bg-ink-900 p-2.5 shadow-[--shadow-panel] lg:top-3 lg:flex">
+          <nav className="sticky top-16 hidden max-h-[calc(100vh-6rem)] flex-col gap-0.5 overflow-y-auto rounded-(--radius-panel) border border-ink-700 bg-ink-900 p-2.5 shadow-(--shadow-panel) lg:top-3 lg:flex">
             <p className="section-kicker mb-1.5 px-2">Taxonomy</p>
             <button
               type="button"
@@ -192,7 +192,7 @@ export default function LibraryPage() {
                 setSubcategory('all');
               }}
               className={clsx(
-                'flex items-center gap-2 rounded-[--radius-control] border px-2.5 py-1.5 text-left text-xs transition-colors duration-150',
+                'flex items-center gap-2 rounded-(--radius-control) border px-2.5 py-1.5 text-left text-xs transition-colors duration-150',
                 category === 'all'
                   ? 'border-brand-500/60 bg-brand-500/15 text-brand-400'
                   : 'border-transparent text-ink-300 hover:bg-ink-850 hover:text-ink-100',
@@ -215,7 +215,7 @@ export default function LibraryPage() {
                     .filter((s) => s.count > 0) ?? []
                 : [];
               return (
-                <div key={c.id} className="rounded-[--radius-control]">
+                <div key={c.id} className="rounded-(--radius-control)">
                   <button
                     type="button"
                     aria-pressed={selected}
@@ -224,7 +224,7 @@ export default function LibraryPage() {
                       setSubcategory('all');
                     }}
                     className={clsx(
-                      'flex w-full items-center gap-2 rounded-[--radius-control] border px-2.5 py-1.5 text-left text-xs transition-colors duration-150',
+                      'flex w-full items-center gap-2 rounded-(--radius-control) border px-2.5 py-1.5 text-left text-xs transition-colors duration-150',
                       selected
                         ? 'border-brand-500/60 bg-brand-500/15 text-brand-400'
                         : 'border-transparent text-ink-300 hover:bg-ink-850 hover:text-ink-100',
@@ -285,7 +285,7 @@ export default function LibraryPage() {
                 setSubcategory('all');
               }}
               className={clsx(
-                'inline-flex shrink-0 items-center gap-1.5 rounded-[--radius-control] border px-2.5 py-1 text-xs transition-colors duration-150',
+                'inline-flex shrink-0 items-center gap-1.5 rounded-(--radius-control) border px-2.5 py-1 text-xs transition-colors duration-150',
                 category === 'all'
                   ? 'border-brand-500/60 bg-brand-500/15 text-brand-400'
                   : 'border-ink-700 bg-ink-900 text-ink-300',
@@ -304,7 +304,7 @@ export default function LibraryPage() {
                   setSubcategory('all');
                 }}
                 className={clsx(
-                  'inline-flex shrink-0 items-center gap-1.5 rounded-[--radius-control] border px-2.5 py-1 text-xs transition-colors duration-150',
+                  'inline-flex shrink-0 items-center gap-1.5 rounded-(--radius-control) border px-2.5 py-1 text-xs transition-colors duration-150',
                   category === c.id
                     ? 'border-brand-500/60 bg-brand-500/15 text-brand-400'
                     : 'border-ink-700 bg-ink-900 text-ink-300',
@@ -388,7 +388,7 @@ export default function LibraryPage() {
       </Card>
 
       {aliasHits.length > 0 && (
-        <div className="rounded-[--radius-control] border border-brand-500/25 bg-brand-500/5 px-3 py-2 text-xs text-ink-300">
+        <div className="rounded-(--radius-control) border border-brand-500/25 bg-brand-500/5 px-3 py-2 text-xs text-ink-300">
           Matched on synonyms:{' '}
           {aliasHits.map((hit, index) => (
             <span key={hit.id}>
@@ -429,10 +429,10 @@ export default function LibraryPage() {
             key={category.id}
             as="section"
             aria-labelledby={`library-cat-${category.id}`}
-            className="scroll-reveal overflow-hidden rounded-[--radius-panel] p-0"
+            className="scroll-reveal overflow-hidden rounded-(--radius-panel) p-0"
           >
             <header className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-ink-800 bg-ink-850/60 px-4 py-2.5">
-              <span className="flex h-7 w-7 items-center justify-center rounded-[--radius-control] border border-ink-700 bg-ink-900 text-brand-400">
+              <span className="flex h-7 w-7 items-center justify-center rounded-(--radius-control) border border-ink-700 bg-ink-900 text-brand-400">
                 {CATEGORY_ICON[category.id]}
               </span>
               <h3 id={`library-cat-${category.id}`} className="text-sm font-semibold text-ink-100">

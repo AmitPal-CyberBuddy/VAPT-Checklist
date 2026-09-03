@@ -222,7 +222,7 @@ export default function DashboardPage() {
             </dl>
           </div>
 
-          <div className="rounded-[--radius-panel] border border-ink-700 bg-ink-950/50 p-4 shadow-[inset_0_1px_0_rgb(141_156_178/0.05)]">
+          <div className="rounded-(--radius-panel) border border-ink-700 bg-ink-950/50 p-4 shadow-[inset_0_1px_0_rgb(141_156_178/0.05)]">
             <div className="flex flex-col gap-4 sm:flex-row-reverse sm:items-center sm:gap-5">
               {/* The ring: an absolute-progress instrument, animated by the
                   same eased count-up that drives the percentage. */}
@@ -449,7 +449,7 @@ export default function DashboardPage() {
                 <Link
                   to={`/e/${engagementId}/workspace?test=${item.definition.id}`}
                   className={clsx(
-                    'group flex h-full items-start gap-3 rounded-[--radius-control] border border-ink-700 bg-ink-850 px-3 py-2 transition-colors duration-150 hover:border-brand-500/50 hover:bg-ink-800',
+                    'group flex h-full items-start gap-3 rounded-(--radius-control) border border-ink-700 bg-ink-850 px-3 py-2 transition-colors duration-150 hover:border-brand-500/50 hover:bg-ink-800',
                     uncertain ? 'rail-warn' : 'rail-brand',
                   )}
                 >

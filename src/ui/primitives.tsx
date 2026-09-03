@@ -30,13 +30,14 @@ type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'subtle';
 type ButtonSize = 'sm' | 'md' | 'lg';
 
 const BUTTON_VARIANTS: Record<ButtonVariant, string> = {
-  // The primary surface is defined in styles.css (.btn-primary) so its
-  // gradient highlight and pressed state stay theme-aware in one place.
-  primary: 'btn-primary text-ink-950 border border-brand-600/50 font-semibold',
-  secondary: 'bg-ink-800 text-ink-100 hover:bg-ink-700 border border-ink-600',
-  subtle: 'bg-ink-850 text-ink-200 hover:bg-ink-800 border border-ink-700',
-  ghost: 'bg-transparent text-ink-300 hover:bg-ink-800 hover:text-ink-100 border border-transparent',
-  danger: 'bg-vuln-500 text-white hover:bg-vuln-400 border border-vuln-400/30 font-semibold',
+  // Button surfaces live in styles.css (.btn-*) so gradients, borders, halos
+  // and pressed states stay theme-aware in one place. Only the ink (text)
+  // and weight ride along here.
+  primary: 'btn-primary text-ink-950 font-semibold',
+  secondary: 'btn-secondary text-ink-100',
+  subtle: 'btn-subtle text-ink-200',
+  ghost: 'btn-ghost text-ink-300 hover:text-ink-100',
+  danger: 'btn-danger text-white font-semibold',
 };
 
 const BUTTON_SIZES: Record<ButtonSize, string> = {
@@ -53,10 +54,11 @@ export function buttonClass(
   className?: string,
 ) {
   return clsx(
-    'inline-flex items-center justify-center rounded-[--radius-control] whitespace-nowrap',
-    // Hover lifts, press sinks with a squeeze — transform joins colour in the
-    // transition so both read as one motion. Disabled states never move.
-    'transition-[color,background-color,border-color,box-shadow,transform] duration-150 hover:-translate-y-px active:translate-y-px active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:translate-y-0 disabled:active:translate-y-0 disabled:active:scale-100',
+    'inline-flex items-center justify-center rounded-(--radius-control) whitespace-nowrap',
+    // Variant surfaces (.btn-*) own the border, shadow, glow and the 1px
+    // press sink; JSX never squeezes, lifts or nudges a button. Disabled
+    // buttons drop their halo (pointer-events gated in styles.css) and dim.
+    'disabled:cursor-not-allowed disabled:opacity-45',
     BUTTON_VARIANTS[variant],
     BUTTON_SIZES[size],
     full && 'w-full',
@@ -83,13 +85,7 @@ export function Button({
 }: ButtonProps) {
   return (
     <button type={type} className={buttonClass(variant, size, full, className)} {...rest}>
-      {icon && variant === 'primary' ? (
-        <span className="btn-nudge" aria-hidden="true">
-          {icon}
-        </span>
-      ) : (
-        icon
-      )}
+      {icon}
       {children}
     </button>
   );
@@ -118,13 +114,7 @@ export function LinkButton({
 }) {
   return (
     <Link to={to} className={buttonClass(variant, size, full, className)}>
-      {icon && variant === 'primary' ? (
-        <span className="btn-nudge" aria-hidden="true">
-          {icon}
-        </span>
-      ) : (
-        icon
-      )}
+      {icon}
       {children}
     </Link>
   );
@@ -458,11 +448,12 @@ export function FieldGroup({
 }
 
 const CONTROL =
-  'w-full rounded-[--radius-control] border border-ink-600 bg-ink-950/60 px-3 py-2 text-sm ' +
-  'text-ink-100 placeholder:text-ink-500 transition-colors duration-150 hover:border-ink-500 ' +
-  // Form controls use border + ring as their focus indicator (the global
-  // :focus-visible outline is suppressed on them, so it cannot weaken here).
-  'focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/45 ' +
+  'w-full rounded-(--radius-control) border border-ink-600 bg-ink-950/60 px-3 py-2 text-sm ' +
+  'text-ink-100 placeholder:text-ink-500 transition-[border-color,box-shadow] duration-150 hover:border-ink-500 ' +
+  // Form controls focus with the same halo language as the buttons (the
+  // global :focus-visible outline is suppressed on them, so it cannot weaken
+  // here).
+  'focus:border-brand-400 focus:outline-none focus:shadow-(--glow-brand) ' +
   'disabled:cursor-not-allowed disabled:opacity-50';
 
 export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(
@@ -559,7 +550,7 @@ export function SegmentedControl<T extends string>({
       role="radiogroup"
       aria-label={label}
       className={clsx(
-        'relative inline-grid auto-cols-fr grid-flow-col overflow-hidden rounded-[--radius-control] border border-ink-600 bg-ink-950/60 p-0.5',
+        'relative inline-grid auto-cols-fr grid-flow-col overflow-hidden rounded-(--radius-control) border border-ink-600 bg-ink-950/60 p-0.5',
         disabled && 'pointer-events-none opacity-50',
         className,
       )}
@@ -593,7 +584,7 @@ export function SegmentedControl<T extends string>({
             title={option.title}
             onClick={() => onChange(option.value)}
             className={clsx(
-              'relative z-10 inline-flex items-center justify-center gap-1 rounded-[calc(var(--radius-control)-2px)] border border-transparent font-medium transition-[color,background-color,transform] duration-150 active:scale-95',
+              'relative z-10 inline-flex items-center justify-center gap-1 rounded-[calc(var(--radius-control)-2px)] border border-transparent font-medium transition-[color,background-color] duration-150',
               size === 'sm' ? 'px-2 py-1 text-micro' : 'px-2.5 py-1.5 text-xs',
               active
                 ? SEGMENT_ACTIVE_TEXT[option.tone ?? 'default']
@@ -727,14 +718,14 @@ export function EmptyState({
   return (
     <div
       className={clsx(
-        'animate-in flex flex-col items-center justify-center gap-3 rounded-[--radius-panel]',
+        'animate-in flex flex-col items-center justify-center gap-3 rounded-(--radius-panel)',
         'border border-dashed border-ink-600 bg-ink-900/40 px-6 text-center',
         compact ? 'py-8' : 'py-14',
       )}
     >
       {icon && (
         <div className="icon-tile">
-          <div className="flex h-12 w-12 items-center justify-center rounded-[--radius-control] border border-ink-600 bg-ink-850 text-ink-300 shadow-[inset_0_1px_0_rgb(141_156_178/0.06)]">
+          <div className="flex h-12 w-12 items-center justify-center rounded-(--radius-control) border border-ink-600 bg-ink-850 text-ink-300 shadow-[inset_0_1px_0_rgb(141_156_178/0.06)]">
             {icon}
           </div>
         </div>
@@ -783,7 +774,7 @@ export function InlineAlert({
     <div
       role={tone === 'error' ? 'alert' : undefined}
       className={clsx(
-        'flex items-start gap-3 rounded-[--radius-panel] border border-l-2 p-3',
+        'flex items-start gap-3 rounded-(--radius-panel) border border-l-2 p-3',
         ALERT_TONES[tone],
         ALERT_RAIL[tone],
         className,

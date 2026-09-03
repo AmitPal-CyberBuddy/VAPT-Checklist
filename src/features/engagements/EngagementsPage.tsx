@@ -203,7 +203,7 @@ export default function EngagementsPage() {
           {/* The register: a dense, scannable list rather than a card grid —
               every row answers name → target → progress → vulnerable → actions
               in one horizontal scan, like the logs a tester actually keeps. */}
-          <ul className="list-none overflow-hidden rounded-[--radius-panel] border border-ink-700 bg-ink-900 shadow-[--shadow-panel]">
+          <ul className="list-none overflow-hidden rounded-(--radius-panel) border border-ink-700 bg-ink-900 shadow-(--shadow-panel)">
             {filtered.map(({ engagement, applicable, resolved, vulnerable, completion }, index) => (
               <li
                 key={engagement.id}

@@ -83,7 +83,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="mx-auto flex h-13 max-w-[1600px] items-center gap-3 px-3 sm:gap-6 sm:px-6 lg:mx-0 lg:h-full lg:w-full lg:max-w-none lg:flex-col lg:items-stretch lg:gap-0 lg:px-0">
           {/* Brand — identity always first, wherever the bar sits. */}
           <NavLink to="/" className="flex shrink-0 items-center gap-2.5 lg:px-3 lg:pt-3 lg:pb-2.5" aria-label="VAPT Checklist — home">
-            <span className="brand-mark flex h-8 w-8 items-center justify-center rounded-[--radius-control] border border-brand-500/50 text-brand-400">
+            <span className="brand-mark flex h-8 w-8 items-center justify-center rounded-(--radius-control) border border-brand-500/50 text-brand-400">
               <IconShield size={18} />
             </span>
             <span className="hidden leading-tight sm:block">
@@ -108,7 +108,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             type="button"
             id="command-palette-trigger"
             onClick={() => setPaletteOpen(true)}
-            className="hidden w-full items-center gap-2.5 rounded-[--radius-control] border border-ink-700 bg-ink-900 px-3 py-2 text-left text-sm text-ink-400 transition-[color,border-color,transform] duration-150 hover:border-ink-500 hover:text-ink-200 active:translate-y-px lg:mb-1 lg:flex"
+            className="hidden w-full items-center gap-2.5 rounded-(--radius-control) border border-ink-700 bg-ink-900 px-3 py-2 text-left text-sm text-ink-400 transition-[color,border-color,transform] duration-150 hover:border-ink-500 hover:text-ink-200 active:translate-y-px lg:mb-1 lg:flex"
           >
             <IconSearch size={14} aria-hidden="true" />
             <span className="flex-1">Search</span>
@@ -129,7 +129,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   to={to}
                   aria-current={active ? 'page' : undefined}
                   className={clsx(
-                    'nav-pill rail-link flex shrink-0 items-center gap-2 rounded-[--radius-control] border px-2.5 py-1.5 text-sm transition-[color,background-color,border-color,transform] duration-150 hover:-translate-y-px active:translate-y-px sm:px-3 lg:w-full lg:shrink lg:px-3',
+                    'nav-pill rail-link flex shrink-0 items-center gap-2 rounded-(--radius-control) border px-2.5 py-1.5 text-sm transition-[color,background-color,border-color,box-shadow] duration-150 sm:px-3 lg:w-full lg:shrink lg:px-3',
                     active
                       ? 'border-ink-700 bg-ink-800 text-ink-50 shadow-[inset_0_1px_0_rgb(141_156_178/0.08)]'
                       : 'border-transparent text-ink-300 hover:bg-ink-900 hover:text-ink-100',
@@ -152,7 +152,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               onClick={() => setPaletteOpen(true)}
               aria-label={`Search (${PALETTE_KBD})`}
               title={`Search (${PALETTE_KBD})`}
-              className="flex h-7 w-7 items-center justify-center rounded-[--radius-control] border border-ink-700 bg-ink-900 text-ink-400 transition-[color,border-color,transform] duration-150 hover:scale-105 hover:border-ink-500 hover:text-ink-200 active:scale-95 lg:hidden"
+              className="flex h-7 w-7 items-center justify-center rounded-(--radius-control) border border-ink-700 bg-ink-900 text-ink-400 transition-[color,border-color,box-shadow] duration-150 hover:border-ink-500 hover:text-ink-200 lg:hidden"
             >
               <IconSearch size={13} />
             </button>
@@ -160,7 +160,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               type="button"
               onClick={toggleTheme}
               aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-              className="flex h-7 w-7 items-center justify-center rounded-[--radius-control] border border-ink-700 bg-ink-900 text-ink-400 transition-[color,border-color,transform] duration-150 hover:scale-105 hover:border-ink-500 hover:text-ink-200 active:scale-95 lg:self-start"
+              className="flex h-7 w-7 items-center justify-center rounded-(--radius-control) border border-ink-700 bg-ink-900 text-ink-400 transition-[color,border-color,box-shadow] duration-150 hover:border-ink-500 hover:text-ink-200 lg:self-start"
             >
               {theme === 'dark' ? <IconSun size={13} /> : <IconMoon size={13} />}
             </button>

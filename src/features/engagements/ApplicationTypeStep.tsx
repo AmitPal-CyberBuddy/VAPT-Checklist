@@ -65,7 +65,7 @@ export function ApplicationTypePicker({
               aria-pressed={selected}
               onClick={() => onChange(type.id)}
               className={clsx(
-                'flex h-full w-full flex-col gap-2 rounded-[--radius-control] border p-3.5 text-left transition-colors duration-150',
+                'flex h-full w-full flex-col gap-2 rounded-(--radius-control) border p-3.5 text-left transition-colors duration-150',
                 selected
                   ? 'glow-active border-brand-500 bg-brand-500/10'
                   : unsupported
@@ -77,7 +77,7 @@ export function ApplicationTypePicker({
                 <span
                   aria-hidden="true"
                   className={clsx(
-                    'flex h-10 w-10 shrink-0 items-center justify-center rounded-[--radius-control] border',
+                    'flex h-10 w-10 shrink-0 items-center justify-center rounded-(--radius-control) border',
                     selected
                       ? 'border-brand-500/50 bg-brand-500/15 text-brand-400'
                       : 'border-ink-600 bg-ink-900 text-ink-300',

@@ -314,9 +314,9 @@ export function CommandPalette({
                       event.preventDefault();
                       go(item);
                     }}
-                    className="palette-item flex items-center gap-3 rounded-[--radius-control] px-3 py-2 text-left"
+                    className="palette-item flex items-center gap-3 rounded-(--radius-control) px-3 py-2 text-left"
                   >
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[--radius-control] border border-ink-700 bg-ink-900 text-ink-300">
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-(--radius-control) border border-ink-700 bg-ink-900 text-ink-300">
                       {item.icon}
                     </span>
                     <span className="min-w-0 flex-1">

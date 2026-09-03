@@ -60,9 +60,9 @@ function RowStatusControl({
           }
         }}
         className={clsx(
-          'select-chevron h-7 cursor-pointer rounded-[--radius-control] border bg-ink-950/60 py-0 pr-6 pl-2',
-          'text-micro transition-colors hover:border-ink-500',
-          'focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/45 disabled:cursor-not-allowed disabled:opacity-50',
+          'select-chevron h-7 cursor-pointer rounded-(--radius-control) border bg-ink-950/60 py-0 pr-6 pl-2',
+          'text-micro transition-[border-color,box-shadow] hover:border-ink-500',
+          'focus:border-brand-400 focus:outline-none focus:shadow-(--glow-brand) disabled:cursor-not-allowed disabled:opacity-50',
           awaitingChoice
             ? 'border-warn-400 text-warn-300 ring-2 ring-warn-400/35'
             : s.status === 'Tested'
@@ -84,7 +84,7 @@ function RowStatusControl({
           role="group"
           aria-label={`Result for ${d.vulnerabilityName}`}
           className={clsx(
-            'animate-in flex gap-1 rounded-[--radius-control]',
+            'animate-in flex gap-1 rounded-(--radius-control)',
             awaitingChoice && 'ring-2 ring-warn-400',
           )}
         >
@@ -101,7 +101,7 @@ function RowStatusControl({
                   onResult(d.id, option.value);
                 }}
                 className={clsx(
-                  'h-7 rounded-[--radius-control] border px-2 text-micro font-medium transition-all duration-100 active:scale-95',
+                  'h-7 rounded-(--radius-control) border px-2 text-micro font-medium transition-[color,border-color,background-color,box-shadow] duration-100',
                   active
                     ? option.tone
                     : 'border-ink-600 bg-ink-900 text-ink-300 hover:border-ink-500 hover:text-ink-100',
