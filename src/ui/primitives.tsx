@@ -54,8 +54,9 @@ export function buttonClass(
 ) {
   return clsx(
     'inline-flex items-center justify-center rounded-[--radius-control] whitespace-nowrap',
-    // Hover changes colour; press sinks 1px — the two smallest, clearest cues.
-    'transition-colors duration-150 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-45 disabled:active:translate-y-0',
+    // Hover lifts, press sinks with a squeeze — transform joins colour in the
+    // transition so both read as one motion. Disabled states never move.
+    'transition-[color,background-color,border-color,box-shadow,transform] duration-150 hover:-translate-y-px active:translate-y-px active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:translate-y-0 disabled:active:translate-y-0 disabled:active:scale-100',
     BUTTON_VARIANTS[variant],
     BUTTON_SIZES[size],
     full && 'w-full',

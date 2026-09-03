@@ -246,8 +246,8 @@ describe('landing page', () => {
     expect(screen.getByRole('link', { name: 'Explore the test library' }).getAttribute('href')).toContain(
       '/library',
     );
-    // A visitor can also reach the app itself from the primary navigation.
-    expect(screen.getByRole('link', { name: 'Home' })).toBeTruthy();
+    // The brand is the way back to the landing page; primary nav serves the tool.
+    expect(screen.getByRole('link', { name: 'VAPT Checklist — home' })).toBeTruthy();
     expect(screen.getByRole('link', { name: 'Engagements' })).toBeTruthy();
   });
 

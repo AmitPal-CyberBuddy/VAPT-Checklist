@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import clsx from 'clsx';
-import { IconAlert, IconBook, IconGrid, IconHome, IconSettings, IconShield, IconSun, IconMoon } from '../ui/icons';
+import { IconAlert, IconBook, IconGrid, IconSettings, IconShield, IconSun, IconMoon } from '../ui/icons';
 import { InlineAlert } from '../ui/primitives';
 import { checkStorage, requestPersistentStorage, type StorageStatus } from '../persistence/db';
 import { useTheme } from '../ui/theme';
@@ -22,7 +22,6 @@ const STORAGE_ADVICE: Record<string, string> = {
 };
 
 const NAV = [
-  { to: '/', label: 'Home', icon: IconHome, end: true },
   { to: '/engagements', label: 'Engagements', icon: IconGrid, end: false },
   { to: '/library', label: 'Test Library', icon: IconBook, end: false },
   { to: '/settings', label: 'Data & Settings', icon: IconSettings, end: false },
@@ -80,7 +79,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   to={to}
                   aria-current={active ? 'page' : undefined}
                   className={clsx(
-                    'nav-pill flex items-center gap-2 rounded-[--radius-control] border px-2.5 py-1.5 text-sm transition-colors duration-150 sm:px-3',
+                    'nav-pill flex items-center gap-2 rounded-[--radius-control] border px-2.5 py-1.5 text-sm transition-[color,background-color,border-color,transform] duration-150 hover:-translate-y-px active:translate-y-px sm:px-3',
                     active
                       ? 'border-ink-700 bg-ink-800 text-ink-50 shadow-[inset_0_1px_0_rgb(141_156_178/0.08)]'
                       : 'border-transparent text-ink-300 hover:bg-ink-900 hover:text-ink-100',
@@ -99,7 +98,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               type="button"
               onClick={toggleTheme}
               aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-              className="flex h-7 w-7 items-center justify-center rounded-[--radius-control] border border-ink-700 bg-ink-900 text-ink-400 transition-colors hover:border-ink-500 hover:text-ink-200"
+              className="flex h-7 w-7 items-center justify-center rounded-[--radius-control] border border-ink-700 bg-ink-900 text-ink-400 transition-[color,border-color,transform] duration-150 hover:scale-105 hover:border-ink-500 hover:text-ink-200 active:scale-95"
             >
               {theme === 'dark' ? <IconSun size={13} /> : <IconMoon size={13} />}
             </button>

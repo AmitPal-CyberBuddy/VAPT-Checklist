@@ -66,20 +66,32 @@ export default function LandingPage() {
       <section className="hero-stage panel-accent space-y-6 rounded-[--radius-panel] border p-6 sm:p-10">
         <div className="grid items-start gap-8 lg:grid-cols-[1.15fr_0.85fr]">
           <div className="space-y-4">
-            <p className="font-mono text-micro font-medium tracking-[0.18em] text-brand-400 uppercase">
+            <p
+              className="stagger-item font-mono text-micro font-medium tracking-[0.18em] text-brand-400 uppercase"
+              style={{ '--d': 0 } as CSSProperties}
+            >
               Local-first · OWASP-aligned · No account required
             </p>
-            <h1 className="gradient-heading text-2xl font-semibold tracking-tight">
+            <h1
+              className="stagger-item gradient-heading text-2xl font-semibold tracking-tight"
+              style={{ '--d': 1 } as CSSProperties}
+            >
               Penetration testing methodology, tailored to every engagement.
             </h1>
-            <p className="max-w-2xl text-sm leading-relaxed text-ink-300 sm:text-base">
+            <p
+              className="stagger-item max-w-2xl text-sm leading-relaxed text-ink-300 sm:text-base"
+              style={{ '--d': 2 } as CSSProperties}
+            >
               VAPT Checklist turns a few scoping answers into a complete,
               prioritised testing checklist — {TEST_LIBRARY.length} distinct
               security objectives across {CATEGORIES.length} categories — and
               tracks each one to a professional report. Everything runs in your
               browser; nothing is uploaded.
             </p>
-            <div className="flex flex-wrap items-center gap-3 pt-1">
+            <div
+              className="stagger-item flex flex-wrap items-center gap-3 pt-1"
+              style={{ '--d': 3 } as CSSProperties}
+            >
               <LinkButton
                 to="/engagements/new"
                 variant="primary"
@@ -103,7 +115,8 @@ export default function LandingPage() {
               workspace uses — so a visitor sees the product, not a mock. */}
           <aside
             aria-label="Sample checks from the library"
-            className="panel glow-border scan-edge overflow-hidden"
+            className="stagger-item panel glow-border scan-edge overflow-hidden"
+            style={{ '--d': 4 } as CSSProperties}
           >
             <div className="flex items-center gap-2 border-b border-ink-800 bg-ink-850/60 px-4 py-2">
               <IconCheckCircle size={14} aria-hidden="true" className="text-safe-400" />
@@ -129,7 +142,10 @@ export default function LandingPage() {
           </aside>
         </div>
 
-        <dl className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <dl
+          className="stagger-item grid grid-cols-2 gap-3 lg:grid-cols-4"
+          style={{ '--d': 5 } as CSSProperties}
+        >
           <Stat label="Methodology checks" value={TEST_LIBRARY.length} hint="one objective per check" />
           <Stat label="Categories" value={CATEGORIES.length} hint="recon to cloud & mobile" />
           <Stat label="Library version" value={LIBRARY_VERSION} hint="mapped to OWASP & CWE" />
