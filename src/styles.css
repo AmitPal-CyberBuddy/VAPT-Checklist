@@ -392,6 +392,23 @@
       radial-gradient(400px 280px at 50% 50%, rgb(69 192 249 / 0.04), transparent 70%);
     pointer-events: none;
   }
+  .hero-stage::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgb(148 163 184 / 0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(148 163 184 / 0.035) 1px, transparent 1px);
+    background-size: 44px 44px;
+    -webkit-mask-image: radial-gradient(90% 70% at 50% 0%, #000 35%, transparent 100%);
+    mask-image: radial-gradient(90% 70% at 50% 0%, #000 35%, transparent 100%);
+    pointer-events: none;
+  }
+  [data-theme='light'] .hero-stage::after {
+    background-image:
+      linear-gradient(rgb(28 26 24 / 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(28 26 24 / 0.03) 1px, transparent 1px);
+  }
   .hero-stage > :not(.sr-only) {
     position: relative;
   }

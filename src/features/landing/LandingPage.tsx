@@ -233,28 +233,32 @@ export default function LandingPage() {
           style={{ '--d': 6 } as CSSProperties}
         >
           <div className="bg-ink-900 p-4">
-            <dt className="font-mono text-micro font-medium tracking-widest text-ink-400 uppercase">
+            <dt className="flex items-center gap-1.5 font-mono text-micro font-medium tracking-widest text-ink-400 uppercase">
+              <IconShieldCheck size={13} aria-hidden="true" className="shrink-0 text-brand-500/80" />
               Methodology checks
             </dt>
             <dd className="stat-band-value mt-1 text-ink-50">{TEST_LIBRARY.length}</dd>
             <p className="mt-1 text-micro text-ink-500">one objective per check</p>
           </div>
           <div className="bg-ink-900 p-4">
-            <dt className="font-mono text-micro font-medium tracking-widest text-ink-400 uppercase">
+            <dt className="flex items-center gap-1.5 font-mono text-micro font-medium tracking-widest text-ink-400 uppercase">
+              <IconLayers size={13} aria-hidden="true" className="shrink-0 text-brand-500/80" />
               Categories
             </dt>
             <dd className="stat-band-value mt-1 text-ink-50">{CATEGORIES.length}</dd>
             <p className="mt-1 text-micro text-ink-500">recon to cloud &amp; mobile</p>
           </div>
           <div className="bg-ink-900 p-4">
-            <dt className="font-mono text-micro font-medium tracking-widest text-ink-400 uppercase">
+            <dt className="flex items-center gap-1.5 font-mono text-micro font-medium tracking-widest text-ink-400 uppercase">
+              <IconTarget size={13} aria-hidden="true" className="shrink-0 text-brand-500/80" />
               Library version
             </dt>
             <dd className="stat-band-value mt-1 text-brand-400">{LIBRARY_VERSION}</dd>
             <p className="mt-1 text-micro text-ink-500">mapped to OWASP &amp; CWE</p>
           </div>
           <div className="bg-ink-900 p-4">
-            <dt className="font-mono text-micro font-medium tracking-widest text-ink-400 uppercase">
+            <dt className="flex items-center gap-1.5 font-mono text-micro font-medium tracking-widest text-ink-400 uppercase">
+              <IconDownload size={13} aria-hidden="true" className="shrink-0 text-brand-500/80" />
               Report sheets
             </dt>
             <dd className="stat-band-value mt-1 text-ink-50">5</dd>
