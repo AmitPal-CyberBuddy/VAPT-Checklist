@@ -47,7 +47,9 @@ const STATUS_OPTIONS = [
     label: 'N/A',
     glyph: <IconBan size={12} strokeWidth={2.5} />,
     tone: 'na' as const,
-    title: 'Not applicable in practice — no result required (3)',
+    // N/A is a testing outcome for a test already in the checklist — distinct
+    // from "Not Applicable", which removes the test from the checklist.
+    title: 'N/A — assessed; this target does not exercise it in practice. No result required (3)',
   },
 ];
 
@@ -383,6 +385,12 @@ export function TestDetailPanel({
             </div>
             <p className="border-t border-ink-800 pt-2 text-micro text-ink-400">
               Rule: {describeRule(d.applicability)}
+            </p>
+            <p className="text-micro text-ink-500">
+              This controls <strong className="font-medium text-ink-400">checklist membership</strong>.
+              Record the testing outcome with the <strong className="font-medium text-ink-400">Status</strong>{' '}
+              control — <strong>N/A</strong> marks a test in the checklist that this target does not
+              exercise in practice.
             </p>
             {s.applicabilitySource === 'manual' && (
               <div className="flex flex-wrap items-center justify-between gap-2">

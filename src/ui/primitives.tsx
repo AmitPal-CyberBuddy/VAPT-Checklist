@@ -286,13 +286,25 @@ const STATUS_ICON: Record<TestStatus, ReactNode> = {
   'N/A': <IconBan size={11} strokeWidth={2.5} />,
 };
 
+/**
+ * Status tooltips. The status axis is about the *outcome of testing one test
+ * that is already in the checklist*, which is a different question from whether
+ * the test belongs in the checklist at all (Applicability). The N/A hint spells
+ * that out so it never reads as a synonym for the "Not Applicable" scope value.
+ */
+const STATUS_HINT: Record<TestStatus, string> = {
+  'Not Tested': 'Status: Not Tested',
+  Tested: 'Status: Tested',
+  'N/A': 'N/A — assessed, and this target does not exercise it in practice.',
+};
+
 export function StatusBadge({ status, className }: { status: TestStatus; className?: string }) {
   return (
     <Badge
       tone={status === 'Tested' ? 'brand' : status === 'N/A' ? 'na' : 'neutral'}
       glyph={STATUS_ICON[status]}
       className={className}
-      title={`Status: ${status}`}
+      title={STATUS_HINT[status]}
     >
       {status}
     </Badge>

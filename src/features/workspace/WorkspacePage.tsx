@@ -517,69 +517,77 @@ export default function WorkspacePage() {
         </div>
 
         {filtersOpen && (
-          <div
-            id="workspace-filter-panel"
-            className="expand-in grid gap-2 border-t border-ink-800 pt-2.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6"
-          >
-            <FilterSelect
-              label="Applicability"
-              value={scope}
-              onChange={(e) => setScope(e.target.value as ScopeFilter)}
+          <>
+            <div
+              id="workspace-filter-panel"
+              className="expand-in grid gap-2 border-t border-ink-800 pt-2.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6"
             >
-              {(Object.keys(SCOPE_LABELS) as ScopeFilter[]).map((key) => (
-                <option key={key} value={key}>
-                  {SCOPE_LABELS[key]}
-                </option>
-              ))}
-            </FilterSelect>
-            <FilterSelect
-              label="Status"
-              value={status}
-              onChange={(e) => setStatus(e.target.value as StatusFilter)}
-            >
-              <option value="all">Any status</option>
-              <option value="Not Tested">Not Tested</option>
-              <option value="Tested">Tested</option>
-              <option value="N/A">N/A</option>
-            </FilterSelect>
-            <FilterSelect
-              label="Result"
-              value={result}
-              onChange={(e) => setResult(e.target.value as ResultFilter)}
-            >
-              <option value="all">Any result</option>
-              <option value="Vulnerable">Vulnerable</option>
-              <option value="Not Vulnerable">Not Vulnerable</option>
-            </FilterSelect>
-            <FilterSelect label="Priority" value={priority} onChange={(e) => setPriority(e.target.value)}>
-              <option value="all">Any priority</option>
-              {PRIORITIES.map((p) => (
-                <option key={p} value={p}>
-                  {p}
-                </option>
-              ))}
-            </FilterSelect>
-            <FilterSelect label="Category" value={category} onChange={(e) => setCategory(e.target.value)}>
-              <option value="all">Any category</option>
-              {categoryOptions.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </FilterSelect>
-            <FilterSelect
-              label="Subcategory"
-              value={subcategory}
-              onChange={(e) => setSubcategory(e.target.value)}
-            >
-              <option value="all">Any subcategory</option>
-              {subcategoryOptions.map((sub) => (
-                <option key={sub} value={sub}>
-                  {sub}
-                </option>
-              ))}
-            </FilterSelect>
-          </div>
+              <FilterSelect
+                label="Applicability"
+                value={scope}
+                onChange={(e) => setScope(e.target.value as ScopeFilter)}
+              >
+                {(Object.keys(SCOPE_LABELS) as ScopeFilter[]).map((key) => (
+                  <option key={key} value={key}>
+                    {SCOPE_LABELS[key]}
+                  </option>
+                ))}
+              </FilterSelect>
+              <FilterSelect
+                label="Status"
+                value={status}
+                onChange={(e) => setStatus(e.target.value as StatusFilter)}
+              >
+                <option value="all">Any status</option>
+                <option value="Not Tested">Not Tested</option>
+                <option value="Tested">Tested</option>
+                <option value="N/A">N/A</option>
+              </FilterSelect>
+              <FilterSelect
+                label="Result"
+                value={result}
+                onChange={(e) => setResult(e.target.value as ResultFilter)}
+              >
+                <option value="all">Any result</option>
+                <option value="Vulnerable">Vulnerable</option>
+                <option value="Not Vulnerable">Not Vulnerable</option>
+              </FilterSelect>
+              <FilterSelect label="Priority" value={priority} onChange={(e) => setPriority(e.target.value)}>
+                <option value="all">Any priority</option>
+                {PRIORITIES.map((p) => (
+                  <option key={p} value={p}>
+                    {p}
+                  </option>
+                ))}
+              </FilterSelect>
+              <FilterSelect label="Category" value={category} onChange={(e) => setCategory(e.target.value)}>
+                <option value="all">Any category</option>
+                {categoryOptions.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </FilterSelect>
+              <FilterSelect
+                label="Subcategory"
+                value={subcategory}
+                onChange={(e) => setSubcategory(e.target.value)}
+              >
+                <option value="all">Any subcategory</option>
+                {subcategoryOptions.map((sub) => (
+                  <option key={sub} value={sub}>
+                    {sub}
+                  </option>
+                ))}
+              </FilterSelect>
+            </div>
+            <p className="mt-2 max-w-3xl text-micro leading-relaxed text-ink-500">
+              <strong className="font-medium text-ink-400">Applicability</strong> decides whether a
+              test is in this engagement&apos;s checklist. <strong className="font-medium text-ink-400">Status</strong> records
+              the outcome of each test already in it — <strong>N/A</strong> marks one you assessed
+              that this target does not exercise in practice.
+            </p>
+          </>
         )}
 
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 border-t border-ink-800 pt-2.5 text-xs text-ink-400">
@@ -651,6 +659,9 @@ export default function WorkspacePage() {
           className="panel animate-in sticky top-16 z-30 flex flex-wrap items-center gap-2 border-brand-500/40 p-3 lg:top-3"
         >
           <Badge tone="brand">{selected.size} selected</Badge>
+          {/* Status: the outcome of testing a test that is already in the
+              checklist. N/A means "assessed — this target does not exercise it". */}
+          <span className="text-micro font-medium tracking-wider text-ink-500 uppercase">Status</span>
           <Button size="sm" onClick={() => void bulk({ status: 'Not Tested' }, 'Set to Not Tested')}>
             Not Tested
           </Button>
@@ -668,13 +679,23 @@ export default function WorkspacePage() {
           >
             Tested → Vulnerable
           </Button>
-          <Button size="sm" onClick={() => void bulk({ status: 'N/A' }, 'Set to N/A')}>
+          <Button
+            size="sm"
+            title="Status: assessed — this target does not exercise it in practice"
+            onClick={() => void bulk({ status: 'N/A' }, 'Set to N/A')}
+          >
             N/A
           </Button>
           <span className="mx-1 h-4 w-px bg-ink-700" aria-hidden="true" />
+          {/* Applicability: whether a test belongs in this engagement's
+              checklist at all — a different question from its Status. */}
+          <span className="text-micro font-medium tracking-wider text-ink-500 uppercase">
+            Checklist
+          </span>
           <Button
             size="sm"
             variant="subtle"
+            title="Keep these tests in this engagement's checklist"
             onClick={() =>
               void bulk({ applicable: true, applicabilitySource: 'manual' }, 'Marked Applicable')
             }
@@ -684,6 +705,7 @@ export default function WorkspacePage() {
           <Button
             size="sm"
             variant="subtle"
+            title="Remove these tests from this engagement's checklist"
             onClick={() =>
               void bulk({ applicable: false, applicabilitySource: 'manual' }, 'Marked Not Applicable')
             }
