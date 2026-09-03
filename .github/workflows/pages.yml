@@ -3,6 +3,13 @@ name: Deploy to GitHub Pages
 # Builds the Vite app and publishes dist/ to GitHub Pages.
 # The repo must have Pages source set to "GitHub Actions"
 # (Settings -> Pages -> Build and deployment -> Source).
+#
+# This workflow also *verifies* the built bundle before it can be published,
+# so the site cannot silently deploy as a blank page again. It guards against:
+#   1. Pages source flipped back to "Deploy from a branch" -> raw source index,
+#      which browsers can't run (blank page).
+#   2. The accessibility/design-system contract regressing (bad vocabulary,
+#      unlabelled controls, colour-only signalling, hand-rolled buttons).
 
 on:
   push:
@@ -28,9 +35,20 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run build
+      - name: Typecheck
+        run: npx tsc --noEmit
+      # The design-system contract IS the accessibility gate: it fails the build
+      # on retired vocabulary, colour-only status, missed control labels, missing
+      # progress-bar names, and non-button lookalikes. Fast (~ms) but authoritative.
+      - name: Accessibility contract (design-system)
+        run: npx vitest run src/ui/designSystem.test.ts
+      - name: Build static bundle
+        run: npm run build
+      - name: Verify built bundle (never a blank page)
+        run: node .github/check-built-bundle.mjs
       - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
         with:
           path: ./dist
 
