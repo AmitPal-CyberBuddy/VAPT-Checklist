@@ -6,6 +6,7 @@ import {
   InlineAlert,
   Modal,
   PageHeader,
+  ProgressBar,
   SectionHeading,
   Stat,
 } from '../../ui/primitives';
@@ -226,25 +227,71 @@ export default function SettingsPage() {
         )}
       </Card>
 
-      <Card className="space-y-3">
-        <SectionHeading title="Storage details" />
+      <Card className="space-y-4">
+        <SectionHeading
+          title="Local data & posture"
+          description="This installation's storage and its local-only guarantees, at a glance."
+        />
+        <div className="panel-inset space-y-2 p-3">
+          <div className="flex items-baseline justify-between gap-3">
+            <span className="text-sm text-ink-200">Storage in use</span>
+            <span className="font-mono text-xs tabular-nums text-ink-300">
+              {usage
+                ? `${(usage.usage / 1024 / 1024).toFixed(1)} MB of ~${(usage.quota / 1024 / 1024 / 1024).toFixed(1)} GB`
+                : 'Measuring…'}
+            </span>
+          </div>
+          <ProgressBar
+            value={usage && usage.quota > 0 ? usage.usage / usage.quota : 0}
+            label="Local storage in use"
+          />
+        </div>
         <dl className="panel-inset px-4 py-1 text-sm">
           <div className="kv-row">
-            <dt className="text-ink-400">Mechanism</dt>
+            <dt className="flex items-center gap-2 text-ink-400">
+              <span aria-hidden="true" className="text-safe-400">
+                ✓
+              </span>
+              Mechanism
+            </dt>
             <dd className="text-ink-100">IndexedDB (Dexie)</dd>
           </div>
           <div className="kv-row">
-            <dt className="text-ink-400">Database</dt>
+            <dt className="flex items-center gap-2 text-ink-400">
+              <span aria-hidden="true" className="text-safe-400">
+                ✓
+              </span>
+              Database
+            </dt>
             <dd className="font-mono text-xs text-ink-100">
               {DB_NAME} · v{DB_VERSION}
             </dd>
           </div>
           <div className="kv-row">
-            <dt className="text-ink-400">Network calls</dt>
+            <dt className="flex items-center gap-2 text-ink-400">
+              <span aria-hidden="true" className="text-safe-400">
+                ✓
+              </span>
+              Network calls
+            </dt>
             <dd className="text-safe-400">None</dd>
           </div>
           <div className="kv-row">
-            <dt className="text-ink-400">Excel generation</dt>
+            <dt className="flex items-center gap-2 text-ink-400">
+              <span aria-hidden="true" className="text-safe-400">
+                ✓
+              </span>
+              Telemetry
+            </dt>
+            <dd className="text-safe-400">None</dd>
+          </div>
+          <div className="kv-row">
+            <dt className="flex items-center gap-2 text-ink-400">
+              <span aria-hidden="true" className="text-safe-400">
+                ✓
+              </span>
+              Excel generation
+            </dt>
             <dd className="text-ink-100">Client-side (bundled)</dd>
           </div>
         </dl>

@@ -1,4 +1,5 @@
-import { useMemo, useState, type ReactElement } from 'react';
+import { useEffect, useMemo, useState, type ReactElement } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import clsx from 'clsx';
 import {
   Badge,
@@ -52,6 +53,16 @@ export default function LibraryPage() {
   const [priority, setPriority] = useState('all');
   const [open, setOpen] = useState<string | null>(null);
   const stats = useMemo(libraryStats, []);
+
+  /* Deep links: the command palette (and shared URLs) can address one test
+     directly with ?test=<id> — it arrives expanded and centred. */
+  const [params] = useSearchParams();
+  const testParam = params.get('test');
+  useEffect(() => {
+    if (!testParam) return;
+    setOpen(testParam);
+    document.getElementById(`library-test-${testParam}`)?.scrollIntoView?.({ block: 'center' });
+  }, [testParam]);
 
   const subcategoryOptions: string[] = useMemo(() => {
     if (category !== 'all') return CATEGORY_BY_ID[category as CategoryId]?.subcategories ?? [];
@@ -438,7 +449,11 @@ export default function LibraryPage() {
               {tests.map((t) => {
                 const expanded = open === t.id;
                 return (
-                  <li key={t.id} className={clsx('border-l-2', PRIORITY_RAIL[t.priority])}>
+                  <li
+                    key={t.id}
+                    id={`library-test-${t.id}`}
+                    className={clsx('border-l-2', PRIORITY_RAIL[t.priority])}
+                  >
                     <button
                       onClick={() => setOpen(expanded ? null : t.id)}
                       aria-expanded={expanded}

@@ -108,6 +108,19 @@ export function TestDetailPanel({
   const [pendingTested, setPendingTested] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pending = useRef<string | null>(null);
+  const paneRef = useRef<HTMLElement>(null);
+
+  /**
+   * On a phone the pane is page-scrolled, so switching tests should land the
+   * reader at the top of the new guidance rather than wherever they stopped
+   * on the previous one. Wide screens scroll the pane body internally, which
+   * already resets on the keyed remount.
+   */
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
+    if (window.matchMedia('(min-width: 1024px)').matches) return;
+    paneRef.current?.scrollIntoView?.({ block: 'start' });
+  }, [d.id]);
 
   /**
    * Sync the editor with the stored row — but only when the store genuinely
@@ -198,11 +211,16 @@ export function TestDetailPanel({
   }
 
   return (
-    <article className="flex h-full min-h-0 flex-col" aria-label={d.vulnerabilityName}>
+    <article
+      ref={paneRef}
+      className="flex flex-col lg:h-full lg:min-h-0"
+      aria-label={d.vulnerabilityName}
+    >
       {/* Severity keyline — one glance tells you what this test is. */}
       <div aria-hidden="true" className={clsx('h-1 w-full', PRIORITY_KEYLINE[d.priority])} />
-      {/* Sticky header: identity + the two decisions ---------------------- */}
-      <header className="sticky top-0 z-10 space-y-3 border-b border-ink-800 bg-ink-900 px-4 py-3.5 sm:px-5">
+      {/* Header: identity. The decisions live in the tray at the bottom,
+          within thumb reach on a phone and always on screen on a laptop. */}
+      <header className="space-y-2 border-b border-ink-800 bg-ink-900 px-4 py-3.5 sm:px-5">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             {onBackToList && (
@@ -230,86 +248,19 @@ export function TestDetailPanel({
               {s.applicabilitySource === 'manual' && <Badge tone="brand">Manual</Badge>}
             </div>
           </div>
-          <div className="flex shrink-0 items-center gap-1">
-            <span className="mr-1 hidden text-micro tabular-nums text-ink-400 sm:inline">
-              {position} / {total}
-            </span>
-            <IconButton
-              size="sm"
-              label="Previous test"
-              onClick={onPrevious}
-              icon={<IconChevron size={14} className="rotate-180" />}
-            />
-            <IconButton size="sm" label="Next test" onClick={onNext} icon={<IconChevron size={14} />} />
-          </div>
+          <span className="shrink-0 text-micro tabular-nums text-ink-400">
+            {position} / {total}
+          </span>
         </div>
-
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-          <div className="flex items-center gap-2">
-            <span className="text-micro font-medium tracking-wider text-ink-400 uppercase">
-              Status
-            </span>
-            <SegmentedControl
-              label="Testing status"
-              value={awaitingChoice ? 'Tested' : s.status}
-              options={STATUS_OPTIONS}
-              disabled={!s.applicable}
-              onChange={chooseStatus}
-            />
-          </div>
-
-          <div
-            className={clsx(
-              'flex items-center gap-2 rounded-[--radius-control] transition-shadow',
-              awaitingChoice && 'ring-2 ring-warn-400 ring-offset-2 ring-offset-ink-900',
-            )}
-          >
-            <span className="text-micro font-medium tracking-wider text-ink-400 uppercase">
-              Result
-            </span>
-            <SegmentedControl
-              label="Testing result"
-              value={s.result}
-              options={RESULT_OPTIONS}
-              disabled={s.status !== 'Tested' && !awaitingChoice}
-              onChange={chooseResult}
-            />
-          </div>
-
-          {savedAt !== null && (
-            <span
-              aria-live="polite"
-              className="pop-confirm inline-flex items-center gap-1 text-xs font-medium text-safe-400"
-            >
-              <span aria-hidden="true">✓</span> Saved
-            </span>
-          )}
-
-          <Button
-            size="sm"
-            variant={awaitingChoice ? 'subtle' : 'primary'}
-            className="ml-auto"
-            onClick={onNextUntested}
-            title="Jump to the next test with status Not Tested (Enter)"
-          >
-            Next Not Tested →
-          </Button>
-        </div>
-
-        {awaitingChoice && (
-          <p className="animate-in flex items-center gap-1.5 text-xs text-warn-300">
-            <IconAlert size={13} aria-hidden="true" />
-            Choose Vulnerable or Not Vulnerable — “Tested” is only recorded together with its result.
-          </p>
-        )}
       </header>
 
-      {/* Body --------------------------------------------------------------
+      {/* Body ----------------------------------------------------------------
               Keyed by the test id so switching tests crossfades the pane
-              instead of flashing. */}
+              instead of flashing. Scrolls internally on wide screens; on a
+              phone the page itself scrolls, with the tray pinned below. */}
       <div
         key={d.id}
-        className="animate-page min-h-0 flex-1 space-y-5 overflow-y-auto px-4 py-5 sm:px-5"
+        className="animate-page space-y-5 px-4 py-5 sm:px-5 lg:min-h-0 lg:flex-1 lg:overflow-y-auto"
       >
         {s.applicable && s.status === 'Not Tested' && !awaitingChoice && (
           <InlineAlert
@@ -464,16 +415,83 @@ export function TestDetailPanel({
             ))}
           </div>
         </Section>
+      </div>
 
-        <div className="flex items-center justify-between border-t border-ink-800 pt-4">
-          <Button variant="ghost" size="sm" onClick={onPrevious}>
-            ← Previous
-          </Button>
-          <Button variant="secondary" size="sm" onClick={onNext}>
-            Next test →
+      {/* Decision tray -------------------------------------------------------
+          The working loop's control surface: record the status, record the
+          result, move on. Pinned to the bottom of the pane on wide screens
+          and to the bottom of the viewport while testing on a phone — where
+          the thumb already is. */}
+      <footer className="cmd-tray px-4 pt-3 sm:px-5">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2.5">
+          <div className="flex items-center gap-1">
+            <IconButton
+              size="sm"
+              label="Previous test"
+              onClick={onPrevious}
+              icon={<IconChevron size={14} className="rotate-180" />}
+            />
+            <IconButton size="sm" label="Next test" onClick={onNext} icon={<IconChevron size={14} />} />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="hidden text-micro font-medium tracking-wider text-ink-400 uppercase sm:inline">
+              Status
+            </span>
+            <SegmentedControl
+              label="Testing status"
+              value={awaitingChoice ? 'Tested' : s.status}
+              options={STATUS_OPTIONS}
+              disabled={!s.applicable}
+              onChange={chooseStatus}
+            />
+          </div>
+
+          <div
+            className={clsx(
+              'flex items-center gap-2 rounded-[--radius-control] transition-shadow',
+              awaitingChoice && 'ring-2 ring-warn-400 ring-offset-2 ring-offset-ink-900',
+            )}
+          >
+            <span className="hidden text-micro font-medium tracking-wider text-ink-400 uppercase sm:inline">
+              Result
+            </span>
+            <SegmentedControl
+              label="Testing result"
+              value={s.result}
+              options={RESULT_OPTIONS}
+              disabled={s.status !== 'Tested' && !awaitingChoice}
+              onChange={chooseResult}
+            />
+          </div>
+
+          {savedAt !== null && (
+            <span
+              aria-live="polite"
+              className="pop-confirm inline-flex items-center gap-1 text-xs font-medium text-safe-400"
+            >
+              <span aria-hidden="true">✓</span> Saved
+            </span>
+          )}
+
+          <Button
+            size="sm"
+            variant={awaitingChoice ? 'subtle' : 'primary'}
+            className="ml-auto"
+            onClick={onNextUntested}
+            title="Jump to the next test with status Not Tested (Enter)"
+          >
+            Next Not Tested →
           </Button>
         </div>
-      </div>
+
+        {awaitingChoice && (
+          <p className="animate-in mt-2.5 flex items-center gap-1.5 text-xs text-warn-300">
+            <IconAlert size={13} aria-hidden="true" />
+            Choose Vulnerable or Not Vulnerable — “Tested” is only recorded together with its result.
+          </p>
+        )}
+      </footer>
     </article>
   );
 }

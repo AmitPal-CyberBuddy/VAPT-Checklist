@@ -920,6 +920,103 @@
       animation: none;
     }
   }
+
+  /* ---------------------------------------------------------------
+   * Command palette (Ctrl/⌘-K) — a machined floating console.
+   * --------------------------------------------------------------- */
+  .palette-panel {
+    border: 1px solid var(--color-ink-700);
+    border-radius: var(--radius-panel);
+    background-color: var(--color-ink-900);
+    box-shadow:
+      var(--shadow-lift),
+      0 0 0 1px rgb(3 6 12 / 0.22);
+    overflow: hidden;
+    animation: rise-in var(--motion-base) var(--ease-spring);
+  }
+  /* A brand keyline across the top — the same identity edge as the shell. */
+  .palette-panel::before {
+    content: '';
+    display: block;
+    height: 2px;
+    background-image: linear-gradient(90deg, transparent, rgb(69 192 249 / 0.7), transparent);
+  }
+  [data-theme='light'] .palette-panel::before {
+    background-image: linear-gradient(90deg, transparent, rgb(8 145 178 / 0.75), transparent);
+  }
+
+  /* The highlighted palette row: a controlled brand rail + raised surface,
+     mirroring the workspace list's selected-row treatment. */
+  .palette-item {
+    position: relative;
+    transition:
+      background-color var(--motion-fast) var(--ease-standard),
+      box-shadow var(--motion-fast) var(--ease-standard);
+  }
+  .palette-item[data-active='true'] {
+    background-color: var(--color-ink-850);
+    box-shadow: inset 2px 0 0 var(--color-brand-500);
+  }
+
+  /* ---------------------------------------------------------------
+   * Workstation decision tray — the always-reachable control surface
+   * at the bottom of the test pane. Translucent with a hairline top
+   * edge, so scrolled guidance reads through it without noise.
+   * --------------------------------------------------------------- */
+  .cmd-tray {
+    position: sticky;
+    bottom: 0;
+    z-index: 15;
+    border-top: 1px solid var(--color-ink-800);
+    background-color: var(--color-ink-900);
+    background-color: color-mix(in srgb, var(--color-ink-900) 92%, transparent);
+    backdrop-filter: blur(12px);
+    /* Thumb-zone padding: honours notched/home-indicator phones. */
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  }
+
+  /* ---------------------------------------------------------------
+   * Workbook sheet glyph for the export builder — a page with a
+   * folded corner and ruled rows, drawn with tokens so it themes.
+   * --------------------------------------------------------------- */
+  .sheet-icon {
+    position: relative;
+    display: block;
+    width: 18px;
+    height: 24px;
+    border: 1px solid var(--color-ink-500);
+    border-radius: 2px;
+    background-color: var(--color-ink-900);
+  }
+  .sheet-icon::before {
+    content: '';
+    position: absolute;
+    top: -1px;
+    right: -1px;
+    width: 6px;
+    height: 6px;
+    border-bottom: 1px solid var(--color-ink-500);
+    border-left: 1px solid var(--color-ink-500);
+    background-color: var(--color-ink-850);
+  }
+  .sheet-icon::after {
+    content: '';
+    position: absolute;
+    left: 3px;
+    right: 3px;
+    top: 10px;
+    bottom: 3px;
+    background-image: repeating-linear-gradient(
+      to bottom,
+      var(--color-ink-600) 0 1px,
+      transparent 1px 4px
+    );
+  }
+
+  /* Toast dismissal: sinks and fades instead of vanishing. */
+  .toast-out {
+    animation: toast-out var(--motion-fast) var(--ease-standard) both;
+  }
 }
 
 @keyframes pop-confirm {
@@ -1006,6 +1103,17 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes toast-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(6px) scale(0.97);
   }
 }
 

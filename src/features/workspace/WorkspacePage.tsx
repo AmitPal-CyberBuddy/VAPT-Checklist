@@ -744,7 +744,7 @@ export default function WorkspacePage() {
           )}
 
           {showDetail && active && (
-            <div className="panel max-h-[calc(100vh-15rem)] min-h-[24rem] overflow-hidden p-0">
+            <div className="panel p-0 lg:max-h-[calc(100vh-15rem)] lg:min-h-[24rem] lg:overflow-hidden">
               <TestDetailPanel
                 key={active.definition.id}
                 item={active}

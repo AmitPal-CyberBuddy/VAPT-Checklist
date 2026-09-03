@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
+import clsx from 'clsx';
 import {
   Badge,
   Button,
   Card,
   InlineAlert,
   LoadingPanel,
+  ProgressBar,
   SectionHeading,
   Stat,
   Toggle,
@@ -109,53 +111,136 @@ export default function ExportPage() {
     { key: 'coverage', value: includeCoverage, set: setIncludeCoverage },
   ] as const;
 
+  /* Live row counts, straight from the same checklist the workbook is built
+     from — the preview can never disagree with the export. */
+  const applicableItems = items.filter((i) => i.state.applicable);
+  const vulnerableItems = applicableItems.filter((i) => i.state.result === 'Vulnerable');
+  const notApplicableItems = items.filter((i) => !i.state.applicable);
+  const coveredCategories = new Set(applicableItems.map((i) => i.definition.category)).size;
+  const sheetCounts: Record<string, string> = {
+    summary: 'Context · statistics',
+    assessment: `${applicableItems.length} tests`,
+    vulnerable: `${vulnerableItems.length} tests`,
+    notApplicable: `${notApplicableItems.length} tests`,
+    coverage: `${coveredCategories} categories`,
+  };
+
   return (
-    <div className="grid gap-5 lg:grid-cols-3">
-      <div className="space-y-5 lg:col-span-2">
+    <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_19rem]">
+      {/* Readiness rail — first in reading order on narrow screens, so the
+          state of the assessment and the download are reached before the
+          workbook anatomy. */}
+      <div className="space-y-4 self-start lg:col-start-2 lg:row-start-1">
+        <div className="cmd-band space-y-4 p-4">
+          <p className="section-kicker">Readiness</p>
+          <div>
+            <p className="metric-hero-value text-ink-50">
+              {Math.round(metrics.completion * 100)}%
+            </p>
+            <p className="mt-0.5 text-sm text-ink-300">assessment progress</p>
+          </div>
+          <ProgressBar value={metrics.completion} label="Assessment progress" />
+
+          {notTested > 0 ? (
+            <InlineAlert
+              tone="warn"
+              icon={<IconAlert size={16} aria-hidden="true" />}
+              title="Assessment is not complete"
+            >
+              {notTested} applicable test{notTested === 1 ? '' : 's'} still Not Tested. They export
+              with that status, so the gap is visible in the report rather than hidden.
+            </InlineAlert>
+          ) : (
+            metrics.counts.applicable > 0 && (
+              <InlineAlert
+                tone="success"
+                icon={<IconCheck size={16} aria-hidden="true" />}
+                title="Assessment complete — ready to export"
+              >
+                Every applicable test has a recorded status. The workbook is the report: summary,
+                assessment, vulnerable tests, not-applicable and coverage.
+              </InlineAlert>
+            )
+          )}
+
+          <Button
+            variant="primary"
+            size="lg"
+            full
+            disabled={busy}
+            icon={<IconDownload size={16} />}
+            onClick={() => void handleExcel()}
+          >
+            {busy ? 'Generating…' : 'Download Excel'}
+          </Button>
+          <p className="font-mono text-micro break-all text-ink-400">{buildFileName(engagement)}</p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          <Stat label="Applicable" value={metrics.counts.applicable} />
+          <Stat label="Not Applicable" value={metrics.counts.excluded} />
+          <Stat
+            label="Vulnerable"
+            value={metrics.counts.vulnerable}
+            tone={metrics.counts.vulnerable ? 'vuln' : 'neutral'}
+          />
+          <Stat
+            label="Progress"
+            value={`${Math.round(metrics.completion * 100)}%`}
+            tone="brand"
+            hint={`${completedOf(metrics.counts)} completed`}
+          />
+        </div>
+      </div>
+
+      {/* Workbook builder — the sheets, exactly as the writer will emit them. */}
+      <div className="space-y-5 lg:col-start-1 lg:row-start-1">
         <Card className="space-y-4">
           <SectionHeading
-            title="Excel export"
+            title="Workbook contents"
             description="Generated in your browser from the same data the dashboard shows. Nothing is uploaded."
           />
 
-          <div className="space-y-2">
+          <ul className="space-y-2">
             {SHEETS.map((sheet) => {
               const toggle = toggles.find((t) => t.key === sheet.key);
+              const optionalOff = toggle && !toggle.value;
               return (
-                <div
+                <li
                   key={sheet.key}
-                  className="panel-inset flex items-start justify-between gap-4 px-3 py-2"
+                  className={clsx(
+                    'panel-inset flex items-start gap-3 px-3 py-2.5 transition-opacity',
+                    optionalOff && 'opacity-55',
+                  )}
                 >
-                  <div className="min-w-0">
-                    <p className="flex items-center gap-2 text-sm text-ink-100">
+                  <span className="sheet-icon mt-1 shrink-0" aria-hidden="true" />
+                  <div className="min-w-0 flex-1">
+                    <p className="flex flex-wrap items-center gap-2 text-sm text-ink-100">
                       {sheet.name}
-                      {sheet.fixed && <Badge tone="neutral">Always included</Badge>}
+                      <span className="rounded border border-ink-600 px-1.5 font-mono text-micro whitespace-nowrap text-ink-300">
+                        {sheetCounts[sheet.key]}
+                      </span>
+                      {sheet.fixed ? (
+                        <Badge tone="neutral">Always included</Badge>
+                      ) : (
+                        <Badge tone={optionalOff ? 'na' : 'brand'}>
+                          {optionalOff ? 'Skipped' : 'Included'}
+                        </Badge>
+                      )}
                     </p>
                     <p className="mt-0.5 text-xs text-ink-500">{sheet.description}</p>
                   </div>
                   {toggle && <Toggle checked={toggle.value} onChange={toggle.set} />}
-                </div>
+                </li>
               );
             })}
-          </div>
+          </ul>
 
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-ink-800 pt-4">
-            <div>
-              <p className="font-mono text-xs text-ink-400">{buildFileName(engagement)}</p>
-              <p className="mt-0.5 text-micro text-ink-500">
-                Frozen headers, filter dropdowns, tuned column widths, colour-coded priority and
-                result cells.
-              </p>
-            </div>
-            <Button
-              variant="primary"
-              size="lg"
-              disabled={busy}
-              icon={<IconDownload size={16} />}
-              onClick={() => void handleExcel()}
-            >
-              {busy ? 'Generating…' : 'Download Excel'}
-            </Button>
+          <div className="border-t border-ink-800 pt-4">
+            <p className="text-micro text-ink-500">
+              Frozen headers, filter dropdowns, tuned column widths, colour-coded priority and
+              result cells.
+            </p>
           </div>
 
           {failure && (
@@ -190,49 +275,6 @@ export default function ExportPage() {
             }
           />
         </Card>
-      </div>
-
-      <div className="space-y-5">
-        <Card className="space-y-3">
-          <SectionHeading title="What will be exported" />
-          <div className="grid grid-cols-2 gap-2">
-            <Stat label="Applicable" value={metrics.counts.applicable} />
-            <Stat label="Not Applicable" value={metrics.counts.excluded} />
-            <Stat
-              label="Vulnerable"
-              value={metrics.counts.vulnerable}
-              tone={metrics.counts.vulnerable ? 'vuln' : 'neutral'}
-            />
-            <Stat
-              label="Progress"
-              value={`${Math.round(metrics.completion * 100)}%`}
-              tone="brand"
-              hint={`${completedOf(metrics.counts)} completed`}
-            />
-          </div>
-        </Card>
-
-        {notTested > 0 ? (
-          <InlineAlert
-            tone="warn"
-            icon={<IconAlert size={16} aria-hidden="true" />}
-            title="Assessment is not complete"
-          >
-            {notTested} applicable test{notTested === 1 ? '' : 's'} still Not Tested. They export
-            with that status, so the gap is visible in the report rather than hidden.
-          </InlineAlert>
-        ) : (
-          metrics.counts.applicable > 0 && (
-            <InlineAlert
-              tone="success"
-              icon={<IconCheck size={16} aria-hidden="true" />}
-              title="Assessment complete — ready to export"
-            >
-              Every applicable test has a recorded status. The workbook is the report: summary,
-              assessment, vulnerable tests, not-applicable and coverage.
-            </InlineAlert>
-          )
-        )}
 
         <Card className="space-y-2 text-xs text-ink-400">
           <p className="text-sm font-medium text-ink-100">Export notes</p>

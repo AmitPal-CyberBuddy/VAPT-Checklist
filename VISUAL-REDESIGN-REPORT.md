@@ -55,3 +55,39 @@ The product now reads as precision assessment equipment — an instrument panel 
 - **No pixel-level browser verification in-sandbox** (no downloadable browser); verified via the live dev preview (port 3333) and the class/contract-level test suite. A short human review of the library rail and settings groups at 1024px is recommended.
 - A few defined-but-unused ambient classes (e.g. `glow-brand`) remain in CSS as vocabulary; negligible weight.
 - Workspace keyboard-hint row is intentionally hidden below `xl` (physical keyboards are desktop-only).
+---
+
+# Round 6 — Command layer & workstation tray
+
+**Theme:** React-level UX upgrades that stay GitHub Pages-safe and add no runtime dependency: a real command layer, a thumb-zone decision tray for the workspace, a report-builder export screen, and reasoning-forward refinements.
+
+## 1. Command palette (Ctrl/⌘-K, everywhere)
+
+- New `src/ui/CommandPalette.tsx` — a keyboard-first navigation console mounted in the shell: fixed destinations, live engagements (safe live query that degrades to destinations only when storage is blocked), and ranked test-library results with priority badges.
+- Triggers: a search-field-styled button in the left rail (lg+) and an icon button in the top bar below lg — never both visible, so the shortcut reads the same at every breakpoint.
+- Results are real anchors (`#/…` hrefs, middle-click/copy-link still work); ↑/↓ move focus, Enter follows, Escape closes and returns focus to the trigger. Honest empty state; live result count.
+- Test-library results deep-link via `?test=<id>`: the row arrives expanded and centred (LibraryPage now reads the param).
+
+## 2. Workspace decision tray (mobile-first recomposition)
+
+- Status/result controls moved out of the header into a sticky bottom tray (`.cmd-tray`): translucent, blurred, safe-area aware — the record-status → record-result → next-test loop lives where the thumb is on a phone and always on screen on a laptop.
+- Header is identity-only (category kicker, vulnerability name, priority/ID, position); prev/next join the tray.
+- Mobile pane is no longer height-capped: guidance page-scrolls under the pinned tray, and switching tests lands at the top of the new guidance (wide screens keep the internal-scroll pane, unchanged).
+
+## 3. Export → report builder
+
+- Two-column composition: a readiness rail (progress hero, completion alert, download CTA, filename, counts) leads on mobile; the workbook anatomy (sheet stack with folded-sheet glyphs, live row counts, include/skip state) fills the main column.
+- Sheet rows show live numbers from the same checklist the writer uses — preview and export can never disagree.
+
+## 4. Other
+
+- Settings: "Local data & posture" console block — storage meter (labelled progress bar) plus posture rows (network calls / telemetry / Excel generation) with tone-marked guarantees.
+- Applicability reasoning: conditions render as a matrix — tone-tinted glyph chips, label, mono detail — instead of a plain text list.
+- Toasts: two-beat exit (sink + fade) instead of vanishing; entrance unchanged.
+- `useEngagementDirectory` hook: shell-level engagement list that never throws in blocked-storage environments.
+
+## 5. Tests / build
+
+- `vitest run` — **21 files, 274 passed** (incl. 5 new command-palette tests: open/search/navigate, engagement jump, library deep-link, Escape focus return, empty state)
+- `tsc --noEmit` — exit 0 · `vite build` — success · GitHub Pages deployment-artifact audit — 12/12
+- No new runtime dependencies; bundle 686 kB / gzip 205 kB.

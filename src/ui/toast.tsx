@@ -1,5 +1,5 @@
 /** Lightweight toast system (zustand store + renderer). */
-import { useEffect } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { create } from 'zustand';
 import clsx from 'clsx';
 import { IconAlert, IconCheck, IconInfo, IconX } from './icons';
@@ -45,17 +45,35 @@ const TONES: Record<ToastTone, { cls: string; rail: string; Icon: typeof IconChe
 
 function ToastItem({ item }: { item: Toast }) {
   const dismiss = useToastStore((s) => s.dismiss);
-  const { cls, rail, Icon } = TONES[item.tone];
+  const [leaving, setLeaving] = useState(false);
+  const leaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  /**
+   * Dismissal is a two-beat exit: mark the toast as leaving so it can sink
+   * and fade, then drop it from the store once the animation has had its
+   * (very short) say. A second request is a no-op.
+   */
+  const beginDismiss = useCallback(() => {
+    if (leaveTimer.current) return;
+    setLeaving(true);
+    leaveTimer.current = setTimeout(() => dismiss(item.id), 150);
+  }, [dismiss, item.id]);
 
   useEffect(() => {
-    const timer = setTimeout(() => dismiss(item.id), 5000);
-    return () => clearTimeout(timer);
-  }, [item.id, dismiss]);
+    const timer = setTimeout(beginDismiss, 5000);
+    return () => {
+      clearTimeout(timer);
+      if (leaveTimer.current) clearTimeout(leaveTimer.current);
+    };
+  }, [item.id, beginDismiss]);
+
+  const { cls, rail, Icon } = TONES[item.tone];
 
   return (
     <div
       className={clsx(
-        'panel floating animate-toast flex w-80 max-w-full items-start gap-3 border p-3 pl-3.5',
+        'panel floating flex w-80 max-w-full items-start gap-3 border p-3 pl-3.5',
+        leaving ? 'toast-out' : 'animate-toast',
         cls,
         rail,
       )}
@@ -68,7 +86,7 @@ function ToastItem({ item }: { item: Toast }) {
         {item.detail && <p className="mt-0.5 text-xs break-words text-ink-400">{item.detail}</p>}
       </div>
       <button
-        onClick={() => dismiss(item.id)}
+        onClick={beginDismiss}
         className="shrink-0 rounded text-ink-400 transition-colors hover:text-ink-100"
         aria-label="Dismiss notification"
       >

@@ -14,10 +14,22 @@ import type { ApplicabilityCondition, ApplicabilitySuggestion } from '../../doma
  * reasoning to decide whether to trust or override it.
  */
 
-const MARK: Record<ApplicabilityCondition['outcome'], { glyph: string; cls: string }> = {
-  met: { glyph: '✓', cls: 'text-safe-400' },
-  unmet: { glyph: '✕', cls: 'text-ink-500' },
-  unknown: { glyph: '?', cls: 'text-warn-400' },
+const MARK: Record<
+  ApplicabilityCondition['outcome'],
+  { glyph: string; chip: string }
+> = {
+  met: {
+    glyph: '✓',
+    chip: 'border-safe-500/40 bg-safe-500/10 text-safe-400',
+  },
+  unmet: {
+    glyph: '✕',
+    chip: 'border-ink-600 bg-ink-850 text-ink-500',
+  },
+  unknown: {
+    glyph: '?',
+    chip: 'border-warn-500/40 bg-warn-500/10 text-warn-300',
+  },
 };
 
 export function ApplicabilityExplanation({
@@ -41,22 +53,32 @@ export function ApplicabilityExplanation({
     <div className={clsx('text-xs', className)}>
       <p
         className={clsx(
-          'mb-1 font-medium',
+          'mb-1.5 font-medium',
           uncertain ? 'text-warn-400' : applicable ? 'text-safe-400' : 'text-ink-400',
         )}
       >
         {conditions.length === 0 ? suggestion.summary : `${heading}:`}
       </p>
       {conditions.length > 0 && (
-        <ul className={clsx('space-y-0.5', compact && 'space-y-0')}>
+        <ul className="space-y-1">
           {conditions.map((condition, index) => {
             const mark = MARK[condition.outcome];
             return (
-              <li key={`${condition.label}-${index}`} className="flex items-baseline gap-2">
-                <span className={clsx('w-3 shrink-0 font-mono', mark.cls)}>{mark.glyph}</span>
-                <span className="text-ink-200">{condition.label}</span>
+              <li key={`${condition.label}-${index}`} className="flex items-center gap-2">
+                <span
+                  aria-hidden="true"
+                  className={clsx(
+                    'flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded border font-mono text-micro leading-none',
+                    mark.chip,
+                  )}
+                >
+                  {mark.glyph}
+                </span>
+                <span className="min-w-0 flex-1 truncate text-ink-200">{condition.label}</span>
                 {!compact && (
-                  <span className="min-w-0 truncate text-ink-500">— {condition.detail}</span>
+                  <span className="shrink-0 font-mono text-micro text-ink-500">
+                    {condition.detail}
+                  </span>
                 )}
               </li>
             );

@@ -1,9 +1,11 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import clsx from 'clsx';
-import { IconAlert, IconBook, IconGrid, IconSettings, IconShield, IconSun, IconMoon } from '../ui/icons';
+import { IconAlert, IconBook, IconGrid, IconSearch, IconSettings, IconShield, IconSun, IconMoon } from '../ui/icons';
 import { InlineAlert } from '../ui/primitives';
+import { CommandPalette, PALETTE_KBD } from '../ui/CommandPalette';
 import { checkStorage, requestPersistentStorage, type StorageStatus } from '../persistence/db';
+import { useEngagementDirectory } from '../hooks/useData';
 import { useTheme } from '../ui/theme';
 import { LIBRARY_VERSION, TEST_LIBRARY } from '../data/library';
 
@@ -30,6 +32,8 @@ const NAV = [
 export function AppShell({ children }: { children: ReactNode }) {
   const location = useLocation();
   const [storage, setStorage] = useState<StorageStatus | null>(null);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const engagements = useEngagementDirectory();
   const { theme, toggle: toggleTheme } = useTheme();
 
   useEffect(() => {
@@ -76,6 +80,21 @@ export function AppShell({ children }: { children: ReactNode }) {
               brand block and the start of the workspace. */}
           <div aria-hidden="true" className="brand-edge hidden h-px opacity-70 lg:block" />
 
+          {/* Command palette trigger — in the rail it reads as a search field
+              with the shortcut; on the top bar it is an icon button. The two
+              never show at once, so the palette is reachable the same way
+              at every breakpoint. */}
+          <button
+            type="button"
+            id="command-palette-trigger"
+            onClick={() => setPaletteOpen(true)}
+            className="hidden w-full items-center gap-2.5 rounded-[--radius-control] border border-ink-700 bg-ink-900 px-3 py-2 text-left text-sm text-ink-400 transition-[color,border-color,transform] duration-150 hover:border-ink-500 hover:text-ink-200 active:translate-y-px lg:mb-1 lg:flex"
+          >
+            <IconSearch size={14} aria-hidden="true" />
+            <span className="flex-1">Search</span>
+            <kbd aria-hidden="true">{PALETTE_KBD}</kbd>
+          </button>
+
           <nav
             aria-label="Primary"
             className="flex min-w-0 flex-1 items-center gap-1 lg:flex-col lg:items-stretch lg:gap-1.5 lg:overflow-y-auto lg:p-3 lg:pt-3"
@@ -107,6 +126,16 @@ export function AppShell({ children }: { children: ReactNode }) {
           {/* Utility cluster — right of the top bar on mobile, pinned to the
               bottom of the rail on wide screens. */}
           <div className="ml-auto flex items-center gap-3 px-1 text-micro text-ink-400 lg:ml-0 lg:mt-auto lg:flex-col lg:items-stretch lg:gap-2.5 lg:border-t lg:border-ink-800 lg:px-3 lg:pt-3 lg:pb-4">
+            <button
+              type="button"
+              id="command-palette-trigger-bar"
+              onClick={() => setPaletteOpen(true)}
+              aria-label={`Search (${PALETTE_KBD})`}
+              title={`Search (${PALETTE_KBD})`}
+              className="flex h-7 w-7 items-center justify-center rounded-[--radius-control] border border-ink-700 bg-ink-900 text-ink-400 transition-[color,border-color,transform] duration-150 hover:scale-105 hover:border-ink-500 hover:text-ink-200 active:scale-95 lg:hidden"
+            >
+              <IconSearch size={13} />
+            </button>
             <button
               type="button"
               onClick={toggleTheme}
@@ -181,6 +210,9 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </footer>
       </div>
+
+      {/* The command layer: Ctrl/⌘-K from anywhere in the console. */}
+      <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} engagements={engagements} />
     </div>
   );
 }
