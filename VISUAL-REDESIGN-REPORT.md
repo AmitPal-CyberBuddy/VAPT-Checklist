@@ -91,3 +91,36 @@ The product now reads as precision assessment equipment — an instrument panel 
 - `vitest run` — **21 files, 274 passed** (incl. 5 new command-palette tests: open/search/navigate, engagement jump, library deep-link, Escape focus return, empty state)
 - `tsc --noEmit` — exit 0 · `vite build` — success · GitHub Pages deployment-artifact audit — 12/12
 - No new runtime dependencies; bundle 686 kB / gzip 205 kB.
+
+---
+
+# Round 7 — Instrumentation & tactility
+
+**Theme:** upgrades to the design system itself, not individual pages: tactile controls, instrumented metrics, honest motion, and browser-chrome integration. Still zero new runtime dependencies.
+
+## 1. Segmented control: sliding indicator
+
+- `SegmentedControl` (the status/result/applicability control across the workspace) is now an equal-column grid with a single tone-aware indicator surface that travels between segments (200ms, standard ease). Changing a result reads as one motion instead of two static states.
+- Radios, accessible names, roving tabindex, glyphs and tones are unchanged — only the presentation layer moved.
+
+## 2. Dashboard instruments
+
+- **Progress ring** in the command band: an SVG gauge whose stroke fills with the same eased count-up that drives the percentage, centred on `completed/applicable`. Turns safe-green at 100%.
+- **Severity distribution strip** above the vulnerable list: Critical → Low proportions in one bar (tone-coded, `aria-hidden`; the counts remain spelled out in the section description for non-visual readers).
+
+## 3. Toast honesty
+
+- A hairline **countdown bar** drains over the 5s auto-dismiss window, in the toast's tone colour. Hovering or focusing the toast pauses both the timer and the bar — the bar never lies about when the toast will leave.
+
+## 4. Scroll-driven section reveals
+
+- Modern CSS only: `animation-timeline: view()` with `@supports` progressive enhancement and a `prefers-reduced-motion: no-preference` guard. Sections rise in as they enter the viewport and hold; browsers without support render instantly. Applied to landing sections, dashboard sections, library category cards and settings cards — never to controls or mid-action content.
+
+## 5. Browser integration
+
+- **Route-aware tab titles**: Engagements / New engagement / Test library / Data & settings / `<engagement name>` — so history and tabs stay meaningful with several assessments open.
+
+## 6. Tests / build
+
+- `vitest run` — **21 files, 274 passed** (one environmental timing flake in a first run did not reproduce across two subsequent full runs)
+- `tsc --noEmit` — exit 0 · `vite build` — success · deployment-artifact audit — 12/12 · bundle 689.7 kB / gzip 206.1 kB

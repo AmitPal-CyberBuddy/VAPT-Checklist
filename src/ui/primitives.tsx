@@ -524,6 +524,15 @@ const SEGMENT_ACTIVE: Record<string, string> = {
   na: 'bg-ink-600 text-ink-50 border-ink-500',
 };
 
+/* The active label sits ON the sliding indicator, so it only needs its
+   foreground colour — the indicator carries the surface and border. */
+const SEGMENT_ACTIVE_TEXT: Record<string, string> = {
+  default: 'text-ink-950',
+  vulnerable: 'text-white',
+  safe: 'text-ink-950',
+  na: 'text-ink-50',
+};
+
 export function SegmentedControl<T extends string>({
   value,
   options,
@@ -542,16 +551,36 @@ export function SegmentedControl<T extends string>({
   /** Accessible name for the group of choices. */
   label: string;
 }) {
+  const activeIndex = options.findIndex((option) => option.value === value);
+  const segmentWidth = 100 / Math.max(1, options.length);
+
   return (
     <div
       role="radiogroup"
       aria-label={label}
       className={clsx(
-        'inline-flex overflow-hidden rounded-[--radius-control] border border-ink-600 bg-ink-950/60 p-0.5',
+        'relative inline-grid auto-cols-fr grid-flow-col overflow-hidden rounded-[--radius-control] border border-ink-600 bg-ink-950/60 p-0.5',
         disabled && 'pointer-events-none opacity-50',
         className,
       )}
     >
+      {/* The sliding indicator: one surface that travels between the equal
+          segments, so the choice change reads as one motion, not two states.
+          Hidden while no value is set, exactly like the labels. */}
+      {activeIndex >= 0 && (
+        <span
+          aria-hidden="true"
+          className={clsx(
+            'top-0.5 bottom-0.5 rounded-[calc(var(--radius-control)-2px)] border transition-[left] duration-200',
+            SEGMENT_ACTIVE[options[activeIndex].tone ?? 'default'],
+          )}
+          style={{
+            left: `calc(${activeIndex * segmentWidth}% + 2px)`,
+            width: `calc(${segmentWidth}% - 4px)`,
+            transitionTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)',
+          }}
+        />
+      )}
       {options.map((option) => {
         const active = option.value === value;
         return (
@@ -564,12 +593,11 @@ export function SegmentedControl<T extends string>({
             title={option.title}
             onClick={() => onChange(option.value)}
             className={clsx(
-              'inline-flex items-center gap-1 rounded-[calc(var(--radius-control)-2px)] border',
-              'border-transparent font-medium transition-[color,background-color,border-color,box-shadow,transform] duration-150 active:scale-95',
+              'relative z-10 inline-flex items-center justify-center gap-1 rounded-[calc(var(--radius-control)-2px)] border border-transparent font-medium transition-[color,background-color,transform] duration-150 active:scale-95',
               size === 'sm' ? 'px-2 py-1 text-micro' : 'px-2.5 py-1.5 text-xs',
               active
-                ? SEGMENT_ACTIVE[option.tone ?? 'default']
-                : 'text-ink-300 hover:bg-ink-800 hover:text-ink-100',
+                ? SEGMENT_ACTIVE_TEXT[option.tone ?? 'default']
+                : 'text-ink-300 hover:bg-ink-800/60 hover:text-ink-100',
             )}
           >
             {option.glyph && (

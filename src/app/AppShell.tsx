@@ -44,6 +44,26 @@ export function AppShell({ children }: { children: ReactNode }) {
     })();
   }, []);
 
+  /* Route-aware tab titles — the browser history and tab strip stay
+     meaningful when several engagements are open at once. */
+  useEffect(() => {
+    const segments = location.pathname.split('/').filter(Boolean);
+    let title = 'VAPT Checklist';
+    if (segments.length === 0) {
+      title = 'VAPT Checklist — methodology tracker';
+    } else if (segments[0] === 'engagements') {
+      title = segments[1] === 'new' ? 'New engagement · VAPT Checklist' : 'Engagements · VAPT Checklist';
+    } else if (segments[0] === 'library') {
+      title = 'Test library · VAPT Checklist';
+    } else if (segments[0] === 'settings') {
+      title = 'Data & settings · VAPT Checklist';
+    } else if (segments[0] === 'e' && segments[1]) {
+      const engagement = engagements.find((e) => e.id === segments[1]);
+      title = engagement ? `${engagement.name} · VAPT Checklist` : 'Engagement · VAPT Checklist';
+    }
+    document.title = title;
+  }, [location.pathname, engagements]);
+
   const storageOk = storage === null ? null : storage.ok;
 
   return (

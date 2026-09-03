@@ -1017,6 +1017,39 @@
   .toast-out {
     animation: toast-out var(--motion-fast) var(--ease-standard) both;
   }
+
+  /* Toast countdown: a hairline that drains as the auto-dismiss timer runs,
+     pausing with the timer on hover/focus. Duration is set inline to match
+     the JS timer exactly. */
+  .toast-countdown {
+    animation-name: toast-countdown;
+    animation-timing-function: linear;
+    animation-fill-mode: forwards;
+  }
+  .toast:hover .toast-countdown,
+  .toast:focus-within .toast-countdown,
+  .toast-countdown.paused {
+    animation-play-state: paused;
+  }
+
+  /* ---------------------------------------------------------------
+   * Scroll-driven section reveal — modern CSS only (animation-timeline),
+   * progressively enhanced: browsers without support simply render the
+   * section. Sections rise in as they enter the viewport and hold once
+   * in place; reduced-motion opts out entirely. Applied to whole
+   * sections, never to controls or content the user is mid-action on.
+   * --------------------------------------------------------------- */
+  @supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+      .scroll-reveal {
+        animation-name: reveal-view;
+        animation-duration: auto;
+        animation-fill-mode: both;
+        animation-timeline: view();
+        animation-range: entry 0% entry 60%;
+      }
+    }
+  }
 }
 
 @keyframes pop-confirm {
@@ -1114,6 +1147,27 @@
   to {
     opacity: 0;
     transform: translateY(6px) scale(0.97);
+  }
+}
+
+@keyframes toast-countdown {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+/* Sections rise in as they enter the viewport (scroll-driven, one-shot). */
+@keyframes reveal-view {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 

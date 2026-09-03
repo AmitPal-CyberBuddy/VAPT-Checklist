@@ -37,16 +37,37 @@ export const toast = {
     useToastStore.getState().push('info', message, detail),
 };
 
-const TONES: Record<ToastTone, { cls: string; rail: string; Icon: typeof IconCheck }> = {
-  success: { cls: 'border-safe-500/40 text-safe-400', rail: 'rail-safe', Icon: IconCheck },
-  error: { cls: 'border-vuln-500/40 text-vuln-400', rail: 'rail-vuln', Icon: IconAlert },
-  info: { cls: 'border-brand-500/40 text-brand-400', rail: 'rail-brand', Icon: IconInfo },
+const TONES: Record<ToastTone, { cls: string; rail: string; bar: string; Icon: typeof IconCheck }> = {
+  success: {
+    cls: 'border-safe-500/40 text-safe-400',
+    rail: 'rail-safe',
+    bar: 'bg-safe-500',
+    Icon: IconCheck,
+  },
+  error: {
+    cls: 'border-vuln-500/40 text-vuln-400',
+    rail: 'rail-vuln',
+    bar: 'bg-vuln-500',
+    Icon: IconAlert,
+  },
+  info: {
+    cls: 'border-brand-500/40 text-brand-400',
+    rail: 'rail-brand',
+    bar: 'bg-brand-500',
+    Icon: IconInfo,
+  },
 };
+
+/** Auto-dismiss window, shared by the JS timer and the countdown bar. */
+const TOAST_DURATION = 5000;
 
 function ToastItem({ item }: { item: Toast }) {
   const dismiss = useToastStore((s) => s.dismiss);
   const [leaving, setLeaving] = useState(false);
+  const [paused, setPaused] = useState(false);
   const leaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** Time left until auto-dismiss; survives pause/resume cycles. */
+  const remaining = useRef(TOAST_DURATION);
 
   /**
    * Dismissal is a two-beat exit: mark the toast as leaving so it can sink
@@ -59,20 +80,37 @@ function ToastItem({ item }: { item: Toast }) {
     leaveTimer.current = setTimeout(() => dismiss(item.id), 150);
   }, [dismiss, item.id]);
 
+  /**
+   * The auto-dismiss clock. Hovering or focusing the toast pauses it — and
+   * the countdown bar pauses with it, because both read this one state.
+   */
   useEffect(() => {
-    const timer = setTimeout(beginDismiss, 5000);
+    if (paused || leaving) return;
+    const startedAt = Date.now();
+    const timer = setTimeout(beginDismiss, remaining.current);
     return () => {
       clearTimeout(timer);
-      if (leaveTimer.current) clearTimeout(leaveTimer.current);
+      remaining.current = Math.max(0, remaining.current - (Date.now() - startedAt));
     };
-  }, [item.id, beginDismiss]);
+  }, [paused, leaving, beginDismiss, item.id]);
 
-  const { cls, rail, Icon } = TONES[item.tone];
+  useEffect(
+    () => () => {
+      if (leaveTimer.current) clearTimeout(leaveTimer.current);
+    },
+    [],
+  );
+
+  const { cls, rail, bar, Icon } = TONES[item.tone];
 
   return (
     <div
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      onFocus={() => setPaused(true)}
+      onBlur={() => setPaused(false)}
       className={clsx(
-        'panel floating flex w-80 max-w-full items-start gap-3 border p-3 pl-3.5',
+        'toast panel floating relative flex w-80 max-w-full items-start gap-3 overflow-hidden border p-3 pl-3.5',
         leaving ? 'toast-out' : 'animate-toast',
         cls,
         rail,
@@ -92,6 +130,13 @@ function ToastItem({ item }: { item: Toast }) {
       >
         <IconX size={14} />
       </button>
+      {/* The countdown: drains over the auto-dismiss window, pausing on
+          hover/focus exactly when the timer does. */}
+      <span
+        aria-hidden="true"
+        className={clsx('toast-countdown absolute bottom-0 left-0 h-0.5 w-full origin-left', bar)}
+        style={{ animationDuration: `${TOAST_DURATION}ms` }}
+      />
     </div>
   );
 }

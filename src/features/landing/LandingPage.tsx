@@ -195,7 +195,7 @@ export default function LandingPage() {
       </section>
 
       {/* ----------------------------------------------- What it does */}
-      <section aria-labelledby="landing-what" className="space-y-4">
+      <section aria-labelledby="landing-what" className="scroll-reveal space-y-4">
         <SectionHeading
           id="landing-what"
           title="What it does"
@@ -250,7 +250,7 @@ export default function LandingPage() {
       </section>
 
       {/* ----------------------------------------------- How it works */}
-      <section aria-labelledby="landing-how" className="space-y-4">
+      <section aria-labelledby="landing-how" className="scroll-reveal space-y-4">
         <SectionHeading
           id="landing-how"
           title="How it works"
@@ -279,7 +279,7 @@ export default function LandingPage() {
       </section>
 
       {/* ----------------------------------------------- Methodology */}
-      <section aria-labelledby="landing-method" className="space-y-4">
+      <section aria-labelledby="landing-method" className="scroll-reveal space-y-4">
         <SectionHeading
           id="landing-method"
           title="Built on recognised methodology"
@@ -318,7 +318,7 @@ export default function LandingPage() {
       </Card>
 
       {/* ----------------------------------------------- Connect */}
-      <section aria-labelledby="landing-connect" className="space-y-4">
+      <section aria-labelledby="landing-connect" className="scroll-reveal space-y-4">
         <SectionHeading
           id="landing-connect"
           title="Connect & feedback"

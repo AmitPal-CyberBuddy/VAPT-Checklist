@@ -27,12 +27,23 @@ import { contextCompleteness } from '../context/ContextForm';
 import { effectiveAssetTypes, effectiveContext, FACT_BY_KEY } from '../../domain/context';
 import { suggestApplicability } from '../../domain/applicability';
 import { safeExternalUrl } from '../../domain/untrusted';
-import type { Priority } from '../../domain/types';
+import { PRIORITIES, type Priority } from '../../domain/types';
 import {
   applicationTypeLabel as applicationTypeName,
   type ApplicationTypeId,
 } from '../../domain/applicationType';
 import { supportLevel } from '../../data/typeCoverage';
+
+/** Ring gauge geometry: r = 42 on a 100×100 viewBox. */
+const RING_CIRCUMFERENCE = 2 * Math.PI * 42;
+
+/** Severity fill for the vulnerable-by-priority distribution strip. */
+const SEVERITY_FILL: Record<Priority, string> = {
+  Critical: 'bg-vuln-500',
+  High: 'bg-high-500',
+  Medium: 'bg-medium-400',
+  Low: 'bg-brand-500/60',
+};
 
 /**
  * A short eased count-up for the headline progress number. Pure presentation —
@@ -212,78 +223,115 @@ export default function DashboardPage() {
           </div>
 
           <div className="rounded-[--radius-panel] border border-ink-700 bg-ink-950/50 p-4 shadow-[inset_0_1px_0_rgb(141_156_178/0.05)]">
-            <div className="flex items-baseline justify-between gap-3">
-              <h2
-                id="progress-heading"
-                className="text-micro font-medium tracking-wider text-ink-400 uppercase"
+            <div className="flex flex-col gap-4 sm:flex-row-reverse sm:items-center sm:gap-5">
+              {/* The ring: an absolute-progress instrument, animated by the
+                  same eased count-up that drives the percentage. */}
+              <div
+                className="relative mx-auto h-28 w-28 shrink-0 sm:h-32 sm:w-32"
+                aria-hidden="true"
               >
-                Overall progress
-              </h2>
-              <span
-                className={clsx(
-                  'metric-hero-value',
-                  metrics.completion === 1 ? 'text-safe-400' : 'text-brand-400',
-                )}
-              >
-                {completionPercent}%
-              </span>
-            </div>
-            <ProgressBar
-              className="mt-3"
-              height="lg"
-              label="Overall assessment progress"
-              value={metrics.completion}
-              tone={metrics.completion === 1 ? 'safe' : 'brand'}
-            />
-            <p className="mt-2 text-xs tabular-nums text-ink-400">
-              <strong className="text-ink-100">{completed}</strong> completed (Tested {c.tested} +{' '}
-              N/A {c.na}) of <strong className="text-ink-100">{c.applicable}</strong> applicable
-              tests
-              {outstandingCount > 0 && (
-                <span className="text-warn-300"> · {outstandingCount} still Not Tested</span>
-              )}
-            </p>
-            {/* The one question every tester asks when the checklist closes:
-                can this assessment be exported as a report? */}
-            <p
-              className={clsx(
-                'mt-2 inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs font-medium',
-                outstandingCount === 0 && c.applicable > 0
-                  ? 'border-safe-500/35 bg-safe-500/10 text-safe-400'
-                  : 'border-warn-500/30 bg-warn-500/5 text-warn-300',
-              )}
-            >
-              <span aria-hidden="true">
-                {c.applicable === 0 ? '—' : outstandingCount === 0 ? '✓' : '◐'}
-              </span>
-              {c.applicable === 0
-                ? 'No applicable tests recorded'
-                : outstandingCount === 0
-                  ? 'Assessment ready for export'
-                  : `${outstandingCount} test${outstandingCount === 1 ? '' : 's'} still need attention`}
-            </p>
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              <LinkButton
-                to={`/e/${engagementId}/workspace`}
-                variant="primary"
-                icon={<IconList size={15} />}
-              >
-                Open testing workspace
-              </LinkButton>
-              <LinkButton
-                to={`/e/${engagementId}/export`}
-                variant="subtle"
-                icon={<IconDownload size={15} />}
-              >
-                Export assessment
-              </LinkButton>
+                <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90">
+                  <circle cx="50" cy="50" r="42" fill="none" strokeWidth="9" className="stroke-ink-800" />
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r="42"
+                    fill="none"
+                    strokeWidth="9"
+                    strokeLinecap="round"
+                    strokeDasharray={RING_CIRCUMFERENCE}
+                    strokeDashoffset={
+                      RING_CIRCUMFERENCE * (1 - Math.min(1, Math.max(0, completionPercent / 100)))
+                    }
+                    className={metrics.completion === 1 ? 'stroke-safe-500' : 'stroke-brand-500'}
+                    style={{ transition: 'stroke-dashoffset 600ms cubic-bezier(0.22, 1, 0.36, 1)' }}
+                  />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="text-base font-semibold tabular-nums text-ink-50">
+                    {completed}/{c.applicable}
+                  </span>
+                  <span className="font-mono text-micro tracking-widest text-ink-400 uppercase">
+                    done
+                  </span>
+                </div>
+              </div>
+
+              <div className="min-w-0 flex-1">
+                <div className="flex items-baseline justify-between gap-3">
+                  <h2
+                    id="progress-heading"
+                    className="text-micro font-medium tracking-wider text-ink-400 uppercase"
+                  >
+                    Overall progress
+                  </h2>
+                  <span
+                    className={clsx(
+                      'metric-hero-value',
+                      metrics.completion === 1 ? 'text-safe-400' : 'text-brand-400',
+                    )}
+                  >
+                    {completionPercent}%
+                  </span>
+                </div>
+                <ProgressBar
+                  className="mt-3"
+                  height="lg"
+                  label="Overall assessment progress"
+                  value={metrics.completion}
+                  tone={metrics.completion === 1 ? 'safe' : 'brand'}
+                />
+                <p className="mt-2 text-xs tabular-nums text-ink-400">
+                  <strong className="text-ink-100">{completed}</strong> completed (Tested {c.tested}{' '}
+                  + N/A {c.na}) of <strong className="text-ink-100">{c.applicable}</strong>{' '}
+                  applicable tests
+                  {outstandingCount > 0 && (
+                    <span className="text-warn-300"> · {outstandingCount} still Not Tested</span>
+                  )}
+                </p>
+                {/* The one question every tester asks when the checklist closes:
+                    can this assessment be exported as a report? */}
+                <p
+                  className={clsx(
+                    'mt-2 inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs font-medium',
+                    outstandingCount === 0 && c.applicable > 0
+                      ? 'border-safe-500/35 bg-safe-500/10 text-safe-400'
+                      : 'border-warn-500/30 bg-warn-500/5 text-warn-300',
+                  )}
+                >
+                  <span aria-hidden="true">
+                    {c.applicable === 0 ? '—' : outstandingCount === 0 ? '✓' : '◐'}
+                  </span>
+                  {c.applicable === 0
+                    ? 'No applicable tests recorded'
+                    : outstandingCount === 0
+                      ? 'Assessment ready for export'
+                      : `${outstandingCount} test${outstandingCount === 1 ? '' : 's'} still need attention`}
+                </p>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <LinkButton
+                    to={`/e/${engagementId}/workspace`}
+                    variant="primary"
+                    icon={<IconList size={15} />}
+                  >
+                    Open testing workspace
+                  </LinkButton>
+                  <LinkButton
+                    to={`/e/${engagementId}/export`}
+                    variant="subtle"
+                    icon={<IconDownload size={15} />}
+                  >
+                    Export assessment
+                  </LinkButton>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       {/* 2 — the six assessment counts, attention first ------------------- */}
-      <section aria-labelledby="stats-heading">
+      <section aria-labelledby="stats-heading" className="scroll-reveal">
         <h2 id="stats-heading" className="sr-only">
           Assessment statistics
         </h2>
@@ -362,7 +410,7 @@ export default function DashboardPage() {
       )}
 
       {/* 3 — what to test next -------------------------------------------- */}
-      <Card as="section" aria-labelledby="high-value-heading" className="space-y-3">
+      <Card as="section" aria-labelledby="high-value-heading" className="scroll-reveal space-y-3">
         <SectionHeading
           id="high-value-heading"
           title={
@@ -443,7 +491,7 @@ export default function DashboardPage() {
       <Card
         as="section"
         aria-labelledby="vulnerable-heading"
-        className="attn-vuln space-y-3"
+        className="attn-vuln scroll-reveal space-y-3"
       >
         <SectionHeading
           id="vulnerable-heading"
@@ -481,7 +529,25 @@ export default function DashboardPage() {
             description="A test appears here as soon as you record Tested → Vulnerable."
           />
         ) : (
-          <ul className="divide-y divide-ink-800">
+          <>
+            {/* Severity distribution: the shape of what was found, in one
+                glance — the counts it encodes are spelled out in the section
+                description for non-visual readers. */}
+            <div
+              aria-hidden="true"
+              className="flex h-2 w-full overflow-hidden rounded-full bg-ink-800"
+            >
+              {PRIORITIES.filter((p) => metrics.findingsByPriority[p] > 0).map((p) => (
+                <span
+                  key={p}
+                  className={clsx(SEVERITY_FILL[p], 'h-full transition-[width] duration-500')}
+                  style={{
+                    width: `${(metrics.findingsByPriority[p] / Math.max(1, findings.length)) * 100}%`,
+                  }}
+                />
+              ))}
+            </div>
+            <ul className="divide-y divide-ink-800">
             {findings.map(({ definition, state }) => (
               <li key={definition.id}>
                 <Link
@@ -513,12 +579,13 @@ export default function DashboardPage() {
                 </Link>
               </li>
             ))}
-          </ul>
+            </ul>
+          </>
         )}
       </Card>
 
       {/* 5 — where the remaining work is ----------------------------------- */}
-      <Card as="section" aria-labelledby="coverage-heading" className="space-y-3">
+      <Card as="section" aria-labelledby="coverage-heading" className="scroll-reveal space-y-3">
         <SectionHeading
           id="coverage-heading"
           title="Coverage by category"

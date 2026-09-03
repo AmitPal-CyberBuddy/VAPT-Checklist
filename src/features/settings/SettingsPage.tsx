@@ -178,7 +178,7 @@ export default function SettingsPage() {
         />
       </div>
 
-      <Card className="panel-accent space-y-4">
+      <Card className="panel-accent scroll-reveal space-y-4">
         <SectionHeading
           title="Backup & restore"
           description="A JSON backup contains every engagement, context and recorded result. Import merges into this browser; duplicate IDs are re-keyed rather than overwritten."
@@ -208,7 +208,7 @@ export default function SettingsPage() {
         </div>
       </Card>
 
-      <Card className="space-y-3">
+      <Card className="scroll-reveal space-y-3">
         <SectionHeading
           title="Test library synchronisation"
           description="When the bundled library gains new tests, existing engagements can adopt them without losing recorded work."
@@ -227,7 +227,7 @@ export default function SettingsPage() {
         )}
       </Card>
 
-      <Card className="space-y-4">
+      <Card className="scroll-reveal space-y-4">
         <SectionHeading
           title="Local data & posture"
           description="This installation's storage and its local-only guarantees, at a glance."
@@ -297,7 +297,7 @@ export default function SettingsPage() {
         </dl>
       </Card>
 
-      <Card className="space-y-3 border-vuln-500/30">
+      <Card className="scroll-reveal space-y-3 border-vuln-500/30">
         <SectionHeading
           title="Danger zone"
           description="Permanently removes every engagement, result and note stored by this application in this browser."

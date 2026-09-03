@@ -429,7 +429,7 @@ export default function LibraryPage() {
             key={category.id}
             as="section"
             aria-labelledby={`library-cat-${category.id}`}
-            className="overflow-hidden rounded-[--radius-panel] p-0"
+            className="scroll-reveal overflow-hidden rounded-[--radius-panel] p-0"
           >
             <header className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-ink-800 bg-ink-850/60 px-4 py-2.5">
               <span className="flex h-7 w-7 items-center justify-center rounded-[--radius-control] border border-ink-700 bg-ink-900 text-brand-400">
