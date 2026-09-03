@@ -558,6 +558,46 @@
     transform: scaleX(1);
   }
 
+  /* In the left rail (lg+), the active item is marked with a left-edge accent
+     instead of the top-bar scan-line, so it reads vertically. */
+  .rail-link::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 22%;
+    bottom: 22%;
+    width: 2px;
+    border-radius: 2px;
+    background-image: linear-gradient(
+      180deg,
+      rgb(69 192 249 / 0.9),
+      rgb(14 165 233 / 0.45)
+    );
+    opacity: 0;
+    transition: opacity var(--motion-base) var(--ease-standard);
+  }
+  .rail-link:hover::before,
+  .rail-link[aria-current='page']::before {
+    opacity: 1;
+  }
+  @media (min-width: 1024px) {
+    .nav-pill::after {
+      display: none;
+    }
+  }
+
+  /* Sticky command surfaces sit below the mobile top bar; once the shell
+     becomes a left rail there is no header above, so they stick to the
+     viewport top with a small gap. */
+  .command-bar {
+    top: 3.4rem;
+  }
+  @media (min-width: 1024px) {
+    .command-bar {
+      top: 0.75rem;
+    }
+  }
+
   /* Interactive cards: a thin brand scan-line fades in across the top edge
      on hover. Kept to a hairline so it never fights the panel border. */
   .scan-edge {

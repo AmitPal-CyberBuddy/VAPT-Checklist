@@ -43,16 +43,22 @@ export function AppShell({ children }: { children: ReactNode }) {
   const storageOk = storage === null ? null : storage.ok;
 
   return (
-    <div className="flex min-h-full flex-col">
+    <div className="min-h-full">
       <a href="#main" className="skip-link">
         Skip to main content
       </a>
 
-      <header className="no-print sticky top-0 z-40 border-b border-ink-800 bg-ink-950/95 backdrop-blur">
+      {/* The shell: one element that recomposes instead of shrinking.
+          Below `lg` it is a horizontal top bar; at `lg` and up it becomes a
+          fixed left rail — the navigation is a single landmark either way,
+          so the structure never duplicates for different breakpoints. */}
+      <header className="no-print sticky top-0 z-40 border-b border-ink-800 bg-ink-950/95 backdrop-blur lg:fixed lg:inset-y-0 lg:left-0 lg:w-60 lg:flex-col lg:border-r lg:border-b-0 lg:bg-ink-950">
         {/* The brand keyline — one controlled accent edge across the console. */}
-        <div aria-hidden="true" className="brand-edge h-0.5" />
-        <div className="mx-auto flex h-13 max-w-[1600px] items-center gap-3 px-3 sm:gap-6 sm:px-6">
-          <NavLink to="/" className="flex shrink-0 items-center gap-2.5" aria-label="VAPT Checklist — home">
+        <div aria-hidden="true" className="brand-edge h-0.5 lg:hidden" />
+
+        <div className="mx-auto flex h-13 max-w-[1600px] items-center gap-3 px-3 sm:gap-6 sm:px-6 lg:mx-0 lg:h-full lg:w-full lg:max-w-none lg:flex-col lg:items-stretch lg:gap-0 lg:px-0">
+          {/* Brand — identity always first, wherever the bar sits. */}
+          <NavLink to="/" className="flex shrink-0 items-center gap-2.5 lg:px-3 lg:pt-3 lg:pb-2.5" aria-label="VAPT Checklist — home">
             <span className="brand-mark flex h-8 w-8 items-center justify-center rounded-[--radius-control] border border-brand-500/50 text-brand-400">
               <IconShield size={18} />
             </span>
@@ -66,9 +72,14 @@ export function AppShell({ children }: { children: ReactNode }) {
             </span>
           </NavLink>
 
-          <div aria-hidden="true" className="hidden h-5 w-px bg-ink-700 lg:block" />
+          {/* In the rail, a hairline under the identity marks the end of the
+              brand block and the start of the workspace. */}
+          <div aria-hidden="true" className="brand-edge hidden h-px opacity-70 lg:block" />
 
-          <nav aria-label="Primary" className="flex items-center gap-1">
+          <nav
+            aria-label="Primary"
+            className="flex min-w-0 flex-1 items-center gap-1 lg:flex-col lg:items-stretch lg:gap-1.5 lg:overflow-y-auto lg:p-3 lg:pt-3"
+          >
             {NAV.map(({ to, label, icon: Icon, end }) => {
               const active = end
                 ? location.pathname === to
@@ -79,7 +90,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   to={to}
                   aria-current={active ? 'page' : undefined}
                   className={clsx(
-                    'nav-pill flex items-center gap-2 rounded-[--radius-control] border px-2.5 py-1.5 text-sm transition-[color,background-color,border-color,transform] duration-150 hover:-translate-y-px active:translate-y-px sm:px-3',
+                    'nav-pill rail-link flex shrink-0 items-center gap-2 rounded-[--radius-control] border px-2.5 py-1.5 text-sm transition-[color,background-color,border-color,transform] duration-150 hover:-translate-y-px active:translate-y-px sm:px-3 lg:w-full lg:shrink lg:px-3',
                     active
                       ? 'border-ink-700 bg-ink-800 text-ink-50 shadow-[inset_0_1px_0_rgb(141_156_178/0.08)]'
                       : 'border-transparent text-ink-300 hover:bg-ink-900 hover:text-ink-100',
@@ -93,16 +104,18 @@ export function AppShell({ children }: { children: ReactNode }) {
             })}
           </nav>
 
-          <div className="ml-auto flex items-center gap-3 text-micro text-ink-400">
+          {/* Utility cluster — right of the top bar on mobile, pinned to the
+              bottom of the rail on wide screens. */}
+          <div className="ml-auto flex items-center gap-3 px-1 text-micro text-ink-400 lg:ml-0 lg:mt-auto lg:flex-col lg:items-stretch lg:gap-2.5 lg:border-t lg:border-ink-800 lg:px-3 lg:pt-3 lg:pb-4">
             <button
               type="button"
               onClick={toggleTheme}
               aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-              className="flex h-7 w-7 items-center justify-center rounded-[--radius-control] border border-ink-700 bg-ink-900 text-ink-400 transition-[color,border-color,transform] duration-150 hover:scale-105 hover:border-ink-500 hover:text-ink-200 active:scale-95"
+              className="flex h-7 w-7 items-center justify-center rounded-[--radius-control] border border-ink-700 bg-ink-900 text-ink-400 transition-[color,border-color,transform] duration-150 hover:scale-105 hover:border-ink-500 hover:text-ink-200 active:scale-95 lg:self-start"
             >
               {theme === 'dark' ? <IconSun size={13} /> : <IconMoon size={13} />}
             </button>
-            <span className="hidden font-mono tabular-nums xl:inline">
+            <span className="hidden font-mono tabular-nums lg:block">
               {TEST_LIBRARY.length} tests · library v{LIBRARY_VERSION}
             </span>
             <span
@@ -133,38 +146,41 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      <main id="main" className="mx-auto w-full max-w-[1600px] flex-1 px-3 py-5 sm:px-6 sm:py-6">
-        {storageOk === false && (
-          <InlineAlert
-            tone="error"
-            icon={<IconAlert size={18} />}
-            title="This browser is not saving your work"
-            className="mb-5"
-          >
-            {STORAGE_ADVICE[storage?.problem ?? 'unknown']}
-            {storage?.detail && (
-              <span className="mt-1 block font-mono text-micro text-ink-400">{storage.detail}</span>
-            )}
-          </InlineAlert>
-        )}
-        {/* Route-level crossfade: 120 ms fade keyed by path, off under reduced motion. */}
-        <div key={location.pathname} className="animate-page">
-          {children}
-        </div>
-      </main>
+      {/* Main column — pushed right of the rail on wide screens. */}
+      <div className="flex min-h-full flex-col lg:pl-60">
+        <main id="main" className="mx-auto w-full max-w-[1600px] flex-1 px-3 py-5 sm:px-6 sm:py-6">
+          {storageOk === false && (
+            <InlineAlert
+              tone="error"
+              icon={<IconAlert size={18} />}
+              title="This browser is not saving your work"
+              className="mb-5"
+            >
+              {STORAGE_ADVICE[storage?.problem ?? 'unknown']}
+              {storage?.detail && (
+                <span className="mt-1 block font-mono text-micro text-ink-400">{storage.detail}</span>
+              )}
+            </InlineAlert>
+          )}
+          {/* Route-level crossfade: 120 ms fade keyed by path, off under reduced motion. */}
+          <div key={location.pathname} className="animate-page">
+            {children}
+          </div>
+        </main>
 
-      <footer className="no-print mt-8 px-4 pt-4 pb-6 sm:px-6">
-        <div aria-hidden="true" className="brand-edge mb-4 h-px opacity-70" />
-        <div className="mx-auto flex max-w-[1600px] flex-col items-center gap-2 text-center">
-          <span className="flex items-center gap-1.5 font-mono text-micro tracking-wide text-ink-500">
-            <IconShield size={11} aria-hidden="true" className="text-brand-500/70" />
-            VAPT Checklist — Assessment Tracker
-          </span>
-          <span className="font-mono text-micro tracking-wide text-ink-500">
-            Fully client-side · no backend, no telemetry · engagement data never leaves this browser
-          </span>
-        </div>
-      </footer>
+        <footer className="no-print mt-8 px-4 pt-4 pb-6 sm:px-6">
+          <div aria-hidden="true" className="brand-edge mb-4 h-px opacity-70" />
+          <div className="mx-auto flex max-w-[1600px] flex-col items-center gap-2 text-center">
+            <span className="flex items-center gap-1.5 font-mono text-micro tracking-wide text-ink-500">
+              <IconShield size={11} aria-hidden="true" className="text-brand-500/70" />
+              VAPT Checklist — Assessment Tracker
+            </span>
+            <span className="font-mono text-micro tracking-wide text-ink-500">
+              Fully client-side · no backend, no telemetry · engagement data never leaves this browser
+            </span>
+          </div>
+        </footer>
+      </div>
     </div>
   );
 }

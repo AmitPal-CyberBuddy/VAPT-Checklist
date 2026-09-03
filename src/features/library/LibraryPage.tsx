@@ -171,7 +171,7 @@ export default function LibraryPage() {
       <div className="grid gap-4 lg:grid-cols-[230px_minmax(0,1fr)]">
         <aside aria-label="Library navigation" className="min-w-0">
           {/* Desktop tree */}
-          <nav className="sticky top-16 hidden max-h-[calc(100vh-6rem)] flex-col gap-0.5 overflow-y-auto rounded-[--radius-panel] border border-ink-700 bg-ink-900 p-2.5 shadow-[--shadow-panel] lg:flex">
+          <nav className="sticky top-16 hidden max-h-[calc(100vh-6rem)] flex-col gap-0.5 overflow-y-auto rounded-[--radius-panel] border border-ink-700 bg-ink-900 p-2.5 shadow-[--shadow-panel] lg:top-3 lg:flex">
             <p className="section-kicker mb-1.5 px-2">Taxonomy</p>
             <button
               type="button"

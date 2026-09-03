@@ -648,7 +648,7 @@ export default function WorkspacePage() {
         <div
           role="toolbar"
           aria-label="Bulk actions"
-          className="panel animate-in sticky top-16 z-30 flex flex-wrap items-center gap-2 border-brand-500/40 p-3"
+          className="panel animate-in sticky top-16 z-30 flex flex-wrap items-center gap-2 border-brand-500/40 p-3 lg:top-3"
         >
           <Badge tone="brand">{selected.size} selected</Badge>
           <Button size="sm" onClick={() => void bulk({ status: 'Not Tested' }, 'Set to Not Tested')}>
