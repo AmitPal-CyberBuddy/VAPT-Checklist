@@ -44,7 +44,7 @@ const SHEETS = [
     key: 'notApplicable',
     name: 'Not Applicable',
     description:
-      'Tests marked Not Applicable, with the rule and reason — the audit trail for every applicability decision.',
+      'Tests not in this engagement\'s checklist, with the rule and reason — the audit trail for every applicability decision.',
   },
   {
     key: 'coverage',
@@ -240,6 +240,12 @@ export default function ExportPage() {
             <p className="text-micro text-ink-500">
               Frozen headers, filter dropdowns, tuned column widths, colour-coded priority and
               result cells.
+            </p>
+            <p className="mt-1.5 text-micro text-ink-500">
+              Tester-entered text is escaped against spreadsheet formula injection before writing a
+              cell — a leading <span className="font-mono">=</span>, <span className="font-mono">+</span>,{' '}
+              <span className="font-mono">-</span> or <span className="font-mono">@</span> is
+              neutralised so the workbook cannot execute as a formula.
             </p>
           </div>
 

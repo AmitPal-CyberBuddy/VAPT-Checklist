@@ -5,11 +5,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="VAPT Checklist - a client-side vulnerability assessment and penetration testing checklist and assessment tracker."
+      content="VAPT Checklist — a local-first, OWASP-aligned vulnerability assessment and penetration testing checklist and assessment tracker. Works entirely in your browser; your data never leaves it."
     />
     <meta name="color-scheme" content="dark light" />
+    <meta name="theme-color" content="#05070f" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#f6f5f2" media="(prefers-color-scheme: light)" />
+    <meta name="robots" content="index, follow" />
+
+    <!-- Open Graph + Twitter so shared links look like a real product. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="VAPT Checklist" />
+    <meta property="og:title" content="VAPT Checklist — Penetration Testing Methodology Tracker" />
+    <meta
+      property="og:description"
+      content="A few scoping answers become a complete, prioritised security checklist — tracked from first probe to a five-sheet Excel report. Local-first, OWASP-aligned, no account required."
+    />
+    <meta property="og:url" content="https://amitpal-cyberbuddy.github.io/VAPT-Checklist/" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="VAPT Checklist — Penetration Testing Methodology Tracker" />
+    <meta
+      name="twitter:description"
+      content="A few scoping answers become a complete, prioritised security checklist — tracked from first probe to a five-sheet Excel report."
+    />
+
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
-    <title>VAPT Checklist</title>
+    <link rel="apple-touch-icon" href="./favicon.svg" />
+    <title>VAPT Checklist — Penetration Testing Methodology Tracker</title>
+
     <!-- Apply the saved theme before first paint so there is no flash of the
          wrong theme. Mirrors src/ui/theme.tsx (kept in sync there too). -->
     <script>
@@ -25,9 +47,141 @@
         }
       })();
     </script>
+
+    <!-- A small, self-contained fallback so the page is never a silent white or
+         black void: if the app bundle can't load (e.g. the site is being served
+         from source instead of the compiled build) we show a clear, on-brand
+         message instead of nothing. Plain inline CSS only — no dependency on the
+         bundled stylesheet, which lives inside the JS bundle. -->
+    <style id="vapt-fallback-style">
+      html, body { margin: 0; height: 100%; }
+      [data-theme='dark'] body {
+        background: #05070f;
+        color: #e3e9f1;
+        color-scheme: dark;
+      }
+      [data-theme='light'] body {
+        background: #f6f5f2;
+        color: #1b1916;
+        color-scheme: light;
+      }
+      .vapt-fallback {
+        position: fixed;
+        inset: 0;
+        z-index: 60;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      }
+      .vapt-fallback__card {
+        max-width: 520px;
+        width: 100%;
+        border-radius: 16px;
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        padding: 32px 28px;
+        text-align: center;
+        background: rgba(10, 16, 30, 0.7);
+        box-shadow: 0 24px 60px -24px rgba(2, 4, 10, 0.6);
+        backdrop-filter: blur(8px);
+      }
+      [data-theme='light'] .vapt-fallback__card {
+        background: #ffffff;
+        border: 1px solid rgba(28, 26, 24, 0.12);
+        box-shadow: 0 18px 40px -18px rgba(28, 26, 24, 0.28);
+      }
+      .vapt-fallback__mark {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        border: 1px solid rgba(14, 165, 233, 0.5);
+        color: #38bdf8;
+        font-size: 22px;
+        margin-bottom: 16px;
+      }
+      .vapt-fallback__title {
+        font-size: 18px;
+        font-weight: 650;
+        letter-spacing: -0.01em;
+        margin: 0 0 8px;
+      }
+      .vapt-fallback__text {
+        font-size: 14px;
+        line-height: 1.6;
+        margin: 0 0 20px;
+        opacity: 0.82;
+      }
+      .vapt-fallback__hint {
+        font: 12px/1.6 ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+        opacity: 0.6;
+        margin: 0;
+      }
+      .vapt-fallback__hidden { display: none !important; }
+    </style>
   </head>
   <body class="h-full">
     <div id="root" class="h-full"></div>
+
+    <!-- Shown only when JavaScript is disabled. -->
+    <noscript>
+      <div class="vapt-fallback">
+        <div class="vapt-fallback__card">
+          <div class="vapt-fallback__mark">🛡️</div>
+          <h1 class="vapt-fallback__title">VAPT Checklist</h1>
+          <p class="vapt-fallback__text">
+            This tool runs entirely in your browser, so it needs JavaScript enabled
+            to build your checklist. Turn on JavaScript and reload the page to continue.
+          </p>
+          <p class="vapt-fallback__hint">vapt-checklist · runs locally, no data is uploaded</p>
+        </div>
+      </div>
+    </noscript>
+
     <script type="module" src="/src/main.tsx"></script>
+
+    <!-- Last line of defence against a blank page. If the module entry never
+         populates #root (a build/deploy issue, a blocked asset, an old cache),
+         replace the empty host with a clear message. Never fires once the app
+         has rendered, because the app removes this fallback. -->
+    <div id="vapt-fallback" class="vapt-fallback vapt-fallback__hidden">
+      <div class="vapt-fallback__card">
+        <div class="vapt-fallback__mark">🛡️</div>
+        <h1 class="vapt-fallback__title">VAPT Checklist</h1>
+        <p class="vapt-fallback__text">
+          The app couldn't finish loading. This usually means the site is being
+          served from source files instead of the compiled build.
+        </p>
+        <p class="vapt-fallback__hint">If this persists, hard-refresh (Ctrl/Cmd+Shift+R).</p>
+      </div>
+    </div>
+
+    <script>
+      (function () {
+        var root = document.getElementById('root');
+        var fallback = document.getElementById('vapt-fallback');
+        function reveal() {
+          if (!root || !fallback || root.childElementCount > 0) return;
+          fallback.classList.remove('vapt-fallback__hidden');
+        }
+        // If the module bundle fails to load, show the fallback immediately.
+        window.addEventListener('error', function (e) {
+          if (e && e.target && e.target.tagName === 'SCRIPT') reveal();
+        }, true);
+        // Give the bundle a healthy window to boot (first paint on a slow CDN can
+        // take a few seconds); only then fall back.
+        var bootTimer = window.setTimeout(reveal, 8000);
+        // Once the app renders, mark the fallback as spent and stop the timer.
+        new MutationObserver(function () {
+          if (root && root.childElementCount > 0) {
+            clearTimeout(bootTimer);
+            if (fallback) fallback.classList.add('vapt-fallback__hidden');
+          }
+        }).observe(root, { childList: true, subtree: true });
+      })();
+    </script>
   </body>
 </html>

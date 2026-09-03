@@ -5,11 +5,12 @@ import {
   Button,
   IconButton,
   InlineAlert,
+  ExternalLink,
   PriorityBadge,
   SegmentedControl,
   Textarea,
 } from '../../ui/primitives';
-import { IconAlert, IconBan, IconCheck, IconChevron, IconCircle, IconCircleFilled, IconExternal, IconTarget } from '../../ui/icons';
+import { IconAlert, IconBan, IconCheck, IconChevron, IconCircle, IconCircleFilled, IconTarget } from '../../ui/icons';
 import { categoryName } from '../../data/categories';
 import { resolveReferences } from '../../data/references';
 import { describeRule, suggestApplicability } from '../../domain/applicability';
@@ -47,7 +48,9 @@ const STATUS_OPTIONS = [
     label: 'N/A',
     glyph: <IconBan size={12} strokeWidth={2.5} />,
     tone: 'na' as const,
-    title: 'Not applicable in practice — no result required (3)',
+    // N/A is a testing outcome for a test already in the checklist — distinct
+    // from "Not Applicable", which removes the test from the checklist.
+    title: 'N/A — assessed; this target does not exercise it in practice. No result required (3)',
   },
 ];
 
@@ -185,6 +188,10 @@ export function TestDetailPanel({
   }
 
   const suggestion = suggestApplicability(d, context);
+  /** A baseline check has no applicability decision to make — it is in every
+      engagement. Only a manual override makes the toggle meaningful. */
+  const isBaselineRule = d.applicability.kind === 'always';
+  const isOverridden = s.applicabilitySource === 'manual';
   const awaitingChoice = pendingTested && s.status !== 'Tested';
   const naWithoutReason = s.status === 'N/A' && !notes.trim();
   const needsEvidence = s.status === 'Tested' && s.result === 'Vulnerable' && !notes.trim();
@@ -285,7 +292,7 @@ export function TestDetailPanel({
         )}
 
         <Section title="What to test">
-          <p className="text-sm leading-relaxed text-ink-200">{d.description}</p>
+          <p className="prose-measure text-sm leading-relaxed text-ink-200">{d.description}</p>
           {d.aliases && d.aliases.length > 0 && (
             <p className="mt-2 text-micro text-ink-400">
               Also known as: <span className="text-ink-300">{d.aliases.join(' · ')}</span>
@@ -294,7 +301,7 @@ export function TestDetailPanel({
         </Section>
 
         <Section title="Testing guidance" divided>
-          <ol className="space-y-2.5 text-base leading-relaxed text-ink-100">
+          <ol className="prose-measure space-y-2.5 text-base leading-relaxed text-ink-100">
             {d.testingGuidance.map((step, i) => (
               <li key={i} className="flex gap-2.5">
                 <span
@@ -329,7 +336,7 @@ export function TestDetailPanel({
             aria-label={`Notes for ${d.vulnerabilityName}`}
             maxLength={TEXT_LIMITS.notes}
             placeholder="Endpoints and parameters tested, payloads used, observations, conclusion…"
-            className="font-mono text-xs"
+            className="prose-measure font-mono text-xs"
           />
           <div className="mt-1.5 flex flex-wrap items-center justify-between gap-2 text-micro text-ink-400">
             <span className={noteError ? 'font-medium text-vuln-400' : undefined}>
@@ -337,7 +344,12 @@ export function TestDetailPanel({
                 ? 'Not saved — this note is only in the editor. Copy it before leaving the page.'
                 : 'Optional · saved automatically'}
             </span>
-            <span>Updated {s.updatedAt.slice(0, 16).replace('T', ' ')}</span>
+            <span className="tabular-nums">
+              {s.testedAt && s.status === 'Tested' && (
+                <span className="text-ink-500">Last tested {s.testedAt.slice(0, 16).replace('T', ' ')} · </span>
+              )}
+              Updated {s.updatedAt.slice(0, 16).replace('T', ' ')}
+            </span>
           </div>
 
           {naWithoutReason && (
@@ -361,28 +373,61 @@ export function TestDetailPanel({
 
         <Section title="Applicability" divided>
           <div className="panel-inset space-y-2 p-3">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <ApplicabilityExplanation suggestion={suggestion} className="min-w-0 flex-1" />
-              <SegmentedControl
-                size="sm"
-                label="Include this test in the engagement"
-                value={s.applicable ? 'yes' : 'no'}
-                options={[
-                  { value: 'yes', label: 'Applicable' },
-                  { value: 'no', label: 'Not Applicable', tone: 'na' },
-                ]}
-                onChange={(v) =>
-                  void recordTestState(
-                    engagementId,
-                    d.id,
-                    { applicable: v === 'yes', applicabilitySource: 'manual' },
-                    'Applicability',
-                  )
-                }
-              />
-            </div>
+            {isBaselineRule && !isOverridden ? (
+              /* A baseline check is in every engagement. There is no choice to
+                 make — offering an "Applicable / Not Applicable" toggle here
+                 reads as if the tester must decide, which is exactly wrong.
+                 Show it as a fixed fact and let Status carry the work. */
+              <div className="flex items-start gap-2">
+                <span
+                  aria-hidden="true"
+                  className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border border-brand-500/40 bg-brand-500/10 text-brand-400"
+                >
+                  <IconTarget size={12} strokeWidth={2.25} />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-ink-100">
+                    In this engagement&apos;s checklist
+                  </p>
+                  <p className="mt-0.5 text-micro text-ink-500">
+                    {suggestion.summary}. Record what you find with the{' '}
+                    <strong className="font-medium text-ink-400">Status</strong> control below.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <ApplicabilityExplanation suggestion={suggestion} className="min-w-0 flex-1" />
+                <SegmentedControl
+                  size="sm"
+                  label="Is this check part of this engagement?"
+                  value={s.applicable ? 'yes' : 'no'}
+                  options={[
+                    { value: 'yes', label: 'Applicable' },
+                    { value: 'no', label: 'Not Applicable', tone: 'na' },
+                  ]}
+                  onChange={(v) =>
+                    void recordTestState(
+                      engagementId,
+                      d.id,
+                      { applicable: v === 'yes', applicabilitySource: 'manual' },
+                      'Applicability',
+                    )
+                  }
+                />
+              </div>
+            )}
+
             <p className="border-t border-ink-800 pt-2 text-micro text-ink-400">
               Rule: {describeRule(d.applicability)}
+            </p>
+            <p className="text-micro leading-relaxed text-ink-500">
+              Applicability is decided once, when you set up the engagement:{' '}
+              <strong className="font-medium text-ink-400">is this check in the checklist?</strong>{' '}
+              Status records what you found on each check that is in the list. A check is either{' '}
+              <strong className="font-medium text-ink-400">Not Applicable</strong> (so it has no
+              status) <em>or</em> it has a Status — never both. For a test in the list, Status{' '}
+              <strong>N/A</strong> means you checked it and this target doesn&apos;t exercise it.
             </p>
             {s.applicabilitySource === 'manual' && (
               <div className="flex flex-wrap items-center justify-between gap-2">
@@ -411,17 +456,9 @@ export function TestDetailPanel({
         <Section title="References" divided>
           <div className="flex flex-wrap gap-1.5">
             {resolveReferences(d).map((reference) => (
-              <a
-                key={reference.label}
-                href={reference.url}
-                target="_blank"
-                rel="noreferrer noopener"
-                className="inline-flex items-center gap-1 rounded-md border border-ink-600 px-2 py-0.5 text-micro text-ink-300 transition-colors hover:border-brand-500/50 hover:text-brand-400"
-              >
+              <ExternalLink key={reference.label} href={reference.url} variant="pill">
                 {reference.label}
-                <IconExternal size={10} aria-hidden="true" />
-                <span className="sr-only">(opens in a new tab)</span>
-              </a>
+              </ExternalLink>
             ))}
           </div>
         </Section>
@@ -444,36 +481,61 @@ export function TestDetailPanel({
             <IconButton size="sm" label="Next test" onClick={onNext} icon={<IconChevron size={14} />} />
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="hidden text-micro font-medium tracking-wider text-ink-400 uppercase sm:inline">
-              Status
-            </span>
-            <SegmentedControl
-              label="Testing status"
-              value={awaitingChoice ? 'Tested' : s.status}
-              options={STATUS_OPTIONS}
-              disabled={!s.applicable}
-              onChange={chooseStatus}
-            />
-          </div>
+          {s.applicable ? (
+            <>
+              <div className="flex items-center gap-2">
+                <span className="hidden text-micro font-medium tracking-wider text-ink-400 uppercase sm:inline">
+                  Status
+                </span>
+                <SegmentedControl
+                  label="Testing status"
+                  value={awaitingChoice ? 'Tested' : s.status}
+                  options={STATUS_OPTIONS}
+                  onChange={chooseStatus}
+                />
+              </div>
 
-          <div
-            className={clsx(
-              'flex items-center gap-2 rounded-(--radius-control) px-1.5 py-0.5 transition-colors',
-              awaitingChoice && 'bg-warn-500/10 ring-1 ring-warn-400/60',
-            )}
-          >
-            <span className="hidden text-micro font-medium tracking-wider text-ink-400 uppercase sm:inline">
-              Result
-            </span>
-            <SegmentedControl
-              label="Testing result"
-              value={s.result}
-              options={RESULT_OPTIONS}
-              disabled={s.status !== 'Tested' && !awaitingChoice}
-              onChange={chooseResult}
-            />
-          </div>
+              <div
+                className={clsx(
+                  'flex items-center gap-2 rounded-(--radius-control) px-1.5 py-0.5 transition-colors',
+                  awaitingChoice && 'bg-warn-500/10 ring-1 ring-warn-400/60',
+                )}
+              >
+                <span className="hidden text-micro font-medium tracking-wider text-ink-400 uppercase sm:inline">
+                  Result
+                </span>
+                <SegmentedControl
+                  label="Testing result"
+                  value={s.result}
+                  options={RESULT_OPTIONS}
+                  disabled={s.status !== 'Tested' && !awaitingChoice}
+                  onChange={chooseResult}
+                />
+              </div>
+            </>
+          ) : (
+            /* Not applicable = not in the checklist, so there is no status to
+               record. A greyed-out status control would read as "should I pick
+               N/A?" — say so plainly instead, and give the way back. */
+            <div className="flex flex-wrap items-center gap-2 text-xs text-ink-400">
+              <IconBan size={13} aria-hidden="true" className="text-ink-500" />
+              <span>Not in this checklist — no status to record.</span>
+              <Button
+                size="sm"
+                variant="subtle"
+                onClick={() =>
+                  void recordTestState(
+                    engagementId,
+                    d.id,
+                    { applicable: true, applicabilitySource: 'manual' },
+                    'Applicability',
+                  )
+                }
+              >
+                Add to checklist
+              </Button>
+            </div>
+          )}
 
           {savedAt !== null && (
             <span

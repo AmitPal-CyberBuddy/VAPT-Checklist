@@ -29,6 +29,7 @@ import {
   IconCheck,
   IconCircle,
   IconCircleFilled,
+  IconExternal,
 } from './icons';
 
 /* ------------------------------------------------------------------ Button */
@@ -124,6 +125,152 @@ export function LinkButton({
       {icon}
       {children}
     </Link>
+  );
+}
+
+/**
+ * A button for an external URL (a real `href`, opens in a new tab). Same visual
+ * system as `Button`/`LinkButton`, but scrolls off-site instead of navigating
+ * within the app — used for LinkedIn, the issue tracker and other outbound
+ * links that must not look like a second-class control.
+ */
+export function ExternalButton({
+  href,
+  variant = 'secondary',
+  size = 'md',
+  icon,
+  full,
+  className,
+  children,
+}: {
+  href: string;
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  icon?: ReactNode;
+  full?: boolean;
+  className?: string;
+  children: ReactNode;
+}) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer noopener"
+      className={buttonClass(variant, size, full, className)}
+    >
+      {icon}
+      {children}
+      {/* An outbound glyph so a new tab is never a surprise. */}
+      <IconExternal size={13} aria-hidden="true" className="opacity-70" />
+    </a>
+  );
+}
+
+/**
+ * An inline text link *within* the app (react-router `Link`). This is the one
+ * way to render a sentence-level link — a brand-coloured label that underlines
+ * on hover/focus. Screens must not hand-roll `text-brand-400 hover:underline`
+ * on a Link; use this so every inline link shares the same colour, weight,
+ * underline behaviour and focus treatment.
+ */
+export function TextLink({
+  to,
+  children,
+  className,
+}: {
+  to: string;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <Link
+      to={to}
+      className={clsx(
+        // text-brand-400 passes contrast in both themes. We signal the link on
+        // hover/focus with an underline rather than any colour shift: a
+        // brighten (brand-300) is unreadable on paper, a darken (brand-600)
+        // fades against the dark obsidian.
+        'inline-flex items-center gap-1 rounded text-xs font-medium text-brand-400',
+        'hover:underline hover:decoration-brand-400/70',
+        'focus-visible:outline-none focus-visible:underline',
+        className,
+      )}
+    >
+      {children}
+    </Link>
+  );
+}
+
+/**
+ * An inline link to an *external* resource — reference docs, standards pages.
+ * A real `<a>` that opens a new tab and carries a small outbound glyph +
+ * sr-only note. `variant="pill"` renders the bordered chip used for library
+ * references; the default is a sentence-level text link. Use for outbound
+ * resources only, never for navigation within the app.
+ */
+export function ExternalLink({
+  href,
+  children,
+  className,
+  variant = 'inline',
+}: {
+  href: string;
+  children: ReactNode;
+  className?: string;
+  variant?: 'inline' | 'pill';
+}) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer noopener"
+      className={
+        variant === 'pill'
+          ? clsx(
+              'inline-flex items-center gap-1 rounded-md border border-ink-600 px-2 py-0.5 text-micro text-ink-300',
+              'transition-colors duration-150 hover:border-brand-500/50 hover:text-brand-400',
+              className,
+            )
+          : clsx(
+              'inline-flex items-center gap-1 text-micro text-ink-300',
+              'transition-colors duration-150 hover:text-brand-400 hover:underline',
+              className,
+            )
+      }
+    >
+      {children}
+      <IconExternal size={10} aria-hidden="true" />
+      <span className="sr-only">(opens in a new tab)</span>
+    </a>
+  );
+}
+
+/**
+ * A text-only action button (no surface, no border). For in-toolbar commands
+ * that read as plain words — "Clear filters", "Bulk edit", "See all". It is the
+ * button analogue of `TextLink`: hover/active shift to the brand accent, and
+ * it underlines on focus so a keyboard user sees where they are. Screens that
+ * render a word as a button use this, not ad-hoc `hover:text-brand-400`.
+ */
+export function TextButton({
+  children,
+  className,
+  type = 'button',
+  ...rest
+}: ButtonHTMLAttributes<HTMLButtonElement>) {
+  return (
+    <button
+      type={type}
+      className={clsx(
+        'inline-flex items-center gap-1 rounded px-0.5 text-xs text-ink-400',
+        'transition-colors duration-150 hover:text-brand-400',
+        'focus-visible:outline-none focus-visible:underline',
+        className,
+      )}
+      {...rest}
+    >
+      {children}
+    </button>
   );
 }
 
@@ -286,13 +433,25 @@ const STATUS_ICON: Record<TestStatus, ReactNode> = {
   'N/A': <IconBan size={11} strokeWidth={2.5} />,
 };
 
+/**
+ * Status tooltips. The status axis is about the *outcome of testing one test
+ * that is already in the checklist*, which is a different question from whether
+ * the test belongs in the checklist at all (Applicability). The N/A hint spells
+ * that out so it never reads as a synonym for the "Not Applicable" scope value.
+ */
+const STATUS_HINT: Record<TestStatus, string> = {
+  'Not Tested': 'Status: Not Tested',
+  Tested: 'Status: Tested',
+  'N/A': 'N/A — assessed, and this target does not exercise it in practice.',
+};
+
 export function StatusBadge({ status, className }: { status: TestStatus; className?: string }) {
   return (
     <Badge
       tone={status === 'Tested' ? 'brand' : status === 'N/A' ? 'na' : 'neutral'}
       glyph={STATUS_ICON[status]}
       className={className}
-      title={`Status: ${status}`}
+      title={STATUS_HINT[status]}
     >
       {status}
     </Badge>

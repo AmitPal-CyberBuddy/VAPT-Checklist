@@ -136,8 +136,10 @@ export function AppShell({ children }: { children: ReactNode }) {
                   )}
                 >
                   <Icon size={15} aria-hidden="true" />
-                  {/* Always in the accessibility tree; visually hidden below md. */}
-                  <span className="sr-only md:not-sr-only">{label}</span>
+                  {/* Always in the accessibility tree; visually hidden only on
+                      the narrowest screens (below sm), where the top bar keeps
+                      the nav to icons. */}
+                  <span className="sr-only sm:not-sr-only">{label}</span>
                 </NavLink>
               );
             })}

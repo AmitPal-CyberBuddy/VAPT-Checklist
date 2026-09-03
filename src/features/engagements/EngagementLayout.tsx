@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { NavLink, Outlet, useParams } from 'react-router-dom';
 import clsx from 'clsx';
-import { Badge, Button, InlineAlert, LoadingPanel, Modal, ProgressBar, Select } from '../../ui/primitives';
+import { Badge, Button, ExternalLink, InlineAlert, LoadingPanel, Modal, ProgressBar, Select } from '../../ui/primitives';
 import { useChecklist, useEngagement, useMetrics } from '../../hooks/useData';
 import { repairIntegrity, setEngagementStatus } from '../../persistence/repository';
 import { toast } from '../../ui/toast';
@@ -113,14 +113,12 @@ export default function EngagementLayout() {
             <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-micro text-ink-500">
               {engagement.applicationUrl &&
                 (safeUrl ? (
-                  <a
+                  <ExternalLink
                     href={safeUrl}
-                    target="_blank"
-                    rel="noreferrer noopener"
                     className="max-w-full truncate font-mono text-brand-400/90 hover:text-brand-400"
                   >
                     {engagement.applicationUrl}
-                  </a>
+                  </ExternalLink>
                 ) : (
                   <span className="max-w-full truncate font-mono" title="Not a linkable http(s) URL">
                     {engagement.applicationUrl}

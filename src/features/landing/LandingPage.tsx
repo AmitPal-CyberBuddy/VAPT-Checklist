@@ -1,14 +1,20 @@
 import type { CSSProperties } from 'react';
 import { CATEGORIES } from '../../data/categories';
 import { LIBRARY_VERSION, TEST_LIBRARY } from '../../data/library';
-import { Card, LinkButton, PriorityBadge, SectionHeading, StatusBadge } from '../../ui/primitives';
+import {
+  Card,
+  ExternalButton,
+  LinkButton,
+  PriorityBadge,
+  SectionHeading,
+  StatusBadge,
+} from '../../ui/primitives';
 import {
   IconArrowRight,
   IconBook,
   IconCheckCircle,
   IconChevron,
   IconDownload,
-  IconExternal,
   IconGauge,
   IconGithub,
   IconGrid,
@@ -233,28 +239,32 @@ export default function LandingPage() {
           style={{ '--d': 6 } as CSSProperties}
         >
           <div className="bg-ink-900 p-4">
-            <dt className="font-mono text-micro font-medium tracking-widest text-ink-400 uppercase">
+            <dt className="flex items-center gap-1.5 font-mono text-micro font-medium tracking-widest text-ink-400 uppercase">
+              <IconShieldCheck size={13} aria-hidden="true" className="shrink-0 text-brand-500/80" />
               Methodology checks
             </dt>
             <dd className="stat-band-value mt-1 text-ink-50">{TEST_LIBRARY.length}</dd>
             <p className="mt-1 text-micro text-ink-500">one objective per check</p>
           </div>
           <div className="bg-ink-900 p-4">
-            <dt className="font-mono text-micro font-medium tracking-widest text-ink-400 uppercase">
+            <dt className="flex items-center gap-1.5 font-mono text-micro font-medium tracking-widest text-ink-400 uppercase">
+              <IconLayers size={13} aria-hidden="true" className="shrink-0 text-brand-500/80" />
               Categories
             </dt>
             <dd className="stat-band-value mt-1 text-ink-50">{CATEGORIES.length}</dd>
             <p className="mt-1 text-micro text-ink-500">recon to cloud &amp; mobile</p>
           </div>
           <div className="bg-ink-900 p-4">
-            <dt className="font-mono text-micro font-medium tracking-widest text-ink-400 uppercase">
+            <dt className="flex items-center gap-1.5 font-mono text-micro font-medium tracking-widest text-ink-400 uppercase">
+              <IconTarget size={13} aria-hidden="true" className="shrink-0 text-brand-500/80" />
               Library version
             </dt>
             <dd className="stat-band-value mt-1 text-brand-400">{LIBRARY_VERSION}</dd>
             <p className="mt-1 text-micro text-ink-500">mapped to OWASP &amp; CWE</p>
           </div>
           <div className="bg-ink-900 p-4">
-            <dt className="font-mono text-micro font-medium tracking-widest text-ink-400 uppercase">
+            <dt className="flex items-center gap-1.5 font-mono text-micro font-medium tracking-widest text-ink-400 uppercase">
+              <IconDownload size={13} aria-hidden="true" className="shrink-0 text-brand-500/80" />
               Report sheets
             </dt>
             <dd className="stat-band-value mt-1 text-ink-50">5</dd>
@@ -477,26 +487,20 @@ export default function LandingPage() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <a
+            <ExternalButton
               href="https://www.linkedin.com/in/amitpal-wb/"
-              target="_blank"
-              rel="noreferrer noopener"
-              className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-(--radius-control) border border-ink-600 bg-ink-800 px-3 text-sm text-ink-100 transition-colors duration-150 hover:bg-ink-700 active:translate-y-px"
+              variant="secondary"
+              icon={<IconLinkedIn size={15} aria-hidden="true" />}
             >
-              <IconLinkedIn size={15} aria-hidden="true" />
               Connect on LinkedIn
-              <IconExternal size={13} aria-hidden="true" className="text-ink-500" />
-            </a>
-            <a
+            </ExternalButton>
+            <ExternalButton
               href="https://github.com/AmitPal-CyberBuddy/VAPT-Checklist/issues"
-              target="_blank"
-              rel="noreferrer noopener"
-              className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-(--radius-control) border border-ink-600 bg-ink-800 px-3 text-sm text-ink-100 transition-colors duration-150 hover:bg-ink-700 active:translate-y-px"
+              variant="secondary"
+              icon={<IconGithub size={15} aria-hidden="true" />}
             >
-              <IconGithub size={15} aria-hidden="true" />
               Suggest an upgrade or report a problem
-              <IconExternal size={13} aria-hidden="true" className="text-ink-500" />
-            </a>
+            </ExternalButton>
           </div>
         </Card>
       </section>
