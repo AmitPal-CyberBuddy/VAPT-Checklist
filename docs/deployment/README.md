@@ -15,10 +15,37 @@ No environment variable, no per-repository rebuild, no `404.html` redirect shim.
 
 ## How the build is served
 
-The repository carries a single deploy workflow, `.github/workflows/pages.yml`, that on a push to
-`main` typechecks, tests, builds the bundle and publishes `dist/` to GitHub Pages. (The
-`docs/deployment/deploy.yml` and `docs/deployment/ci.yml` files are kept here as reference mirrors;
-the live workflow in `.github/workflows/pages.yml` is what actually runs.)
+The repository carries a deploy workflow, `.github/workflows/pages.yml`, that on a push to `main`
+builds the bundle and publishes `dist/` to GitHub Pages. (The `docs/deployment/deploy.yml` and
+`docs/deployment/ci.yml` files are kept here as reference mirrors.)
+
+### Protecting against a blank page
+
+The hosted page was blank once because GitHub Pages was set to "Deploy from a branch", which serves
+the **raw source** `index.html` (browsers can't run the `/src/main.tsx` entry). That setting is now
+"GitHub Actions", and the workflow deploys the compiled app. To keep it that way, the repo ships two
+guards — but note they must be **wired into the workflow by the repo owner**, because the
+automation account that maintains this branch does not have the GitHub `workflows` permission and
+cannot push edits to `.github/workflows/`.
+
+1. **Bundle verification** — `.github/check-built-bundle.mjs` refuses to publish if `dist/index.html`
+   links the raw source entry, is missing the hashed `./assets/*.js` + stylesheet, or references an
+   asset that isn't on disk. Run it after the build:
+   ```yaml
+   - name: Verify built bundle (never a blank page)
+     run: node .github/check-built-bundle.mjs
+   ```
+2. **Accessibility gate** — `src/ui/designSystem.test.ts` fails the build on retired vocabulary,
+   colour-only status, unlabelled controls, missing progress-bar names and hand-rolled button
+   lookalikes. Run it before building:
+   ```yaml
+   - name: Accessibility contract (design-system)
+     run: npx vitest run src/ui/designSystem.test.ts
+   ```
+
+Until those steps are added to `pages.yml`, the guards exist but aren't enforced in the workflow.
+A minimal hardened `build` job that includes both, plus `npx tsc --noEmit` and `npm run build`,
+is shown in the throwaway `docs/deployment/ci.yml`.
 
 ## ⚠️ If the hosted page is blank — read this first
 
