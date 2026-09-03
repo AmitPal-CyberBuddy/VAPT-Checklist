@@ -10,7 +10,7 @@ import {
   Stat,
   Toggle,
 } from '../../ui/primitives';
-import { IconAlert, IconDownload } from '../../ui/icons';
+import { IconAlert, IconCheck, IconDownload } from '../../ui/icons';
 import { useChecklist, useEngagement, useMetrics } from '../../hooks/useData';
 import { buildFileName } from '../../export/fileName';
 import { exportBackup } from '../../persistence/repository';
@@ -212,7 +212,7 @@ export default function ExportPage() {
           </div>
         </Card>
 
-        {notTested > 0 && (
+        {notTested > 0 ? (
           <InlineAlert
             tone="warn"
             icon={<IconAlert size={16} aria-hidden="true" />}
@@ -221,6 +221,17 @@ export default function ExportPage() {
             {notTested} applicable test{notTested === 1 ? '' : 's'} still Not Tested. They export
             with that status, so the gap is visible in the report rather than hidden.
           </InlineAlert>
+        ) : (
+          metrics.counts.applicable > 0 && (
+            <InlineAlert
+              tone="success"
+              icon={<IconCheck size={16} aria-hidden="true" />}
+              title="Assessment complete — ready to export"
+            >
+              Every applicable test has a recorded status. The workbook is the report: summary,
+              assessment, vulnerable tests, not-applicable and coverage.
+            </InlineAlert>
+          )
         )}
 
         <Card className="space-y-2 text-xs text-ink-400">

@@ -6,14 +6,18 @@ import {
   IconArrowRight,
   IconBook,
   IconCheckCircle,
+  IconChevron,
   IconDownload,
   IconExternal,
+  IconGauge,
   IconGithub,
+  IconGrid,
   IconLayers,
   IconLinkedIn,
   IconList,
   IconLock,
   IconShield,
+  IconShieldCheck,
   IconTarget,
 } from '../../ui/icons';
 
@@ -54,6 +58,16 @@ const METHODOLOGY = [
 
 /** Real tests pulled from the library, shown as a sample of what ships. */
 const FEATURED_IDS = ['INJ-001', 'AUTHZ-002', 'SESS-010', 'INJ-022'];
+
+/** The assessment lifecycle, made explicit — the workstation's spine. */
+const PIPELINE = [
+  { label: 'Engagement', icon: IconGrid },
+  { label: 'Target & context', icon: IconTarget },
+  { label: 'Applicable tests', icon: IconList },
+  { label: 'Active testing', icon: IconGauge },
+  { label: 'Results', icon: IconShieldCheck },
+  { label: 'Report', icon: IconDownload },
+];
 
 export default function LandingPage() {
   const featured = FEATURED_IDS.map((id) => TEST_LIBRARY.find((t) => t.id === id)).filter(
@@ -151,6 +165,33 @@ export default function LandingPage() {
           <Stat label="Library version" value={LIBRARY_VERSION} hint="mapped to OWASP & CWE" />
           <Stat label="Report sheets" value="5" hint="in the Excel export" />
         </dl>
+      </section>
+
+      {/* --------------------------------------------- Assessment pipeline */}
+      <section
+        aria-labelledby="landing-flow"
+        className="stagger-item panel space-y-3 p-4 sm:p-5"
+        style={{ '--d': 6 } as CSSProperties}
+      >
+        <h2 id="landing-flow" className="section-kicker">
+          Assessment workflow
+        </h2>
+        <ol className="flex flex-wrap items-center gap-y-2">
+          {PIPELINE.map((stage, index) => (
+            <li key={stage.label} className="flex items-center gap-2">
+              <span className="flex items-center gap-2 rounded-[--radius-control] border border-ink-700 bg-ink-850 px-2.5 py-1.5">
+                <span aria-hidden="true" className="font-mono text-micro tabular-nums text-brand-400">
+                  {String(index + 1).padStart(2, '0')}
+                </span>
+                <stage.icon size={14} aria-hidden="true" className="text-ink-300" />
+                <span className="text-xs font-medium text-ink-200">{stage.label}</span>
+              </span>
+              {index < PIPELINE.length - 1 && (
+                <IconChevron size={14} aria-hidden="true" className="shrink-0 text-ink-600" />
+              )}
+            </li>
+          ))}
+        </ol>
       </section>
 
       {/* ----------------------------------------------- What it does */}
