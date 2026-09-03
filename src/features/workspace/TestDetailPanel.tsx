@@ -333,7 +333,7 @@ export function TestDetailPanel({
         </Section>
 
         <Section title="Testing guidance" divided>
-          <ol className="space-y-2.5 text-sm text-ink-200">
+          <ol className="space-y-2.5 text-base leading-relaxed text-ink-100">
             {d.testingGuidance.map((step, i) => (
               <li key={i} className="flex gap-2.5">
                 <span
@@ -342,7 +342,7 @@ export function TestDetailPanel({
                 >
                   {i + 1}
                 </span>
-                <span className="leading-relaxed">{step}</span>
+                <span>{step}</span>
               </li>
             ))}
           </ol>

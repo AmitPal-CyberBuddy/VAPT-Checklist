@@ -164,53 +164,149 @@ export default function LibraryPage() {
         <Stat label="High" value={stats.byPriority.High} tone="warn" />
       </div>
 
-      {/* Category navigation: jump to a domain or filter by it. Counts are
-          read live from the library so the strip never drifts. */}
-      <nav aria-label="Library categories" className="flex flex-wrap items-center gap-1.5">
-        <button
-          type="button"
-          aria-pressed={category === 'all'}
-          onClick={() => {
-            setCategory('all');
-            setSubcategory('all');
-          }}
-          className={clsx(
-            'inline-flex items-center gap-1.5 rounded-[--radius-control] border px-2.5 py-1 text-xs transition-colors duration-150',
-            category === 'all'
-              ? 'border-brand-500/60 bg-brand-500/15 text-brand-400'
-              : 'border-ink-700 bg-ink-900 text-ink-300 hover:border-ink-500 hover:text-ink-100',
-          )}
-        >
-          All categories
-          <span className="rounded bg-ink-800 px-1.5 font-mono text-micro tabular-nums text-ink-300">
-            {stats.total}
-          </span>
-        </button>
-        {CATEGORIES.map((c) => (
-          <button
-            key={c.id}
-            type="button"
-            aria-pressed={category === c.id}
-            onClick={() => {
-              setCategory(category === c.id ? 'all' : c.id);
-              setSubcategory('all');
-            }}
-            className={clsx(
-              'inline-flex items-center gap-1.5 rounded-[--radius-control] border px-2.5 py-1 text-xs transition-colors duration-150',
-              category === c.id
-                ? 'border-brand-500/60 bg-brand-500/15 text-brand-400'
-                : 'border-ink-700 bg-ink-900 text-ink-300 hover:border-ink-500 hover:text-ink-100',
-            )}
-          >
-            <span className="text-brand-500/70">{CATEGORY_ICON[c.id]}</span>
-            {c.name}
-            <span className="rounded bg-ink-800 px-1.5 font-mono text-micro tabular-nums text-ink-300">
-              {stats.byCategory[c.id] ?? 0}
-            </span>
-          </button>
-        ))}
-      </nav>
+      {/* Two-pane knowledge base: a persistent taxonomy tree on wide screens
+          (sticky, with subcategories under the selected domain), a horizontal
+          chip strip on narrow ones — the layout recomposes, it does not
+          shrink. */}
+      <div className="grid gap-4 lg:grid-cols-[230px_minmax(0,1fr)]">
+        <aside aria-label="Library navigation" className="min-w-0">
+          {/* Desktop tree */}
+          <nav className="sticky top-16 hidden max-h-[calc(100vh-6rem)] flex-col gap-0.5 overflow-y-auto rounded-[--radius-panel] border border-ink-700 bg-ink-900 p-2.5 shadow-[--shadow-panel] lg:flex">
+            <p className="section-kicker mb-1.5 px-2">Taxonomy</p>
+            <button
+              type="button"
+              aria-pressed={category === 'all'}
+              onClick={() => {
+                setCategory('all');
+                setSubcategory('all');
+              }}
+              className={clsx(
+                'flex items-center gap-2 rounded-[--radius-control] border px-2.5 py-1.5 text-left text-xs transition-colors duration-150',
+                category === 'all'
+                  ? 'border-brand-500/60 bg-brand-500/15 text-brand-400'
+                  : 'border-transparent text-ink-300 hover:bg-ink-850 hover:text-ink-100',
+              )}
+            >
+              <span className="flex-1">All categories</span>
+              <span className="rounded bg-ink-800 px-1.5 font-mono text-micro tabular-nums text-ink-300">
+                {stats.total}
+              </span>
+            </button>
+            {CATEGORIES.map((c) => {
+              const selected = category === c.id;
+              const subcounts = selected
+                ? CATEGORY_BY_ID[c.id]?.subcategories
+                    .map((sub) => ({
+                      sub,
+                      count: TEST_LIBRARY.filter((t) => t.category === c.id && t.subcategory === sub)
+                        .length,
+                    }))
+                    .filter((s) => s.count > 0) ?? []
+                : [];
+              return (
+                <div key={c.id} className="rounded-[--radius-control]">
+                  <button
+                    type="button"
+                    aria-pressed={selected}
+                    onClick={() => {
+                      setCategory(selected ? 'all' : c.id);
+                      setSubcategory('all');
+                    }}
+                    className={clsx(
+                      'flex w-full items-center gap-2 rounded-[--radius-control] border px-2.5 py-1.5 text-left text-xs transition-colors duration-150',
+                      selected
+                        ? 'border-brand-500/60 bg-brand-500/15 text-brand-400'
+                        : 'border-transparent text-ink-300 hover:bg-ink-850 hover:text-ink-100',
+                    )}
+                  >
+                    <span className="text-brand-500/80">{CATEGORY_ICON[c.id]}</span>
+                    <span className="min-w-0 flex-1 truncate">{c.name}</span>
+                    <span className="rounded bg-ink-800 px-1.5 font-mono text-micro tabular-nums text-ink-300">
+                      {stats.byCategory[c.id] ?? 0}
+                    </span>
+                  </button>
+                  {selected && subcounts.length > 0 && (
+                    <div className="mt-0.5 space-y-0.5 border-l border-ink-700 pl-2 ml-3">
+                      <button
+                        type="button"
+                        aria-pressed={subcategory === 'all'}
+                        onClick={() => setSubcategory('all')}
+                        className={clsx(
+                          'w-full rounded px-2 py-1 text-left text-micro transition-colors',
+                          subcategory === 'all'
+                            ? 'bg-brand-500/10 font-medium text-brand-400'
+                            : 'text-ink-400 hover:bg-ink-850 hover:text-ink-200',
+                        )}
+                      >
+                        All in category
+                      </button>
+                      {subcounts.map(({ sub, count }) => (
+                        <button
+                          key={sub}
+                          type="button"
+                          aria-pressed={subcategory === sub}
+                          onClick={() => setSubcategory(subcategory === sub ? 'all' : sub)}
+                          className={clsx(
+                            'flex w-full items-center gap-1.5 rounded px-2 py-1 text-left text-micro transition-colors',
+                            subcategory === sub
+                              ? 'bg-brand-500/10 font-medium text-brand-400'
+                              : 'text-ink-400 hover:bg-ink-850 hover:text-ink-200',
+                          )}
+                        >
+                          <span className="min-w-0 flex-1 truncate">{sub}</span>
+                          <span className="tabular-nums text-ink-500">{count}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </nav>
 
+          {/* Mobile chip strip */}
+          <nav aria-label="Library categories" className="flex gap-1.5 overflow-x-auto pb-1 lg:hidden">
+            <button
+              type="button"
+              aria-pressed={category === 'all'}
+              onClick={() => {
+                setCategory('all');
+                setSubcategory('all');
+              }}
+              className={clsx(
+                'inline-flex shrink-0 items-center gap-1.5 rounded-[--radius-control] border px-2.5 py-1 text-xs transition-colors duration-150',
+                category === 'all'
+                  ? 'border-brand-500/60 bg-brand-500/15 text-brand-400'
+                  : 'border-ink-700 bg-ink-900 text-ink-300',
+              )}
+            >
+              All
+              <span className="font-mono text-micro tabular-nums text-ink-400">{stats.total}</span>
+            </button>
+            {CATEGORIES.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                aria-pressed={category === c.id}
+                onClick={() => {
+                  setCategory(category === c.id ? 'all' : c.id);
+                  setSubcategory('all');
+                }}
+                className={clsx(
+                  'inline-flex shrink-0 items-center gap-1.5 rounded-[--radius-control] border px-2.5 py-1 text-xs transition-colors duration-150',
+                  category === c.id
+                    ? 'border-brand-500/60 bg-brand-500/15 text-brand-400'
+                    : 'border-ink-700 bg-ink-900 text-ink-300',
+                )}
+              >
+                <span className="text-brand-500/70">{CATEGORY_ICON[c.id]}</span>
+                {c.name}
+              </button>
+            ))}
+          </nav>
+        </aside>
+
+        <div className="min-w-0 space-y-4">
       <Card className="flex flex-wrap items-center gap-2">
         <div className="relative min-w-56 flex-1">
           <IconSearch
@@ -462,6 +558,8 @@ export default function LibraryPage() {
           </Card>
         ))}
       </Card>
+        </div>
+      </div>
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import clsx from 'clsx';
 import {
@@ -33,6 +34,36 @@ import {
 } from '../../domain/applicationType';
 import { supportLevel } from '../../data/typeCoverage';
 
+/**
+ * A short eased count-up for the headline progress number. Pure presentation —
+ * the stored value is never touched. Instant under prefers-reduced-motion so
+ * the metric still reads correctly for users who disable animation.
+ */
+function useCountUp(target: number, duration = 550): number {
+  const [value, setValue] = useState(target);
+  useEffect(() => {
+    if (
+      typeof window === 'undefined' ||
+      !window.matchMedia ||
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    ) {
+      setValue(target);
+      return;
+    }
+    let raf = 0;
+    const start = performance.now();
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / duration);
+      const eased = 1 - Math.pow(1 - t, 3);
+      setValue(target * eased);
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target, duration]);
+  return value;
+}
+
 function surfaceLabel(engagement: { applicationType: ApplicationTypeId; context: object }): string {
   const options = FACT_BY_KEY.assetTypes.options ?? [];
   const surfaces = effectiveAssetTypes(engagement.applicationType, engagement.context as never);
@@ -50,6 +81,9 @@ export default function DashboardPage() {
   const engagement = useEngagement(engagementId);
   const items = useChecklist(engagementId);
   const metrics = useMetrics(items);
+  // Hoisted above the loading early-return so the hook count stays stable
+  // between the loading and loaded renders.
+  const completionPercent = Math.round(useCountUp(metrics.completion * 100));
 
   if (!items || !engagement) {
     return (
@@ -191,7 +225,7 @@ export default function DashboardPage() {
                   metrics.completion === 1 ? 'text-safe-400' : 'text-brand-400',
                 )}
               >
-                {Math.round(metrics.completion * 100)}%
+                {completionPercent}%
               </span>
             </div>
             <ProgressBar
@@ -208,6 +242,25 @@ export default function DashboardPage() {
               {outstandingCount > 0 && (
                 <span className="text-warn-300"> · {outstandingCount} still Not Tested</span>
               )}
+            </p>
+            {/* The one question every tester asks when the checklist closes:
+                can this assessment be exported as a report? */}
+            <p
+              className={clsx(
+                'mt-2 inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs font-medium',
+                outstandingCount === 0 && c.applicable > 0
+                  ? 'border-safe-500/35 bg-safe-500/10 text-safe-400'
+                  : 'border-warn-500/30 bg-warn-500/5 text-warn-300',
+              )}
+            >
+              <span aria-hidden="true">
+                {c.applicable === 0 ? '—' : outstandingCount === 0 ? '✓' : '◐'}
+              </span>
+              {c.applicable === 0
+                ? 'No applicable tests recorded'
+                : outstandingCount === 0
+                  ? 'Assessment ready for export'
+                  : `${outstandingCount} test${outstandingCount === 1 ? '' : 's'} still need attention`}
             </p>
             <div className="mt-3 grid grid-cols-2 gap-2">
               <LinkButton
@@ -234,22 +287,27 @@ export default function DashboardPage() {
         <h2 id="stats-heading" className="sr-only">
           Assessment statistics
         </h2>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
+        {/* Featured row: the three numbers that decide what a tester does
+            next get the visual weight; the rest are a compact strip. */}
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-[1.1fr_1.1fr_1fr]">
           <Stat
+            featured
             label="Vulnerable"
             value={c.vulnerable}
             glyph="▲"
             tone={c.vulnerable > 0 ? 'vuln' : 'neutral'}
-            hint={c.vulnerable > 0 ? 'needs review' : undefined}
+            hint={c.vulnerable > 0 ? 'needs review' : 'no vulnerable tests recorded'}
           />
           <Stat
+            featured
             label="Not Tested"
             value={c.notTested}
             glyph="○"
             tone={c.notTested > 0 ? 'warn' : 'safe'}
-            hint={c.notTested > 0 ? 'remaining work' : 'all done'}
+            hint={c.notTested > 0 ? 'remaining work' : 'all applicable tested'}
           />
           <Stat
+            featured
             label="Total applicable"
             value={c.applicable}
             hint={
@@ -259,6 +317,8 @@ export default function DashboardPage() {
             }
             tone="brand"
           />
+        </div>
+        <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
           <Stat label="Tested" value={c.tested} glyph="●" hint="with a result" />
           <Stat label="N/A" value={c.na} glyph="⊘" hint="out of scope in practice" />
           <Stat label="Not Vulnerable" value={c.notVulnerable} glyph="✓" tone="safe" hint="verified clean" />

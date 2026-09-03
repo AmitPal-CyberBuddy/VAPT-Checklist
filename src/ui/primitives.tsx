@@ -870,6 +870,7 @@ export function Stat({
   tone = 'neutral',
   className,
   glyph,
+  featured,
 }: {
   label: string;
   value: ReactNode;
@@ -877,6 +878,8 @@ export function Stat({
   tone?: 'neutral' | 'vuln' | 'safe' | 'warn' | 'brand';
   className?: string;
   glyph?: string;
+  /** Featured metrics are larger and carry a meaning-tinted surface. */
+  featured?: boolean;
 }) {
   const tones = {
     neutral: 'text-ink-50',
@@ -893,11 +896,24 @@ export function Stat({
     warn: 'rail-warn',
     brand: 'rail-brand',
   };
+  const tint = featured
+    ? tone === 'vuln'
+      ? 'tile-vuln'
+      : tone === 'warn'
+        ? 'tile-warn'
+        : tone === 'brand'
+          ? 'tile-brand'
+          : tone === 'safe'
+            ? 'tile-safe'
+            : ''
+    : '';
   return (
     <div
       className={clsx(
-        'metric-tile relative overflow-hidden',
+        featured ? 'featured-metric' : 'metric-tile',
+        'relative overflow-hidden',
         tone !== 'neutral' && rails[tone],
+        tint,
         className,
       )}
     >
@@ -911,7 +927,9 @@ export function Stat({
       </p>
       <p
         className={clsx(
-          'text-2xl leading-tight font-semibold tracking-tight tabular-nums',
+          featured
+            ? 'metric-featured-value'
+            : 'text-2xl leading-tight font-semibold tracking-tight tabular-nums',
           tones[tone],
         )}
       >

@@ -61,11 +61,15 @@ function RowStatusControl({
         }}
         className={clsx(
           'select-chevron h-7 cursor-pointer rounded-[--radius-control] border bg-ink-950/60 py-0 pr-6 pl-2',
-          'text-micro text-ink-100 transition-colors hover:border-ink-500',
+          'text-micro transition-colors hover:border-ink-500',
           'focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/45 disabled:cursor-not-allowed disabled:opacity-50',
           awaitingChoice
-            ? 'border-warn-400 ring-2 ring-warn-400/35'
-            : 'border-ink-600',
+            ? 'border-warn-400 text-warn-300 ring-2 ring-warn-400/35'
+            : s.status === 'Tested'
+              ? 'border-brand-500/60 text-brand-300'
+              : s.status === 'N/A'
+                ? 'border-ink-600 text-ink-400'
+                : 'border-ink-600 text-ink-100',
         )}
       >
         {TEST_STATUSES.map((status) => (

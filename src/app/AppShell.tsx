@@ -53,7 +53,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div aria-hidden="true" className="brand-edge h-0.5" />
         <div className="mx-auto flex h-13 max-w-[1600px] items-center gap-3 px-3 sm:gap-6 sm:px-6">
           <NavLink to="/" className="flex shrink-0 items-center gap-2.5" aria-label="VAPT Checklist — home">
-            <span className="flex h-8 w-8 items-center justify-center rounded-[--radius-control] border border-brand-500/50 bg-brand-500/12 text-brand-400 ring-1 ring-brand-500/20">
+            <span className="brand-mark flex h-8 w-8 items-center justify-center rounded-[--radius-control] border border-brand-500/50 text-brand-400">
               <IconShield size={18} />
             </span>
             <span className="hidden leading-tight sm:block">
@@ -153,7 +153,8 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </main>
 
-      <footer className="no-print mt-8 border-t border-ink-800 px-4 pt-4 pb-6 sm:px-6">
+      <footer className="no-print mt-8 px-4 pt-4 pb-6 sm:px-6">
+        <div aria-hidden="true" className="brand-edge mb-4 h-px opacity-70" />
         <div className="mx-auto flex max-w-[1600px] flex-col items-center gap-2 text-center">
           <span className="flex items-center gap-1.5 font-mono text-micro tracking-wide text-ink-500">
             <IconShield size={11} aria-hidden="true" className="text-brand-500/70" />
