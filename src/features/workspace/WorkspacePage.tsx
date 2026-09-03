@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
-import clsx from 'clsx';
 import {
   Badge,
   Button,
@@ -12,6 +11,7 @@ import {
   LinkButton,
   LiveAnnouncement,
   LoadingPanel,
+  TextButton,
 } from '../../ui/primitives';
 import { IconAlert, IconCheck, IconFilter, IconSearch, IconX } from '../../ui/icons';
 import { TestListRow } from './TestListRow';
@@ -604,15 +604,12 @@ export default function WorkspacePage() {
             </button>
           )}
           {unconfirmedIds.size > 0 && scope !== 'unconfirmed' && (
-            <button
-              className="rounded text-warn-400 hover:underline"
-              onClick={() => setScope('unconfirmed')}
-            >
+            <TextButton className="text-warn-400 hover:text-warn-300" onClick={() => setScope('unconfirmed')}>
               {unconfirmedIds.size} unconfirmed
-            </button>
+            </TextButton>
           )}
-          <button
-            className={clsx('rounded hover:text-brand-400', selectionMode ? 'text-brand-400' : '')}
+          <TextButton
+            className={selectionMode ? 'text-brand-400' : ''}
             aria-pressed={selectionMode}
             onClick={() => {
               setSelectionMode((v) => !v);
@@ -620,10 +617,9 @@ export default function WorkspacePage() {
             }}
           >
             {selectionMode ? 'Exit bulk edit' : 'Bulk edit'}
-          </button>
+          </TextButton>
           {selectionMode && (
-            <button
-              className="rounded hover:text-brand-400"
+            <TextButton
               onClick={() =>
                 setSelected(
                   selected.size === visible.length
@@ -635,13 +631,13 @@ export default function WorkspacePage() {
               {selected.size === visible.length && visible.length > 0
                 ? 'Deselect all'
                 : 'Select all shown'}
-            </button>
+            </TextButton>
           )}
           {(activeFilters > 0 || query) && (
-            <button className="ml-auto rounded hover:text-brand-400" onClick={resetFilters}>
+            <TextButton className="ml-auto" onClick={resetFilters}>
               <IconX size={11} className="mr-1 inline" aria-hidden="true" />
               Clear filters
-            </button>
+            </TextButton>
           )}
           <span className="hidden w-full text-micro text-ink-500 xl:block">
             <kbd>j</kbd>/<kbd>k</kbd> move · <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> status ·{' '}

@@ -10,8 +10,10 @@ import {
   LoadingPanel,
   PriorityBadge,
   ProgressBar,
+  ExternalLink,
   SectionHeading,
   Stat,
+  TextLink,
 } from '../../ui/primitives';
 import {
   IconAlert,
@@ -23,7 +25,6 @@ import {
   IconCircleFilled,
   IconCircleHalf,
   IconDownload,
-  IconExternal,
   IconList,
   IconSpark,
   IconTarget,
@@ -179,16 +180,12 @@ export default function DashboardPage() {
                   {!engagement.applicationUrl ? (
                     <span className="text-ink-400">Not recorded</span>
                   ) : safeUrl ? (
-                    <a
+                    <ExternalLink
                       href={safeUrl}
-                      target="_blank"
-                      rel="noreferrer noopener"
-                      className="inline-flex max-w-full items-center gap-1 truncate hover:text-brand-400"
+                      className="max-w-full truncate hover:text-brand-400"
                     >
                       {engagement.applicationUrl}
-                      <IconExternal size={11} aria-hidden="true" />
-                      <span className="sr-only">(opens in a new tab)</span>
-                    </a>
+                    </ExternalLink>
                   ) : (
                     // Unsupported scheme (javascript:, data:…) — shown, never linked.
                     <span className="break-all" title="Not a linkable http(s) URL">
@@ -409,12 +406,9 @@ export default function DashboardPage() {
           icon={<IconTarget size={18} aria-hidden="true" />}
           title={`Application context is ${Math.round(completeness.ratio * 100)}% complete`}
           action={
-            <Link
-              to={`/e/${engagementId}/context`}
-              className="rounded text-xs font-medium text-brand-400 hover:underline"
-            >
+            <TextLink to={`/e/${engagementId}/context`}>
               Refine context →
-            </Link>
+            </TextLink>
           }
         >
           {unconfirmed.length} tests are applicable only because facts are unknown. Answering more
@@ -438,12 +432,9 @@ export default function DashboardPage() {
               : 'Applicable and Not Tested, ranked by priority, how strongly this application\u2019s context points at the test, exploitability and what you have already found.'
           }
           actions={
-            <Link
-              to={`/e/${engagementId}/workspace?status=Not+Tested`}
-              className="rounded text-xs text-brand-400 hover:underline"
-            >
+            <TextLink to={`/e/${engagementId}/workspace?status=Not+Tested`}>
               See all Not Tested →
-            </Link>
+            </TextLink>
           }
         />
         {highValue.length === 0 ? (
@@ -521,12 +512,9 @@ export default function DashboardPage() {
           }
           actions={
             findings.length > 0 && (
-              <Link
-                to={`/e/${engagementId}/workspace?result=Vulnerable`}
-                className="rounded text-xs text-brand-400 hover:underline"
-              >
+              <TextLink to={`/e/${engagementId}/workspace?result=Vulnerable`}>
                 Open in workspace →
-              </Link>
+              </TextLink>
             )
           }
         />
@@ -608,7 +596,7 @@ export default function DashboardPage() {
                 <div className="mb-1 flex items-center justify-between gap-2 text-xs">
                   <Link
                     to={`/e/${engagementId}/workspace?category=${group.key}`}
-                    className="truncate rounded text-ink-200 hover:text-brand-400"
+                    className="truncate rounded text-ink-200 transition-colors duration-150 hover:text-brand-400"
                   >
                     {group.label}
                   </Link>

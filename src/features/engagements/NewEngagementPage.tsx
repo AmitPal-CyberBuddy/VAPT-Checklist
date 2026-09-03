@@ -10,6 +10,7 @@ import {
   PriorityBadge,
   ProgressBar,
   SectionHeading,
+  TextButton,
   Textarea,
 } from '../../ui/primitives';
 import { IconChevron, IconShield } from '../../ui/icons';
@@ -246,13 +247,12 @@ export default function NewEngagementPage() {
             </Field>
           </div>
 
-          <button
+          <TextButton
             type="button"
             onClick={() => setShowOptional((v) => !v)}
-            className="text-xs text-ink-400 hover:text-brand-400"
           >
             {showOptional ? '− Hide' : '+ Add'} client, tester, dates and scope notes
-          </button>
+          </TextButton>
 
           {showOptional && (
             <div className="animate-in space-y-4 border-t border-ink-800 pt-4">

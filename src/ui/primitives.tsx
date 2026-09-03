@@ -166,6 +166,114 @@ export function ExternalButton({
   );
 }
 
+/**
+ * An inline text link *within* the app (react-router `Link`). This is the one
+ * way to render a sentence-level link — a brand-coloured label that underlines
+ * on hover/focus. Screens must not hand-roll `text-brand-400 hover:underline`
+ * on a Link; use this so every inline link shares the same colour, weight,
+ * underline behaviour and focus treatment.
+ */
+export function TextLink({
+  to,
+  children,
+  className,
+}: {
+  to: string;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <Link
+      to={to}
+      className={clsx(
+        // text-brand-400 passes contrast in both themes. We signal the link on
+        // hover/focus with an underline rather than any colour shift: a
+        // brighten (brand-300) is unreadable on paper, a darken (brand-600)
+        // fades against the dark obsidian.
+        'inline-flex items-center gap-1 rounded text-xs font-medium text-brand-400',
+        'hover:underline hover:decoration-brand-400/70',
+        'focus-visible:outline-none focus-visible:underline',
+        className,
+      )}
+    >
+      {children}
+    </Link>
+  );
+}
+
+/**
+ * An inline link to an *external* resource — reference docs, standards pages.
+ * A real `<a>` that opens a new tab and carries a small outbound glyph +
+ * sr-only note. `variant="pill"` renders the bordered chip used for library
+ * references; the default is a sentence-level text link. Use for outbound
+ * resources only, never for navigation within the app.
+ */
+export function ExternalLink({
+  href,
+  children,
+  className,
+  variant = 'inline',
+}: {
+  href: string;
+  children: ReactNode;
+  className?: string;
+  variant?: 'inline' | 'pill';
+}) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer noopener"
+      className={
+        variant === 'pill'
+          ? clsx(
+              'inline-flex items-center gap-1 rounded-md border border-ink-600 px-2 py-0.5 text-micro text-ink-300',
+              'transition-colors duration-150 hover:border-brand-500/50 hover:text-brand-400',
+              className,
+            )
+          : clsx(
+              'inline-flex items-center gap-1 text-micro text-ink-300',
+              'transition-colors duration-150 hover:text-brand-400 hover:underline',
+              className,
+            )
+      }
+    >
+      {children}
+      <IconExternal size={10} aria-hidden="true" />
+      <span className="sr-only">(opens in a new tab)</span>
+    </a>
+  );
+}
+
+/**
+ * A text-only action button (no surface, no border). For in-toolbar commands
+ * that read as plain words — "Clear filters", "Bulk edit", "See all". It is the
+ * button analogue of `TextLink`: hover/active shift to the brand accent, and
+ * it underlines on focus so a keyboard user sees where they are. Screens that
+ * render a word as a button use this, not ad-hoc `hover:text-brand-400`.
+ */
+export function TextButton({
+  children,
+  className,
+  type = 'button',
+  ...rest
+}: ButtonHTMLAttributes<HTMLButtonElement>) {
+  return (
+    <button
+      type={type}
+      className={clsx(
+        'inline-flex items-center gap-1 rounded px-0.5 text-xs text-ink-400',
+        'transition-colors duration-150 hover:text-brand-400',
+        'focus-visible:outline-none focus-visible:underline',
+        className,
+      )}
+      {...rest}
+    >
+      {children}
+    </button>
+  );
+}
+
 /** Icon-only button. `label` is mandatory — it becomes the accessible name. */
 export function IconButton({
   label,

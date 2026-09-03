@@ -7,17 +7,18 @@ import {
   Card,
   EmptyState,
   FilterSelect,
+  ExternalLink,
   Input,
   PageHeader,
   PriorityBadge,
   Stat,
+  TextButton,
 } from '../../ui/primitives';
 import {
   IconChevron,
   IconClock,
   IconCloud,
   IconCode,
-  IconExternal,
   IconEye,
   IconFileText,
   IconFingerprint,
@@ -373,8 +374,7 @@ export default function LibraryPage() {
         </FilterSelect>
         <span className="text-xs text-ink-500">{filtered.length} shown</span>
         {filtersActive && (
-          <button
-            className="flex items-center gap-1 text-xs text-ink-400 hover:text-brand-400"
+          <TextButton
             onClick={() => {
               setQuery('');
               setCategory('all');
@@ -382,8 +382,8 @@ export default function LibraryPage() {
               setPriority('all');
             }}
           >
-            <IconX size={12} /> Clear
-          </button>
+            <IconX size={12} aria-hidden="true" /> Clear
+          </TextButton>
         )}
       </Card>
 
@@ -391,11 +391,11 @@ export default function LibraryPage() {
         <div className="rounded-(--radius-control) border border-brand-500/25 bg-brand-500/5 px-3 py-2 text-xs text-ink-300">
           Matched on synonyms:{' '}
           {aliasHits.map((hit, index) => (
-            <span key={hit.id}>
+              <span key={hit.id}>
               {index > 0 && ' · '}
-              <button className="text-brand-400 hover:underline" onClick={() => setOpen(hit.id)}>
+              <TextButton className="text-brand-400" onClick={() => setOpen(hit.id)}>
                 “{hit.alias}” → {hit.name}
-              </button>
+              </TextButton>
             </span>
           ))}
         </div>
@@ -540,17 +540,13 @@ export default function LibraryPage() {
                             <p className="section-kicker mb-1">References</p>
                             <div className="flex flex-wrap gap-1.5">
                               {resolveReferences(t).map((reference) => (
-                                <a
+                                <ExternalLink
                                   key={reference.label}
                                   href={reference.url}
-                                  target="_blank"
-                                  rel="noreferrer noopener"
-                                  className="inline-flex items-center gap-1 rounded-md border border-ink-600 px-1.5 py-0.5 text-micro text-ink-300 transition-colors hover:border-brand-500/50 hover:text-brand-400"
+                                  variant="pill"
                                 >
                                   {reference.label}
-                                  <IconExternal size={10} />
-                                  <span className="sr-only">(opens in a new tab)</span>
-                                </a>
+                                </ExternalLink>
                               ))}
                             </div>
                           </div>

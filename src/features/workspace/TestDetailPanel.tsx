@@ -5,11 +5,12 @@ import {
   Button,
   IconButton,
   InlineAlert,
+  ExternalLink,
   PriorityBadge,
   SegmentedControl,
   Textarea,
 } from '../../ui/primitives';
-import { IconAlert, IconBan, IconCheck, IconChevron, IconCircle, IconCircleFilled, IconExternal, IconTarget } from '../../ui/icons';
+import { IconAlert, IconBan, IconCheck, IconChevron, IconCircle, IconCircleFilled, IconTarget } from '../../ui/icons';
 import { categoryName } from '../../data/categories';
 import { resolveReferences } from '../../data/references';
 import { describeRule, suggestApplicability } from '../../domain/applicability';
@@ -455,17 +456,9 @@ export function TestDetailPanel({
         <Section title="References" divided>
           <div className="flex flex-wrap gap-1.5">
             {resolveReferences(d).map((reference) => (
-              <a
-                key={reference.label}
-                href={reference.url}
-                target="_blank"
-                rel="noreferrer noopener"
-                className="inline-flex items-center gap-1 rounded-md border border-ink-600 px-2 py-0.5 text-micro text-ink-300 transition-colors hover:border-brand-500/50 hover:text-brand-400"
-              >
+              <ExternalLink key={reference.label} href={reference.url} variant="pill">
                 {reference.label}
-                <IconExternal size={10} aria-hidden="true" />
-                <span className="sr-only">(opens in a new tab)</span>
-              </a>
+              </ExternalLink>
             ))}
           </div>
         </Section>
