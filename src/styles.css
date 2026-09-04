@@ -1448,95 +1448,6 @@
   }
 
   /* ---------------------------------------------------------------
-   * The console mock — an intentionally dark instrument in both themes
-   * (a CRT readout, like an embedded code editor), carrying a faint
-   * scan-line texture.
-   * --------------------------------------------------------------- */
-  .terminal {
-    position: relative;
-    background: linear-gradient(to bottom, rgb(10 16 28 / 0.92), rgb(6 10 18 / 0.97));
-    border: 1px solid var(--color-ink-700);
-    border-radius: var(--radius-panel);
-    overflow: hidden;
-  }
-  .terminal::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background-image: repeating-linear-gradient(
-      to bottom,
-      rgb(141 156 178 / 0.03) 0 1px,
-      transparent 1px 3px
-    );
-  }
-  [data-theme='light'] .terminal {
-    background: linear-gradient(to bottom, #101827, #0a101c);
-    border-color: #212d44;
-  }
-  [data-theme='light'] .terminal::after {
-    background-image: repeating-linear-gradient(
-      to bottom,
-      rgb(226 232 240 / 0.03) 0 1px,
-      transparent 1px 3px
-    );
-  }
-
-  /* A block cursor that blinks on the prompt line. */
-  .terminal-cursor {
-    display: inline-block;
-    width: 0.55em;
-    height: 1.05em;
-    margin-left: 2px;
-    vertical-align: text-bottom;
-    background: var(--color-brand-400);
-    animation: blink 1.1s steps(1) infinite;
-  }
-
-  /* Corner brackets — the HUD/blueprint frame on console surfaces.
-     Drawn on ::before so the element keeps its own background layers. */
-  .corner-frame {
-    position: relative;
-  }
-  .corner-frame::before {
-    content: '';
-    position: absolute;
-    inset: 6px;
-    pointer-events: none;
-    --corner-color: rgb(69 192 249 / 0.5);
-    background-image: linear-gradient(var(--corner-color), var(--corner-color)),
-      linear-gradient(var(--corner-color), var(--corner-color)),
-      linear-gradient(var(--corner-color), var(--corner-color)),
-      linear-gradient(var(--corner-color), var(--corner-color)),
-      linear-gradient(var(--corner-color), var(--corner-color)),
-      linear-gradient(var(--corner-color), var(--corner-color)),
-      linear-gradient(var(--corner-color), var(--corner-color)),
-      linear-gradient(var(--corner-color), var(--corner-color));
-    background-repeat: no-repeat;
-    background-size:
-      14px 1.5px,
-      1.5px 14px,
-      14px 1.5px,
-      1.5px 14px,
-      14px 1.5px,
-      1.5px 14px,
-      14px 1.5px,
-      1.5px 14px;
-    background-position:
-      left top,
-      left top,
-      right top,
-      right top,
-      left bottom,
-      left bottom,
-      right bottom,
-      right bottom;
-  }
-  [data-theme='light'] .corner-frame::before {
-    --corner-color: rgb(8 145 178 / 0.55);
-  }
-
-  /* ---------------------------------------------------------------
    * Capability marquee — a seamless ticker of real checks. Purely
    * decorative (aria-hidden at the call site); the mask fades both
    * edges, hover pauses it, and reduced motion freezes it.
@@ -1663,17 +1574,6 @@
   to {
     opacity: 1;
     transform: translateY(0);
-  }
-}
-
-@keyframes blink {
-  0%,
-  55% {
-    opacity: 1;
-  }
-  56%,
-  100% {
-    opacity: 0;
   }
 }
 
