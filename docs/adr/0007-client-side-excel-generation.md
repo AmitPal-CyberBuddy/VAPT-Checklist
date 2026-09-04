@@ -25,7 +25,7 @@ Export.
 
 ## Consequences
 
-- Six styled sheets are produced locally with no server and no network request.
+- Five styled sheets are produced locally with no server and no network request.
 - The XLSX writer is a separate ~78 kB chunk, absent from the initial load.
 - The v4 API (`writeXlsxFile(sheets).toFile(name)`, `textColor`, `columnSpan`) is pinned; a future
   major upgrade will require touching `src/export/excel.ts` only.

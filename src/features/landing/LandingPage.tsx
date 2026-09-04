@@ -15,6 +15,7 @@ import {
   IconCheckCircle,
   IconChevron,
   IconDownload,
+  IconFileText,
   IconGauge,
   IconGithub,
   IconGrid,
@@ -35,6 +36,30 @@ import {
  * and the sample checklist below is real data from the bundled library.
  */
 
+/** The workbook the export produces, shown as the hero's report preview. */
+const REPORT_SHEETS = [
+  {
+    name: 'Engagement Summary',
+    body: 'Identity, dates, statistics and application context.',
+  },
+  {
+    name: 'Assessment',
+    body: 'Every applicable check — result, notes, guidance and standards mapping.',
+  },
+  {
+    name: 'Vulnerable Tests',
+    body: 'Confirmed vulnerabilities only, ordered Critical → Low.',
+  },
+  {
+    name: 'Not Applicable',
+    body: 'Checks excluded from scope, with the reason — the audit trail.',
+  },
+  {
+    name: 'Coverage',
+    body: 'Per-category counts and progress, with a total row.',
+  },
+];
+
 const STEPS = [
   {
     title: 'Define the engagement',
@@ -50,7 +75,7 @@ const STEPS = [
   },
   {
     title: 'Export the report',
-    body: 'One click produces a five-sheet Excel workbook — summary, assessment, vulnerable tests, not-applicable and coverage — straight from local data. Backup and restore as JSON anytime.',
+    body: `One click produces a ${REPORT_SHEETS.length}-sheet Excel workbook — summary, assessment, vulnerable tests, not-applicable and coverage — straight from local data. Backup and restore as JSON anytime.`,
   },
 ];
 
@@ -128,7 +153,7 @@ export default function LandingPage() {
           >
             A few scoping answers become a complete, prioritised checklist —{' '}
             {TEST_LIBRARY.length} security objectives across {CATEGORIES.length} categories —
-            tracked from first probe to a five-sheet report. Everything runs in your browser;
+            tracked from first probe to a {REPORT_SHEETS.length}-sheet report. Everything runs in your browser;
             nothing is uploaded.
           </p>
           <div
@@ -155,49 +180,34 @@ export default function LandingPage() {
         </div>
 
         <div className="grid items-stretch gap-4 lg:grid-cols-[1.05fr_0.95fr]">
-          {/* A session, told the way the tool actually behaves — the console
-              is decorative (aria-hidden) so no fake statuses reach a screen
-              reader. */}
+          {/* What the export actually produces — the same sheets the
+              workbook builder lists, so a visitor sees the report anatomy
+              instead of a mock CLI session. */}
           <div
-            className="stagger-item terminal corner-frame"
+            className="stagger-item panel glow-border scan-edge overflow-hidden"
             style={{ '--d': 4 } as CSSProperties}
-            aria-hidden="true"
           >
-            <div className="flex items-center gap-2 border-b border-ink-800/70 px-4 py-2.5">
-              <span className="flex gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-vuln-500/80" />
-                <span className="h-2 w-2 rounded-full bg-warn-400/80" />
-                <span className="h-2 w-2 rounded-full bg-safe-500/80" />
-              </span>
-              <span className="font-mono text-micro tracking-widest text-ink-500 uppercase">
-                vapt-checklist · local session
+            <div className="flex items-center gap-2 border-b border-ink-800 bg-ink-850/60 px-4 py-2">
+              <IconFileText size={14} aria-hidden="true" className="text-brand-400" />
+              <span className="font-mono text-micro font-medium tracking-widest text-ink-400 uppercase">
+                The Excel report · generated locally
               </span>
             </div>
-            <div className="space-y-2.5 px-4 py-4 font-mono text-xs leading-relaxed sm:px-5 sm:text-sm">
-              <p>
-                <span className="text-brand-400">$</span>{' '}
-                <span className="text-ink-100">vapt new "ACME Portal" --type web-app</span>
-              </p>
-              <p className="text-safe-400">
-                ✓ engagement created — 68 of {TEST_LIBRARY.length} checks applicable
-              </p>
-              <p>
-                <span className="text-brand-400">$</span>{' '}
-                <span className="text-ink-100">vapt status</span>
-              </p>
-              <p className="text-ink-300">
-                ▌ testing <span className="font-semibold text-ink-50">42/68</span> ·{' '}
-                <span className="text-vuln-400">3 vulnerable</span> ·{' '}
-                <span className="text-warn-300">23 not tested</span>
-              </p>
-              <p>
-                <span className="text-brand-400">$</span>{' '}
-                <span className="text-ink-100">vapt export --xlsx</span>
-              </p>
-              <p className="text-safe-400">
-                ✓ acme-portal-assessment.xlsx — 5 sheets, written locally
-                <span className="terminal-cursor" />
-              </p>
+            <ul className="divide-y divide-ink-800">
+              {REPORT_SHEETS.map((sheet, index) => (
+                <li key={sheet.name} className="flex items-start gap-3 px-4 py-2.5">
+                  <span className="mt-0.5 font-mono text-micro tabular-nums text-brand-400">
+                    {String(index + 1).padStart(2, '0')}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-ink-100">{sheet.name}</p>
+                    <p className="mt-0.5 text-xs leading-relaxed text-ink-400">{sheet.body}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <div className="border-t border-ink-800 px-4 py-2 font-mono text-micro text-ink-500">
+              {REPORT_SHEETS.length} sheets · written in your browser · nothing uploaded
             </div>
           </div>
 
@@ -267,7 +277,7 @@ export default function LandingPage() {
               <IconDownload size={13} aria-hidden="true" className="shrink-0 text-brand-500/80" />
               Report sheets
             </dt>
-            <dd className="stat-band-value mt-1 text-ink-50">5</dd>
+            <dd className="stat-band-value mt-1 text-ink-50">{REPORT_SHEETS.length}</dd>
             <p className="mt-1 text-micro text-ink-500">in the Excel export</p>
           </div>
         </dl>
@@ -383,7 +393,7 @@ export default function LandingPage() {
             <h3 className="text-sm font-semibold tracking-wide text-ink-100">Assessment-grade tracking and reporting</h3>
             <p className="text-sm leading-relaxed text-ink-400">
               Record status, result and evidence notes per check; the dashboard
-              surfaces high-value work next. Export a five-sheet Excel workbook —
+              surfaces high-value work next. Export a {REPORT_SHEETS.length}-sheet Excel workbook —
               summary, assessment, vulnerable tests, not-applicable and coverage.
             </p>
             <p className="flex flex-wrap gap-1.5 pt-1">
