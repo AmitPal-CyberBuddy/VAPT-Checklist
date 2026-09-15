@@ -43,10 +43,9 @@ async function openEngagement(id: string) {
   render(<App />);
   const select = await screen.findByLabelText('Engagement status');
   // Wait until the checklist itself has loaded: the status guard reads the
-  // checklist, and the counts only become authoritative at that point.
-  await waitFor(() =>
-    expect(screen.getAllByText(/[1-9]\d* Not Applicable/).length).toBeGreaterThan(0),
-  );
+  // checklist, and the counts only become authoritative at that point. The
+  // dashboard's statistics band only renders once that load has finished.
+  await screen.findByRole('region', { name: 'Assessment statistics' });
   return select;
 }
 

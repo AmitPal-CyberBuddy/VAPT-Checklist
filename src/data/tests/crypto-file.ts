@@ -87,10 +87,10 @@ export const cryptoTests: TestDefinition[] = [
     description:
       'Encrypted values handled by the application can be decrypted or forged because the server leaks oracle signals on malformed ciphertext, or because the ciphertext lacks integrity protection (CBC bit flipping, ECB block shuffling).',
     testingGuidance: [
-      'Identify encrypted blobs handled by the application that map to structured plaintext (user=alice, role=user, session data)and strings or tokens the app accepts.',
+      'Identify encrypted blobs handled by the application that map to structured plaintext (user=alice, role=user, session data) and strings or tokens the app accepts.',
       'Tamper with the final ciphertext block and compare error messages, status codes and timing across malformed inputs to detect an oracle.',
       'Flip bits in preceding CBC blocks or reorder ECB blocks and observe whether the decrypted plaintext or behaviour changes predictably.',
-      'Where an oracle or tampering is confirmed, demonstrate decryption or forging of a benign value only,and report the absence of authenticated encryption.',
+      'Where an oracle or tampering is confirmed, demonstrate decryption or forging of a benign value only, and report the absence of authenticated encryption.',
     ],
     owasp: ['WSTG-CRYP-02', 'A02:2021'],
     cwe: ['CWE-209', 'CWE-347', 'CWE-353'],
@@ -124,17 +124,17 @@ export const cryptoTests: TestDefinition[] = [
     subcategory: 'Integrity Protection',
     priority: 'High',
     description:
-      'Signed or MAC-protected values (tokens, cookies, webhooks, licence data) are accepted without verifying the signature, or verification can be skipped by removing it.',
+      'Signed or MAC-protected values the application accepts from outside itself (partner service tokens, signed URLs, MAC-protected cookies, licence data) are accepted without verifying the signature, or verification can be skipped by removing it. JWT session tokens are SESS-010\'s objective and inbound webhook payloads are API-012\'s — record each under that test.',
     testingGuidance: [
+      'Identify where the application consumes externally signed or MAC-protected values (partner services, object storage links, payment providers, licence checks).',
       'Strip the signature component and resubmit; also submit an invalid signature.',
       'Test whether the algorithm or key identifier can be attacker-selected.',
-      'For webhooks, replay a modified payload without a valid signature header.',
-      'For JWT session tokens, JWT-specific coverage (algorithm confusion, claims, expiry) lives in SESS-010 — do not repeat that methodology here.',
+      'Do not repeat the JWT methodology (SESS-010) or the webhook replay methodology (API-012) here.',
     ],
     owasp: ['A08:2021'],
     cwe: ['CWE-345', 'CWE-347'],
-    applicability: rule.any(rule.includes('authMechanisms', 'jwt'), rule.is('callsExternalServices', true)),
-    aliases: ['Signature Verification Bypass', 'Unverified Webhook Signature', 'Missing MAC Validation'],
+    applicability: rule.is('callsExternalServices', true),
+    aliases: ['Signature Verification Bypass', 'Missing MAC Validation', 'Unsigned Token Accepted'],
     tags: ['crypto'],
   },
 ];

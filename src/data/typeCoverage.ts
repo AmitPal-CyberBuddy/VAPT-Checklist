@@ -62,12 +62,15 @@ export interface TypeCoverage {
 /**
  * Thresholds. Deliberately blunt and few:
  *   0 domain-specific tests            → unsupported
- *   fewer than 14                      → limited
+ *   fewer than 13                      → limited
  *   otherwise                          → supported
- * 14 is the size of the smallest set we are willing to call an assessment
- * domain (the REST API set), not a number tuned to make the UI look good.
+ * 13 is the size of the smallest set we are willing to call an assessment
+ * domain (the REST API set). It was 14 before the catalog audit merged the
+ * duplicate IDOR / horizontal-escalation objective into a single test — the
+ * count follows the distinct objectives the domain is aimed at, not a number
+ * tuned to keep a UI label stable.
  */
-const SUPPORTED_THRESHOLD = 14;
+const SUPPORTED_THRESHOLD = 13;
 
 export function applicationTypeCoverage(type: ApplicationTypeId): TypeCoverage {
   const named = TEST_LIBRARY.filter((t) => namesAssetType(t.applicability, type));

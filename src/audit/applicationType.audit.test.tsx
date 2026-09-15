@@ -40,13 +40,16 @@ const applicableFor = (type: ApplicationTypeId, context: ApplicationContext = {}
 
 describe('coverage claims are measured, not asserted', () => {
   it('derives every support level from the library itself', () => {
+    // Mirrors SUPPORTED_THRESHOLD in typeCoverage.ts — 13, the size of the
+    // smallest supported domain (REST API) after the duplicate
+    // IDOR / horizontal-escalation objective was merged into one test.
     for (const type of APPLICATION_TYPES) {
       const coverage = COVERAGE_BY_TYPE[type.id];
       if (coverage.support === 'unsupported') expect(coverage.specific).toHaveLength(0);
-      if (coverage.support === 'supported') expect(coverage.specific.length).toBeGreaterThanOrEqual(14);
+      if (coverage.support === 'supported') expect(coverage.specific.length).toBeGreaterThanOrEqual(13);
       if (coverage.support === 'limited') {
         expect(coverage.specific.length).toBeGreaterThan(0);
-        expect(coverage.specific.length).toBeLessThan(14);
+        expect(coverage.specific.length).toBeLessThan(13);
       }
     }
   });

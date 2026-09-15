@@ -733,9 +733,11 @@ export default function WorkspacePage() {
       ) : (
         <div className="grid gap-3 lg:grid-cols-[minmax(300px,360px)_1fr]">
           {showList && (
+            /* scroll-pt-24: keep focused/active rows clear of the sticky
+               bulk-actions bar while bulk editing. */
             <nav
               aria-label="Tests"
-              className="panel max-h-[calc(100vh-16rem)] min-h-[20rem] overflow-y-auto p-0 lg:max-h-[calc(100vh-15rem)]"
+              className="panel max-h-[calc(100vh-16rem)] min-h-[20rem] overflow-y-auto scroll-pt-24 p-0 lg:max-h-[calc(100vh-15rem)]"
             >
               <ul ref={listRef} className="divide-y divide-ink-800">
                 {visible.map((item) => (

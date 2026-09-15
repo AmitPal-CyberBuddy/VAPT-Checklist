@@ -21,6 +21,7 @@ import {
   setEngagementStatus,
 } from '../../persistence/repository';
 import { toast } from '../../ui/toast';
+import { TEST_LIBRARY } from '../../data/library';
 import type { Engagement } from '../../domain/types';
 import { applicationTypeLabel } from '../../domain/applicationType';
 
@@ -120,7 +121,7 @@ export default function EngagementsPage() {
           description={
             query
               ? 'Search covers the engagement name, client and scope. Try a shorter term.'
-              : 'Create an engagement, describe the target application, and the applicable test list is generated for you — 184 vulnerability tests, narrowed to the ones that matter for that target.'
+              : `Create an engagement, describe the target application, and the applicable test list is generated for you — ${TEST_LIBRARY.length} vulnerability tests, narrowed to the ones that matter for that target.`
           }
           action={
             !query && (
@@ -251,7 +252,10 @@ export default function EngagementsPage() {
                     {engagement.testerName && <span>· {engagement.testerName}</span>}
                   </p>
                   {(engagement.applicationUrl || engagement.scope.length > 0) && (
-                    <p className="mt-1 truncate font-mono text-micro text-ink-500">
+                    <p
+                      className="mt-1 truncate font-mono text-micro text-ink-500"
+                      title={[engagement.applicationUrl, ...engagement.scope].filter(Boolean).join(' · ')}
+                    >
                       {[engagement.applicationUrl, ...engagement.scope].filter(Boolean).join(' · ')}
                     </p>
                   )}

@@ -73,7 +73,7 @@ export const reconTests: TestDefinition[] = [
     testingGuidance: [
       'Review all HTML/JS for comments, TODOs, disabled features and hardcoded endpoints.',
       'Download .map files and reconstruct original sources where available.',
-      'Grep bundles for key patterns (api_key, secret, password, Bearer, AKIA, private key headers).',
+      'Grep bundles for key patterns (api_key, secret, password, Bearer, AKIA, private key headers); a key confirmed live against its service is CRYPTO-003\'s objective — do not double-record it.',
     ],
     owasp: ['WSTG-INFO-05'],
     cwe: ['CWE-615', 'CWE-540'],

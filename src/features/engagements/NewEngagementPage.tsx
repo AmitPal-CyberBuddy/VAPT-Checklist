@@ -263,6 +263,7 @@ export default function NewEngagementPage() {
                     maxLength={TEXT_LIMITS.clientName}
                     onChange={(e) => setClientName(e.target.value)}
                     placeholder="ABC Ltd"
+                    autoComplete="organization"
                   />
                 </Field>
                 <Field label="Tester">
@@ -271,6 +272,7 @@ export default function NewEngagementPage() {
                     maxLength={TEXT_LIMITS.testerName}
                     onChange={(e) => setTesterName(e.target.value)}
                     placeholder="Your name"
+                    autoComplete="name"
                   />
                 </Field>
                 <div className="grid grid-cols-2 gap-3">

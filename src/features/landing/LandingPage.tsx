@@ -103,7 +103,7 @@ const MARQUEE_IDS = [
   'INJ-014',
   'AUTHZ-001',
   'AUTHZ-002',
-  'AUTHZ-004',
+  'AUTHZ-005',
   'SESS-001',
   'API-001',
   'API-002',
