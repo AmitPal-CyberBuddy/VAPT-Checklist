@@ -51,7 +51,7 @@ export const apiTests: TestDefinition[] = [
     subcategory: 'API Resource Controls',
     priority: 'High',
     description:
-      'The API has no per-client quota, payload ceiling or pagination limit, so a legitimate caller can exhaust compute, storage or third-party spend. Distinct from DOS-001 (attempt limiting on auth endpoints) and LOGIC-005 (abuse of a business flow).',
+      'The API has no per-client quota, payload ceiling or pagination limit, so a legitimate caller can exhaust compute, storage or third-party spend. Distinct from DOS-001 (attempt limiting on auth endpoints), LOGIC-005 (abuse of a business flow) and DOS-005 (expensive queries and unbounded pagination on web endpoints — record each once).',
     testingGuidance: [
       'Measure the request rate accepted per token, per IP and unauthenticated.',
       'Request very large page sizes (limit=100000) and deeply nested expansions.',
@@ -192,7 +192,7 @@ export const apiTests: TestDefinition[] = [
       'Retrieve the WSDL and enumerate all operations, including those not used by the client.',
       'Invoke administrative operations directly and test WS-Security enforcement.',
       'Test XML attacks (XXE, XML bombs, signature wrapping) against the endpoint.',
-      'Test SOAPAction header spoofing: send an action name that differs from the SOAP body operation,and check which handler performs the route and whether authorisation is enforced at the routing layer.',
+      'Test SOAPAction header spoofing: send an action name that differs from the SOAP body operation, and check which handler performs the route and whether authorisation is enforced at the routing layer.',
     ],
     owasp: ['API5:2023', 'WSTG-INPV-07'],
     cwe: ['CWE-285', 'CWE-611'],

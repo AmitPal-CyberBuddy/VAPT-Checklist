@@ -190,6 +190,10 @@
 @layer base {
   html {
     -webkit-text-size-adjust: 100%;
+    /* WCAG 2.4.11 Focus Not Obscured — when the page itself scrolls (the
+       mobile layout), focus movement stops clear of the pinned decision
+       tray and the home-indicator zone instead of landing under them. */
+    scroll-padding-bottom: calc(8.5rem + env(safe-area-inset-bottom));
   }
 
   body {

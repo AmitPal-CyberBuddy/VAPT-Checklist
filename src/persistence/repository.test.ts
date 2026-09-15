@@ -11,10 +11,14 @@ import {
   exportBackup,
   getChecklist,
   importBackup,
+  mergeRetiredState,
   previewApplicability,
+  syncLibrary,
   updateTestState,
 } from './repository';
+import { stateKey } from '../domain/executionState';
 import { TEST_LIBRARY } from '../data/library';
+import type { TestState } from '../domain/types';
 
 
 /**
@@ -189,5 +193,141 @@ describe('repository', () => {
     expect(all.filter((e) => e.name.includes('imported'))).toHaveLength(1);
     const importedId = all.find((e) => e.name.includes('imported'))!.id;
     expect(await getChecklist(importedId)).toHaveLength(TEST_LIBRARY.length);
+  });
+});
+
+/* ------------------------------------------------- catalog merge (AUTHZ-004 → AUTHZ-002) */
+
+function testState(engagementId: string, testId: string, patch: Partial<TestState>): TestState {
+  const timestamp = new Date().toISOString();
+  return {
+    id: stateKey(engagementId, testId),
+    engagementId,
+    testId,
+    applicable: true,
+    suggestedApplicable: true,
+    applicabilitySource: 'auto',
+    status: 'Not Tested',
+    result: null,
+    notes: '',
+    createdAt: timestamp,
+    updatedAt: timestamp,
+    ...patch,
+  };
+}
+
+describe('mergeRetiredState', () => {
+  it('adopts the retired record when the successor has no work', () => {
+    const merged = mergeRetiredState(
+      testState('e', 'AUTHZ-002', {}),
+      testState('e', 'AUTHZ-004', { status: 'Tested', result: 'Vulnerable', notes: 'idor on /api/orders/{id}' }),
+      'AUTHZ-004',
+    );
+    expect(merged.status).toBe('Tested');
+    expect(merged.result).toBe('Vulnerable');
+    expect(merged.notes).toBe('idor on /api/orders/{id}');
+    expect(merged.applicable).toBe(true);
+  });
+
+  it('keeps a Vulnerable finding even when the successor was tested Not Vulnerable', () => {
+    const merged = mergeRetiredState(
+      testState('e', 'AUTHZ-002', { status: 'Tested', result: 'Not Vulnerable', notes: 'role checks pass' }),
+      testState('e', 'AUTHZ-004', { status: 'Tested', result: 'Vulnerable', notes: 'bypassed on admin objects' }),
+      'AUTHZ-004',
+    );
+    expect(merged.status).toBe('Tested');
+    expect(merged.result).toBe('Vulnerable');
+    // Both notes survive; the retired side is labelled with its old ID.
+    expect(merged.notes).toBe('role checks pass\n\n[AUTHZ-004] bypassed on admin objects');
+  });
+
+  it('lets the successor’s later judgement win over a non-vulnerable retired record', () => {
+    const merged = mergeRetiredState(
+      testState('e', 'AUTHZ-002', { status: 'N/A' }),
+      testState('e', 'AUTHZ-004', { status: 'Tested', result: 'Not Vulnerable' }),
+      'AUTHZ-004',
+    );
+    expect(merged.status).toBe('N/A');
+    expect(merged.result).toBeNull();
+  });
+
+  it('stays Not Tested when neither side recorded work', () => {
+    const merged = mergeRetiredState(
+      testState('e', 'AUTHZ-002', {}),
+      testState('e', 'AUTHZ-004', {}),
+      'AUTHZ-004',
+    );
+    expect(merged.status).toBe('Not Tested');
+    expect(merged.result).toBeNull();
+    expect(merged.notes).toBe('');
+  });
+
+  it('unions applicability and preserves a manual override on the successor', () => {
+    const merged = mergeRetiredState(
+      testState('e', 'AUTHZ-002', { applicable: false, applicabilitySource: 'manual' }),
+      testState('e', 'AUTHZ-004', { applicable: true }),
+      'AUTHZ-004',
+    );
+    expect(merged.applicable).toBe(true);
+    expect(merged.applicabilitySource).toBe('manual');
+  });
+});
+
+describe('syncLibrary catalog merge', () => {
+  const seedRetiredRow = async (engagementId: string) => {
+    await db.testStates.add(
+      testState(engagementId, 'AUTHZ-004', {
+        status: 'Tested',
+        result: 'Vulnerable',
+        notes: 'order id enumeration',
+      }),
+    );
+    await db.engagements.update(engagementId, { libraryVersion: '1.3.0' });
+  };
+
+  it('carries a merged test’s work into its successor and removes the orphan row', async () => {
+    const engagement = await createEngagement({ applicationType: 'web-app', name: 'Pre-merge' });
+    await seedRetiredRow(engagement.id);
+
+    const result = await syncLibrary(engagement.id);
+    expect(result).toEqual({ added: 0, retired: 0, merged: 1 });
+
+    expect(await db.testStates.get(stateKey(engagement.id, 'AUTHZ-004'))).toBeUndefined();
+    const successor = await db.testStates.get(stateKey(engagement.id, 'AUTHZ-002'));
+    expect(successor).toMatchObject({
+      status: 'Tested',
+      result: 'Vulnerable',
+      notes: 'order id enumeration',
+    });
+    // The checklist is untouched in size — the merge moves a row, not adds one.
+    expect(await getChecklist(engagement.id)).toHaveLength(TEST_LIBRARY.length);
+  });
+
+  it('re-keys the record when the successor row is missing', async () => {
+    const engagement = await createEngagement({ applicationType: 'web-app', name: 'No successor' });
+    await db.testStates.delete(stateKey(engagement.id, 'AUTHZ-002'));
+    await seedRetiredRow(engagement.id);
+
+    const result = await syncLibrary(engagement.id);
+    expect(result.merged).toBe(1);
+    expect(await db.testStates.get(stateKey(engagement.id, 'AUTHZ-004'))).toBeUndefined();
+    expect(await db.testStates.get(stateKey(engagement.id, 'AUTHZ-002'))).toMatchObject({
+      testId: 'AUTHZ-002',
+      result: 'Vulnerable',
+    });
+  });
+
+  it('still reports unmapped retired states, and leaves their rows in place', async () => {
+    const engagement = await createEngagement({ applicationType: 'web-app', name: 'Legacy row' });
+    await seedRetiredRow(engagement.id);
+    await db.testStates.add(
+      testState(engagement.id, 'OLD-999', { status: 'Tested', result: 'Vulnerable' }),
+    );
+
+    const result = await syncLibrary(engagement.id);
+    expect(result).toEqual({ added: 0, retired: 1, merged: 1 });
+    // The unmapped row is the tester's record — reported, never deleted.
+    expect(await db.testStates.get(stateKey(engagement.id, 'OLD-999'))).toBeTruthy();
+    expect(await db.testStates.get(stateKey(engagement.id, 'AUTHZ-004'))).toBeUndefined();
   });
 });

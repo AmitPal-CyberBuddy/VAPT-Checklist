@@ -343,7 +343,7 @@ export const businessLogicTests: TestDefinition[] = [
     testingGuidance: [
       'Catalogue client-delivered parameters that encode identity, entitlement, state or constraints (hidden fields, disabled inputs, feature flags, values embedded in tokens and cookies).',
       'Submit modified or extreme values (role=admin, isAdmin=true, quantity=−1, price=0, limit=100000) directly to the API and observe whether the server re-derives the value from the session.',
-      'Bypass UI constraints with out-of-range, wrong-type, oversized, null, unicode, emoji and NULL-byte inputs,and record where the backend accepts them and what downstream effect they have.',
+      'Bypass UI constraints with out-of-range, wrong-type, oversized, null, unicode, emoji and NULL-byte inputs, and record where the backend accepts them and what downstream effect they have.',
       'Toggle feature flags in client state and see whether the backend honours the unlocked feature; test read-only fields for server-side write acceptance.',
     ],
     owasp: ['WSTG-BUSL-01', 'WSTG-BUSL-07'],

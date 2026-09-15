@@ -188,7 +188,10 @@ function TestListRowInner({
       {active && (
         <span aria-hidden="true" className="absolute top-0 bottom-0 left-0 w-0.5 bg-brand-400/90" />
       )}
-      <div className="flex items-start gap-2">
+      {/* flex-wrap: on a phone the name keeps its width and the status
+          control drops under it instead of squeezing the name away. At lg
+          and up the two-pane layout restores the single-line row. */}
+      <div className="flex flex-wrap items-start gap-x-2 gap-y-1.5">
         {selectionMode && (
           <input
             type="checkbox"
@@ -204,7 +207,7 @@ function TestListRowInner({
           onClick={() => onOpen(d.id)}
           aria-current={active ? 'true' : undefined}
           tabIndex={active ? 0 : -1}
-          className="min-w-0 flex-1 py-2 text-left"
+          className="min-w-0 flex-1 basis-56 py-2 text-left lg:basis-0"
         >
           {/* 1 — the vulnerability name dominates */}
           <span

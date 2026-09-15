@@ -275,9 +275,11 @@ export function TestDetailPanel({
               Keyed by the test id so switching tests crossfades the pane
               instead of flashing. Scrolls internally on wide screens; on a
               phone the page itself scrolls, with the tray pinned below. */}
+      {/* scroll-pb-32: the pane scrolls internally on wide screens, so
+          focus/scroll stops clear of the sticky decision tray below. */}
       <div
         key={d.id}
-        className="animate-page space-y-5 px-4 py-5 sm:px-5 lg:min-h-0 lg:flex-1 lg:overflow-y-auto"
+        className="animate-page scroll-pb-32 space-y-5 px-4 py-5 sm:px-5 lg:min-h-0 lg:flex-1 lg:overflow-y-auto"
       >
         {s.applicable && s.status === 'Not Tested' && !awaitingChoice && (
           <InlineAlert
@@ -422,12 +424,9 @@ export function TestDetailPanel({
               Rule: {describeRule(d.applicability)}
             </p>
             <p className="text-micro leading-relaxed text-ink-500">
-              Applicability is decided once, when you set up the engagement:{' '}
-              <strong className="font-medium text-ink-400">is this check in the checklist?</strong>{' '}
-              Status records what you found on each check that is in the list. A check is either{' '}
-              <strong className="font-medium text-ink-400">Not Applicable</strong> (so it has no
-              status) <em>or</em> it has a Status — never both. For a test in the list, Status{' '}
-              <strong>N/A</strong> means you checked it and this target doesn&apos;t exercise it.
+              Applicability decides whether the check is in this checklist; Status then records what
+              you found — <strong className="font-medium text-ink-400">N/A</strong> is a Status:
+              you checked it and the target doesn&apos;t exercise it.
             </p>
             {s.applicabilitySource === 'manual' && (
               <div className="flex flex-wrap items-center justify-between gap-2">

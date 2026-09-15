@@ -8,7 +8,7 @@
 
 import { nanoid } from 'nanoid';
 import { db } from './db';
-import { LIBRARY_VERSION, TEST_LIBRARY, TEST_BY_ID } from '../data/library';
+import { LIBRARY_VERSION, RETIRED_TEST_MERGES, TEST_LIBRARY, TEST_BY_ID } from '../data/library';
 import { suggestApplicability } from '../domain/applicability';
 import {
   applyTransition,
@@ -19,7 +19,12 @@ import {
   stateKey,
   type StateTransition,
 } from '../domain/executionState';
-import { TEST_STATUSES, TEST_RESULTS, type TestResult } from '../domain/types';
+import {
+  TEST_STATUSES,
+  TEST_RESULTS,
+  type TestResult,
+  type TestStatus,
+} from '../domain/types';
 import { toApplicationTypeId, isApplicationTypeId } from '../domain/applicationType';
 import { clampText, TEXT_LIMITS } from '../domain/untrusted';
 import { effectiveContext, type ApplicationContext } from '../domain/context';
@@ -360,21 +365,86 @@ export interface LibrarySyncResult {
   /** New tests seeded into the engagement. */
   added: number;
   /**
-   * States for tests that no longer exist in the library (merged or removed).
-   * They are reported, never deleted: the row is the tester's record, and the
-   * checklist simply stops showing it.
+   * States for tests that no longer exist in the library (merged or removed)
+   * that were NOT part of a catalog merge. They are reported, never deleted:
+   * the row is the tester's record, and the checklist simply stops showing it.
    */
   retired: number;
+  /** Recorded work on a merged test that was carried into its successor. */
+  merged: number;
+}
+
+/**
+ * Carries a merged test's recorded work into its successor.
+ *
+ * A merge only happens when the retired test and the successor are the same
+ * testing objective, so the record is about the combined test — it must not
+ * disappear. The rules:
+ *
+ *  - a Vulnerable finding beats everything: a recorded finding survives;
+ *  - otherwise the successor's recorded status wins (the tester's latest
+ *    judgement on the combined test);
+ *  - otherwise the retired record's status is adopted;
+ *  - notes from both sides are kept, the retired side labelled with its old ID.
+ *
+ * The result always satisfies the state-machine invariants (Tested carries a
+ * result), because both inputs did.
+ */
+export function mergeRetiredState(
+  successor: TestState,
+  retired: TestState,
+  retiredTestId: string,
+): TestState {
+  const isVuln = (s: TestState) => s.status === 'Tested' && s.result === 'Vulnerable';
+  const hasWork = (s: TestState) => s.status !== 'Not Tested' || s.notes.trim() !== '';
+
+  let status: TestStatus;
+  let result: TestResult | null;
+  if (isVuln(retired)) {
+    status = 'Tested';
+    result = 'Vulnerable';
+  } else if (successor.status !== 'Not Tested') {
+    status = successor.status;
+    result = successor.result;
+  } else if (retired.status !== 'Not Tested') {
+    status = retired.status;
+    result = retired.result;
+  } else {
+    status = 'Not Tested';
+    result = null;
+  }
+
+  const successorNotes = successor.notes.trim();
+  const retiredNotes = retired.notes.trim();
+  const notes = [
+    successorNotes,
+    hasWork(retired)
+      ? successorNotes
+        ? `[${retiredTestId}] ${retiredNotes}`
+        : retiredNotes
+      : '',
+  ]
+    .filter(Boolean)
+    .join('\n\n');
+
+  return {
+    ...successor,
+    status,
+    result,
+    notes: clampText(notes, TEXT_LIMITS.notes),
+    // If either record said the check was in scope, the combined check is.
+    applicable: successor.applicable || retired.applicable,
+    applicabilitySource: successor.applicabilitySource === 'manual' ? 'manual' : 'auto',
+  };
 }
 
 /** Reconciles an engagement with the bundled library after a content change. */
 export async function syncLibrary(engagementId: string): Promise<LibrarySyncResult> {
   const engagement = await db.engagements.get(engagementId);
-  if (!engagement) return { added: 0, retired: 0 };
+  if (!engagement) return { added: 0, retired: 0, merged: 0 };
 
   const states = await listStates(engagementId);
   const existing = new Set(states.map((s) => s.testId));
-  const retired = states.filter((s) => !TEST_BY_ID.has(s.testId)).length;
   const timestamp = now();
 
   const added = TEST_LIBRARY.filter((t) => !existing.has(t.id)).map((definition) =>
@@ -386,17 +456,51 @@ export async function syncLibrary(engagementId: string): Promise<LibrarySyncResu
     ),
   );
 
+  // Catalog merges: carry the retired test's recorded work into its successor,
+  // then remove the orphan row. Without this, an engagement created before the
+  // merge would silently lose the test's status, result and notes from every
+  // view, export and backup it is shown in.
+  const byTestId = new Map(states.map((s) => [s.testId, s]));
+  const mergeUpdates: TestState[] = [];
+  const mergedRowIds: string[] = [];
+  let merged = 0;
+  for (const [retiredTestId, successorId] of Object.entries(RETIRED_TEST_MERGES)) {
+    const retired = byTestId.get(retiredTestId);
+    if (!retired) continue;
+    const successor = byTestId.get(successorId);
+    if (successor) {
+      mergeUpdates.push(mergeRetiredState(successor, retired, retiredTestId));
+    } else {
+      // The successor row is missing — re-key the record onto it instead of
+      // dropping it.
+      mergeUpdates.push({
+        ...retired,
+        testId: successorId,
+        id: stateKey(engagementId, successorId),
+        updatedAt: timestamp,
+      });
+    }
+    mergedRowIds.push(retired.id);
+    merged += 1;
+  }
+
+  const retired = states.filter(
+    (s) => !TEST_BY_ID.has(s.testId) && !mergedRowIds.includes(s.id),
+  ).length;
+
   await db.transaction('rw', db.testStates, db.engagements, async () => {
     if (added.length > 0) await db.testStates.bulkAdd(added);
+    if (mergeUpdates.length > 0) await db.testStates.bulkPut(mergeUpdates);
+    if (mergedRowIds.length > 0) await db.testStates.bulkDelete(mergedRowIds);
     // Always record the version, even when nothing was added — otherwise the
     // engagement is reported as outdated forever.
     await db.engagements.update(engagementId, {
       libraryVersion: LIBRARY_VERSION,
-      updatedAt: added.length > 0 ? timestamp : engagement.updatedAt,
+      updatedAt: added.length > 0 || merged > 0 ? timestamp : engagement.updatedAt,
     });
   });
 
-  return { added: added.length, retired };
+  return { added: added.length, retired, merged };
 }
 
 /* ------------------------------------------------------------ backup / restore */

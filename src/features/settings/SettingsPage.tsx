@@ -138,21 +138,28 @@ export default function SettingsPage() {
     if (!engagements) return;
     let added = 0;
     let retired = 0;
+    let merged = 0;
     for (const e of engagements) {
       const result = await syncLibrary(e.id);
       added += result.added;
       retired += result.retired;
+      merged += result.merged;
     }
     const detail = [
       added > 0 ? `${added} new test${added === 1 ? '' : 's'} added` : '',
+      merged > 0
+        ? `${merged} recorded test state${merged === 1 ? '' : 's'} from merged tests carried into their successor`
+        : '',
       retired > 0
-        ? `${retired} recorded state${retired === 1 ? '' : 's'} belong to tests that have since been merged and are no longer shown`
+        ? `${retired} recorded state${retired === 1 ? '' : 's'} belong to retired tests and are kept in storage but no longer shown`
         : '',
     ]
       .filter(Boolean)
       .join(' · ');
     toast.success(
-      added === 0 && retired === 0 ? 'All engagements are up to date' : 'Library synchronised',
+      added === 0 && retired === 0 && merged === 0
+        ? 'All engagements are up to date'
+        : 'Library synchronised',
       detail || undefined,
     );
   }

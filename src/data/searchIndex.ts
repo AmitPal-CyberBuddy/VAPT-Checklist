@@ -5,8 +5,8 @@
  * must match on every field the product promises: vulnerability name, test ID,
  * category, subcategory, aliases, tags, description and testing guidance.
  *
- * Rather than rebuilding a lowercase haystack per keystroke (184 tests ×
- * ~1.5 kB of prose), the index is built once at module load and reused. Notes
+ * Rather than rebuilding a lowercase haystack per keystroke (every test in the
+ * library × ~1.5 kB of prose), the index is built once at module load and reused. Notes
  * live in engagement state, so they are matched separately by the caller.
  */
 

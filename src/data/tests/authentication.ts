@@ -76,7 +76,7 @@ export const authenticationTests: TestDefinition[] = [
       'Compare responses for valid vs invalid usernames on login, registration, password reset and MFA challenge, over repeated requests rather than single samples.',
       'Extend to non-authentication surfaces: profile lookup, invites, sharing, API filters and bulk endpoints reveal whether an account, resource or tenant exists.',
       'Check status codes, message wording, response length and timing on both login and non-login identifiers.',
-      'Assess whether enumeration enables targeted attacks at scale (credential stuffing, phishing, account takeover)and what mitigation exists (generic messages, rate limits).',
+      'Assess whether enumeration enables targeted attacks at scale (credential stuffing, phishing, account takeover) and what mitigation exists (generic messages, rate limits).',
     ],
     owasp: ['WSTG-IDNT-04'],
     cwe: ['CWE-204'],
@@ -91,7 +91,7 @@ export const authenticationTests: TestDefinition[] = [
     subcategory: 'Login Controls',
     priority: 'High',
     description:
-      'The login function permits unlimited or lightly limited authentication attempts, enabling brute force, credential stuffing and password spraying.',
+      'The login function permits unlimited or lightly limited authentication attempts, enabling brute force, credential stuffing and password spraying. The login behaviour is this test\'s objective; platform rate limiting across the other security-sensitive endpoints is DOS-001.',
     testingGuidance: [
       'Submit repeated failed logins for one account and observe lockout, throttling or CAPTCHA behaviour.',
       'Test the horizontal case: one password across many accounts (spraying), which lockout rarely covers.',
@@ -344,11 +344,11 @@ export const authenticationTests: TestDefinition[] = [
     subcategory: 'Authentication Logic',
     priority: 'High',
     description:
-      'Authentication decisions are enforced primarilyin client-side code — route guards, JavaScript login state, hidden authentication flags — so modifyingthe client reaches authenticated functionality without a valid credential.',
+      'Authentication decisions are enforced primarily in client-side code — route guards, JavaScript login state, hidden authentication flags — so modifying the client reaches authenticated functionality without a valid credential.',
     testingGuidance: [
-      'Review front-end routingand guards for logic that decides access without a server-side authentication check.',
-      'Manipulate the authentication response body or local state(authenticated: true)and observe whether privileged UIand data become available without a valid credential.',
-      'Confirm every privileged data fetchand endpoint is independently authenticatedand authorised server-side: an unauthenticated request is rejected with a login redirect or 40x, not served from client state.',
+      'Review front-end routing and guards for logic that decides access without a server-side authentication check.',
+      'Manipulate the authentication response body or local state (authenticated: true) and observe whether privileged UI and data become available without a valid credential.',
+      'Confirm every privileged data fetch and endpoint is independently authenticated and authorised server-side: an unauthenticated request is rejected with a login redirect or 40x, not served from client state.',
       'For role or entitlement values trusted via hidden fields, tokens or cookies, cover that under LOGIC-007 — do not repeat it here.',
     ],
     owasp: ['WSTG-ATHN-04'],

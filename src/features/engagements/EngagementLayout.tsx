@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { NavLink, Outlet, useParams } from 'react-router-dom';
+import { NavLink, Outlet, useParams, useLocation } from 'react-router-dom';
 import clsx from 'clsx';
 import { Badge, Button, ExternalLink, InlineAlert, LoadingPanel, Modal, ProgressBar, Select } from '../../ui/primitives';
 import { useChecklist, useEngagement, useMetrics } from '../../hooks/useData';
@@ -20,6 +20,14 @@ const TABS = [
 
 export default function EngagementLayout() {
   const { engagementId } = useParams();
+  const location = useLocation();
+  /**
+   * On the Dashboard tab the command band stays a slim identity strip —
+   * the dashboard's stat band and progress panel already own those
+   * headline metrics, so repeating them here only duplicates the page.
+   */
+  const onDashboard =
+    location.pathname === `/e/${engagementId}` || location.pathname === `/e/${engagementId}/`;
   const engagement = useEngagement(engagementId);
   const items = useChecklist(engagementId);
   const metrics = useMetrics(items);
@@ -126,28 +134,34 @@ export default function EngagementLayout() {
                 ))}
               {applicationType && <span>{applicationType}</span>}
               {engagement.scope.length > 0 && (
-                <span className="truncate font-mono">{engagement.scope.join(' · ')}</span>
+                <span className="truncate font-mono" title={engagement.scope.join(' · ')}>
+                  {engagement.scope.join(' · ')}
+                </span>
               )}
             </p>
           </div>
 
           <div className="flex items-center gap-4">
-            <div className="text-right">
-              <p className="text-micro tracking-wider text-ink-400 uppercase">Completion</p>
-              <p className="text-xl font-semibold tabular-nums text-ink-50">
-                {Math.round(metrics.completion * 100)}%
-              </p>
-            </div>
-            <div className="w-44">
-              <ProgressBar
-                value={metrics.completion}
-                label="Engagement progress"
-                tone={metrics.completion === 1 ? 'safe' : 'brand'}
-              />
-              <p className="mt-1.5 text-micro text-ink-400">
-                {c.tested + c.na} of {c.applicable} applicable completed
-              </p>
-            </div>
+            {!onDashboard && (
+              <>
+                <div className="text-right">
+                  <p className="text-micro tracking-wider text-ink-400 uppercase">Completion</p>
+                  <p className="text-xl font-semibold tabular-nums text-ink-50">
+                    {Math.round(metrics.completion * 100)}%
+                  </p>
+                </div>
+                <div className="w-44">
+                  <ProgressBar
+                    value={metrics.completion}
+                    label="Engagement progress"
+                    tone={metrics.completion === 1 ? 'safe' : 'brand'}
+                  />
+                  <p className="mt-1.5 text-micro text-ink-400">
+                    {c.tested + c.na} of {c.applicable} applicable completed
+                  </p>
+                </div>
+              </>
+            )}
             <Select
               aria-label="Engagement status"
               value={engagement.status}
@@ -161,27 +175,29 @@ export default function EngagementLayout() {
           </div>
         </div>
 
-        <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-ink-800 pt-4">
-          <Badge tone="brand">{c.applicable} applicable</Badge>
-          <Badge tone="neutral" glyph={<IconCircle size={11} strokeWidth={2.5} />}>
-            {c.notTested} Not Tested
-          </Badge>
-          <Badge tone="brand" glyph={<IconCircleFilled size={11} />}>
-            {c.tested} Tested
-          </Badge>
-          <Badge tone="na" glyph={<IconBan size={11} strokeWidth={2.5} />}>
-            {c.na} N/A
-          </Badge>
-          <Badge tone="vulnerable" glyph={<IconAlert size={11} strokeWidth={2.5} />}>
-            {c.vulnerable} Vulnerable
-          </Badge>
-          <Badge tone="safe" glyph={<IconCheck size={11} strokeWidth={3} />}>
-            {c.notVulnerable} Not Vulnerable
-          </Badge>
-          <span className="ml-auto text-micro text-ink-400">
-            {c.excluded} Not Applicable
-          </span>
-        </div>
+        {!onDashboard && (
+          <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-ink-800 pt-4">
+            <Badge tone="brand">{c.applicable} applicable</Badge>
+            <Badge tone="neutral" glyph={<IconCircle size={11} strokeWidth={2.5} />}>
+              {c.notTested} Not Tested
+            </Badge>
+            <Badge tone="brand" glyph={<IconCircleFilled size={11} />}>
+              {c.tested} Tested
+            </Badge>
+            <Badge tone="na" glyph={<IconBan size={11} strokeWidth={2.5} />}>
+              {c.na} N/A
+            </Badge>
+            <Badge tone="vulnerable" glyph={<IconAlert size={11} strokeWidth={2.5} />}>
+              {c.vulnerable} Vulnerable
+            </Badge>
+            <Badge tone="safe" glyph={<IconCheck size={11} strokeWidth={3} />}>
+              {c.notVulnerable} Not Vulnerable
+            </Badge>
+            <span className="ml-auto text-micro text-ink-400">
+              {c.excluded} Not Applicable
+            </span>
+          </div>
+        )}
       </div>
 
       <nav

@@ -128,6 +128,7 @@ export const disclosureTests: TestDefinition[] = [
       'Exercise the application with the console open and record what is logged.',
       'Inspect outbound requests to analytics/error services for personal data and tokens in payloads or URLs.',
       'Check whether the session replay tooling masks form fields.',
+      'Consent and disclosure of third-party trackers is PRIV-002\'s objective — do not double-record it here.',
     ],
     owasp: ['A09:2021'],
     cwe: ['CWE-532'],
@@ -145,7 +146,7 @@ export const availabilityTests: TestDefinition[] = [
     subcategory: 'Rate Limiting',
     priority: 'High',
     description:
-      'Security-sensitive endpoints — login, OTP, password reset, token exchange — accept unlimited attempts from one client, enabling brute force and credential stuffing. This is the transport-level control; API quota design is API-003 and business-flow abuse is LOGIC-005.',
+      'Security-sensitive endpoints — login, OTP, password reset, token exchange — accept unlimited attempts from one client, enabling brute force and credential stuffing. This is the transport-level control; credential brute force against the login function itself is AUTH-005, API quota design is API-003 and business-flow abuse is LOGIC-005.',
     testingGuidance: [
       'Baseline the accepted request rate for login, search, OTP, export and API endpoints.',
       'Test limits per IP, per account and per token, and check whether they can be reset by rotating identifiers.',
@@ -220,7 +221,7 @@ export const availabilityTests: TestDefinition[] = [
     subcategory: 'Resource Exhaustion',
     priority: 'Medium',
     description:
-      'Search, reporting and listing endpoints allow unbounded result sets, wildcard queries or costly sorts that degrade the service.',
+      'Search, reporting and listing endpoints allow unbounded result sets, wildcard queries or costly sorts that degrade the service. Where the surface is an API, record the quota, payload and pagination-limit design under API-003 instead of double-recording the same request.',
     testingGuidance: [
       'Request maximum/absent page sizes and wildcard-only searches.',
       'Test sorting and filtering on unindexed fields and cross-joins via nested expansion.',

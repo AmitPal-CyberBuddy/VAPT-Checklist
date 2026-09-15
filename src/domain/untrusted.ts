@@ -38,7 +38,8 @@ export function safeExternalUrl(value: string | undefined | null): string | null
 /**
  * Length ceilings for stored text.
  *
- * Not arbitrary: an engagement lives in IndexedDB alongside ~184 test states,
+ * Not arbitrary: an engagement lives in IndexedDB alongside a full set of test
+ * states (one per library test),
  * and unbounded text is how a local-first application exhausts its quota and
  * loses an assessment. The notes ceiling also keeps every cell inside Excel's
  * hard 32,767-character limit, below which a workbook is silently truncated or

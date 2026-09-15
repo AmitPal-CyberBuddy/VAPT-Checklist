@@ -28,7 +28,20 @@ import { apiTests, graphqlTests } from './tests/api-graphql';
 import { disclosureTests, availabilityTests, privacyTests } from './tests/disclosure-dos-privacy';
 import { cloudTests, mobileTests } from './tests/cloud-mobile';
 
-export const LIBRARY_VERSION = '1.3.1';
+export const LIBRARY_VERSION = '1.4.0';
+
+/**
+ * Catalog merges: a retired test ID mapped to the test that absorbed it.
+ *
+ * These are the merges where the retired test and its successor are the SAME
+ * testing objective (not merely overlapping coverage), so a record made
+ * against the old ID is a record about the combined test. `syncLibrary`
+ * carries that recorded work into the successor and removes the orphan row.
+ * Any other retired test keeps its row untouched — reported, never deleted.
+ */
+export const RETIRED_TEST_MERGES: Record<string, string> = {
+  'AUTHZ-004': 'AUTHZ-002', // Horizontal privilege escalation ≡ IDOR/BOLA
+};
 
 const CATEGORY_INDEX: Record<CategoryId, number> = Object.fromEntries(
   CATEGORIES.map((c, i) => [c.id, i]),

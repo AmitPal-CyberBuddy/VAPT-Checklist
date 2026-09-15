@@ -53,6 +53,15 @@ describe('vulnerability naming and aliases', () => {
     expect(idor.aliases).toContain('Insecure Direct Object Reference');
   });
 
+  it('folds horizontal privilege escalation into IDOR/BOLA — one objective, one test', () => {
+    const idor = byId('AUTHZ-002');
+    expect(idor.aliases).toContain('Horizontal Privilege Escalation');
+    expect(idor.aliases).toContain('Cross-Account Access');
+    expect(idor.aliases).toContain('Cross-User Data Modification');
+    // AUTHZ-004 was retired into AUTHZ-002; the ID must not reappear.
+    expect(TEST_LIBRARY.some((t) => t.id === 'AUTHZ-004')).toBe(false);
+  });
+
   it('shares one namespace between names and aliases', () => {
     const terms = new Map<string, string>();
     for (const t of TEST_LIBRARY) {
@@ -186,6 +195,21 @@ describe('applicability rules', () => {
     for (const fact of CONTEXT_FACTS.filter((f) => f.feeds)) {
       expect(used.has(fact.feeds!), `${fact.key} feeds an unused fact`).toBe(true);
     }
+  });
+
+  it('scopes CRYPTO-007 to externally signed values — a JWT-only target does not trigger it', () => {
+    // JWT session tokens are SESS-010's objective; webhook payloads are
+    // API-012's. The token fact alone must not pull the general integrity
+    // check into the checklist (callsExternalServices is the real trigger).
+    const jwtOnly = suggestApplicability(byId('CRYPTO-007'), {
+      authMechanisms: ['jwt'],
+      callsExternalServices: false,
+    });
+    expect(jwtOnly.applicable).toBe(false);
+    expect(jwtOnly.uncertain).toBe(false);
+    expect(suggestApplicability(byId('CRYPTO-007'), { callsExternalServices: true }).applicable).toBe(
+      true,
+    );
   });
 
   it('never lets a rule depend on a metadata-only fact', () => {
