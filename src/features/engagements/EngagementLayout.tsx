@@ -202,7 +202,7 @@ export default function EngagementLayout() {
 
       <nav
         aria-label="Engagement sections"
-        className="flex gap-1 overflow-x-auto border-b border-ink-800"
+        className="engagement-tabs flex gap-1 overflow-x-auto border-b border-ink-800"
       >
         {TABS.map((tab) => (
           <NavLink
@@ -217,7 +217,7 @@ export default function EngagementLayout() {
                   : 'border-transparent text-ink-300 hover:text-ink-100',
               )
             }
-            aria-current={undefined}
+            title={tab.label}
           >
             {({ isActive }) => (
               <>

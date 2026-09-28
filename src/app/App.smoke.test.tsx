@@ -42,6 +42,18 @@ describe('application shell', () => {
     expect(await screen.findByText('No engagements yet')).toBeTruthy();
   });
 
+  it('lets users recover from an empty engagement search without editing the query', async () => {
+    render(<App />);
+    const search = await screen.findByRole('searchbox', {
+      name: 'Search engagements by name, client or scope',
+    });
+    fireEvent.change(search, { target: { value: 'missing target' } });
+
+    expect(await screen.findByText('No engagements match “missing target”')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Clear search' }));
+    expect(await screen.findByText('No engagements yet')).toBeTruthy();
+  });
+
   it('exposes landmarks, a skip link and a primary navigation', async () => {
     render(<App />);
     expect(await screen.findByRole('link', { name: 'Skip to main content' })).toBeTruthy();
@@ -94,6 +106,7 @@ describe('application shell', () => {
     render(<App />);
 
     expect(await screen.findByRole('heading', { name: 'Dashboard Target' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Dashboard' }).getAttribute('aria-current')).toBe('page');
     expect(await screen.findByText('Total applicable')).toBeTruthy();
     // Shown in the engagement header and again on the dashboard identity card.
     expect(screen.getAllByText('https://app.example.com').length).toBeGreaterThan(0);

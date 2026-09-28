@@ -174,7 +174,7 @@ export default function SettingsPage() {
         description="Everything is stored locally in this browser. There is no account, no server and no synchronisation — take backups if the data matters."
       />
 
-      <div className="grid gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Stat label="Engagements" value={engagements?.length ?? '—'} tone="brand" />
         <Stat label="Library tests" value={TEST_LIBRARY.length} />
         <Stat label="Library version" value={LIBRARY_VERSION} />

@@ -464,7 +464,9 @@
     inset: 0;
     transform: translateX(-100%);
     background-image: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.28), transparent);
-    animation: sheen 2.6s ease-in-out infinite;
+    /* One quiet pass on arrival; width changes already communicate progress,
+       so a perpetual sweep would add motion without adding information. */
+    animation: sheen 1.8s ease-out 1 both;
   }
 
   /* Skeleton cells get the same travelling light, at a quieter intensity. */
@@ -827,8 +829,8 @@
     z-index: 100;
     border-radius: var(--radius-control);
     background: var(--color-brand-500);
-    padding: 0.5rem 0.875rem;
-    font-size: 0.8125rem;
+    padding: 0.5rem 0.75rem;
+    font-size: var(--text-sm);
     font-weight: 600;
     color: var(--color-ink-950);
     transition: top var(--motion-fast) var(--ease-standard);
@@ -948,6 +950,23 @@
     .nav-pill::after {
       display: none;
     }
+  }
+
+  /* Engagement tabs stay thumb-sized and easy to scan on narrow screens.
+     Hide only the scrollbar chrome; the row remains horizontally scrollable
+     with native touch/trackpad behavior when all sections do not fit. */
+  .engagement-tabs {
+    scrollbar-width: none;
+    scroll-snap-type: x proximity;
+    scroll-padding-inline: 0.5rem;
+    overscroll-behavior-inline: contain;
+  }
+  .engagement-tabs::-webkit-scrollbar {
+    display: none;
+  }
+  .engagement-tabs > a {
+    min-height: 2.75rem;
+    scroll-snap-align: start;
   }
 
   /* Sticky command surfaces sit below the mobile top bar; once the shell
@@ -1594,6 +1613,15 @@
   55%,
   100% {
     transform: translateX(100%);
+  }
+}
+
+/* Fixed, multi-layer canvas lighting is attractive on desktop but can trigger
+   extra repaint work while scrolling on mobile GPUs. Keep the same palette,
+   and let the background move with the document on compact screens. */
+@media (max-width: 767px) {
+  body {
+    background-attachment: scroll;
   }
 }
 
