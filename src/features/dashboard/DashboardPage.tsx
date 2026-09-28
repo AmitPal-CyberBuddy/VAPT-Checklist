@@ -347,7 +347,7 @@ export default function DashboardPage() {
         </h2>
         {/* Featured row: the three numbers that decide what a tester does
             next get the visual weight; the rest are a compact strip. */}
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-[1.1fr_1.1fr_1fr]">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 xl:grid-cols-[1.1fr_1.1fr_1fr]">
           <Stat
             featured
             label="Vulnerable"
@@ -366,6 +366,7 @@ export default function DashboardPage() {
           />
           <Stat
             featured
+            className="col-span-2 xl:col-span-1"
             label="Total applicable"
             value={c.applicable}
             hint={
@@ -376,7 +377,7 @@ export default function DashboardPage() {
             tone="brand"
           />
         </div>
-        <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
+        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
           <Stat label="Tested" value={c.tested} glyph={<IconCircleFilled size={11} />} hint="with a result" />
           <Stat label="N/A" value={c.na} glyph={<IconBan size={11} strokeWidth={2.5} />} hint="assessed, target doesn't exercise it" />
           <Stat label="Not Vulnerable" value={c.notVulnerable} glyph={<IconCheck size={11} strokeWidth={3} />} tone="safe" hint="verified clean" />

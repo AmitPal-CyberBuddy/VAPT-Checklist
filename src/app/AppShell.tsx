@@ -127,7 +127,8 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <NavLink
                   key={to}
                   to={to}
-                  aria-current={active ? 'page' : undefined}
+                  aria-label={label}
+                  title={label}
                   className={clsx(
                     'nav-pill rail-link flex shrink-0 items-center gap-2 rounded-(--radius-control) border px-2.5 py-1.5 text-sm transition-[color,background-color,border-color,box-shadow] duration-150 sm:px-3 lg:w-full lg:shrink lg:px-3',
                     active
@@ -174,23 +175,35 @@ export function AppShell({ children }: { children: ReactNode }) {
                 'flex items-center gap-1.5 rounded-md border px-2 py-1',
                 storageOk === false
                   ? 'border-vuln-500/40 bg-vuln-500/10 text-vuln-400'
-                  : 'border-safe-500/30 bg-safe-500/5 text-safe-400',
+                  : storageOk === true
+                    ? 'border-safe-500/30 bg-safe-500/5 text-safe-400'
+                    : 'border-ink-700 bg-ink-900 text-ink-400',
               )}
               title={
                 storageOk === false
                   ? 'IndexedDB is unavailable — private mode or blocked storage. Work will not be saved.'
-                  : 'Data is stored locally in this browser (IndexedDB). Nothing is sent anywhere.'
+                  : storageOk === true
+                    ? 'Data is stored locally in this browser (IndexedDB). Nothing is sent anywhere.'
+                    : 'Checking whether this browser can save assessment data.'
               }
             >
               <span
                 aria-hidden="true"
                 className={clsx(
                   'h-1.5 w-1.5 rounded-full',
-                  storageOk === false ? 'animate-pulse bg-vuln-400' : 'bg-safe-400',
+                  storageOk === false
+                    ? 'animate-pulse bg-vuln-400'
+                    : storageOk === true
+                      ? 'bg-safe-400'
+                      : 'animate-pulse bg-ink-400',
                 )}
               />
               <span className="hidden font-mono sm:inline">
-                {storageOk === false ? 'Storage unavailable' : 'Saved locally'}
+                {storageOk === false
+                  ? 'Storage unavailable'
+                  : storageOk === true
+                    ? 'Saved locally'
+                    : 'Checking storage'}
               </span>
             </span>
           </div>

@@ -81,8 +81,8 @@ export default function EngagementsPage() {
         eyebrow="Assessment register"
         description="Each engagement pairs an application context with its own copy of the test library. Given this application — what should I test, what have I tested, and what did I find?"
         actions={
-          <>
-            <div className="relative">
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+            <div className="relative w-full sm:w-auto">
               <IconSearch
                 size={15}
                 aria-hidden="true"
@@ -94,17 +94,18 @@ export default function EngagementsPage() {
                 onChange={(e) => setQuery(e.target.value)}
                 aria-label="Search engagements by name, client or scope"
                 placeholder="Search engagements"
-                className="w-48 pl-9 sm:w-56"
+                className="w-full pl-9 sm:w-56"
               />
             </div>
             <Button
               variant="primary"
+              className="w-full sm:w-auto"
               icon={<IconPlus size={15} />}
               onClick={() => navigate('/engagements/new')}
             >
               New engagement
             </Button>
-          </>
+          </div>
         }
       />
 
@@ -124,7 +125,11 @@ export default function EngagementsPage() {
               : `Create an engagement, describe the target application, and the applicable test list is generated for you — ${TEST_LIBRARY.length} vulnerability tests, narrowed to the ones that matter for that target.`
           }
           action={
-            !query && (
+            query.trim() ? (
+              <Button variant="secondary" onClick={() => setQuery('')}>
+                Clear search
+              </Button>
+            ) : (
               <Button
                 variant="primary"
                 icon={<IconPlus size={15} />}
@@ -158,7 +163,7 @@ export default function EngagementsPage() {
         <div className="space-y-5">
           <section
             aria-label="Engagement register summary"
-            className="grid gap-2 sm:grid-cols-4"
+            className="grid grid-cols-2 gap-2 sm:grid-cols-4"
           >
             {[
               {

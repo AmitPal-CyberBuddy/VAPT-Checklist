@@ -520,7 +520,7 @@ export default function WorkspacePage() {
           <>
             <div
               id="workspace-filter-panel"
-              className="expand-in grid gap-2 border-t border-ink-800 pt-2.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6"
+              className="expand-in grid grid-cols-2 gap-2 border-t border-ink-800 pt-2.5 lg:grid-cols-3 xl:grid-cols-6"
             >
               <FilterSelect
                 label="Applicability"
