@@ -13,6 +13,7 @@ Implementation: [`src/ui/primitives.tsx`](../src/ui/primitives.tsx) (components)
 | --- | --- | --- |
 | **Surface** | `ink-950` app · `ink-900` panel · `ink-850` inset | Three levels, no more |
 | **Text** | `ink-50/100` primary · `ink-300` secondary · `ink-400` tertiary · `ink-500` faintest | `ink-500` is the lightest tone allowed for text |
+| **On-fill** | `on-fill` — constant near-black, *never* redefined per theme | Text sitting on a saturated fill (answer chips, step pills). An `ink-*` token there inverts to near-white in light mode and fails contrast |
 | **Line** | `ink-700` panel border · `ink-600` control border | Never used for text |
 | **Radius** | `--radius-control` 0.5rem · `--radius-panel` 0.75rem | Two radii; `kbd` chips use 0.25rem |
 | **Accent** | `brand-500` action/highest-information · `vuln-500` vulnerable/danger · `safe-500` not vulnerable/success · `warn-500` warning · `high-500`/`medium-400` the severities between critical and low | Semantic, never decorative |
@@ -132,9 +133,19 @@ was the result* from a single glance at any row.
 | `Modal` | `role="dialog"`, labelled, closes on `Escape`, traps `Tab`, restores focus on close |
 | `EmptyState` / `InlineAlert` / `LoadingPanel` | The only ways to render empty, informational and loading states |
 | `LiveAnnouncement` | Politely announces transient changes (the active test) to screen readers |
+| `ShortcutsDialog` | The full keyboard map, on the `Modal` primitive; opened by `?` or the rail's keyboard button |
 
 **Lists, not cards, for repeated data.** The workspace list is a dense `<ul>`: at ~170 rows every
 pixel of card chrome is a pixel not spent on the vulnerability name.
+
+**Navigation chrome.** The rail carries a recent-engagements quick switch (latest four, with the
+same progress figure the list shows; hidden below `lg` where the list itself is one tap away).
+The engagement tabs' active underline is one measured element that glides between tabs — pure
+decoration; `aria-current` and the label colour announce the state without it. Scroll is
+disciplined: a new screen starts at the top, Back/Forward restore where that entry was left, and
+search-param-only changes (the workspace's `?test=`) never reset scroll. Distribution strips
+(dashboard composition, findings by priority) are `aria-hidden` bars whose every segment is
+spelled out as swatch + label + count text alongside.
 
 ---
 
@@ -161,7 +172,8 @@ minimum width, so the page itself never overflows.
 ## 7. Accessibility commitments
 
 - **Landmarks**: `banner`, `navigation` (named), `main`, `contentinfo`, plus a skip link.
-- **Keyboard**: every action reachable; the workspace loop is fully keyboard-driven
+- **Keyboard**: every action reachable; the workspace loop is fully keyboard-driven, and every
+  shortcut is listed in the dialog opened by `?` or the rail's keyboard button
   (`j`/`k`, `1`/`2`/`3`, `v`/`b`, `e`, `⏎`, `/`); modals close on `Escape`, trap `Tab` and restore
   focus to the trigger.
 - **Roving tabindex**: the workspace list is a *single* tab stop — Tab moves past it in one press,
@@ -172,8 +184,10 @@ minimum width, so the page itself never overflows.
 - **Focus**: one visible treatment (`2px` brand outline, `2px` offset) on every focusable element.
 - **Names**: icon-only controls, filter selects, progress bars and radio groups all carry explicit
   accessible names.
-- **Contrast**: the lightest text token clears WCAG AA (4.5:1) on both the app and panel surfaces.
-  Line colours are never used for text.
+- **Contrast**: the lightest text token clears WCAG AA (4.5:1) on the app, panel and inset
+  surfaces — computed from the shipped tokens by [`src/ui/contrast.test.ts`](../src/ui/contrast.test.ts),
+  including badge chips (text on a tint), segmented labels (text on tinted glass) and text on
+  solid fills, in both themes. Line colours are never used for text.
 - **Live regions**: toasts announce politely; the result count updates via `aria-live`.
 - **Motion**: fully disabled under `prefers-reduced-motion`.
 
@@ -192,6 +206,7 @@ on drift. It is why this document stays true.
 | Components | A screen hand-rolls a button, or restyles a priority/status/result state |
 | Vocabulary | The words *Pending, Untested, Incomplete, Resolved, Findings, In scope, Excluded, Issue* appear in the interface |
 | Accessibility | An unlabelled `Select`, an unnamed `ProgressBar`, a missing skip link or duplicate `main` |
+| Contrast | Any text pairing the components render falls below WCAG AA 4.5:1 in either theme (`src/ui/contrast.test.ts`) |
 
 It caught five live violations on its first run — a borrowed `critical` badge tone in Settings, a
 retired phrase in a workspace tooltip, "Excluded" on the export screen, an unlabelled context
@@ -211,3 +226,4 @@ select, and two unnamed progress bars.
 | Export failed | Export screen — keeps the message, offers retry, points at JSON backup |
 | Backup rejected | Import dialog — lists the specific problems, confirms nothing was written |
 | Loading | `LoadingPanel` skeletons matching the shape of the content that follows |
+| Printed | Any screen — light token set, glass/shadows stripped, panes expanded (paper has no scrollbars), interaction chrome hidden; badges keep glyph + label for greyscale |

@@ -1,7 +1,7 @@
 # The Test Library
 
-The bundled VAPT knowledge base: **184 vulnerability test definitions**, 18 categories,
-99 subcategories and 542 searchable aliases.
+The bundled VAPT knowledge base: **177 vulnerability test definitions**, 18 categories,
+97 subcategories and 547 searchable aliases.
 
 Content and applicability were audited against WSTG 4.2, ASVS 4.0, OWASP Top 10 2021 and API Top 10
 2023 — see [`CONTENT-AUDIT.md`](CONTENT-AUDIT.md) for what changed and why.
@@ -97,20 +97,20 @@ Two levels. A third would look tidy and slow testers down.
 | Mobile Application | `MOB` | Local Data Storage · Binary & Secrets · Platform Integration · Network Security · Resilience |
 | Privacy & Data Protection | `PRIV` | Data Minimisation · Third-Party Sharing · Consent Management · Data Presentation · Regulated Data · Data Subject Rights |
 
-Priority distribution: **31 Critical · 64 High · 73 Medium · 16 Low**.
+Priority distribution: **30 Critical · 62 High · 69 Medium · 16 Low**.
 
 ---
 
 ## 4. Applicability
 
-40 context facts, 38 of which drive rules (2 are marked `metadataOnly` — recorded for the report,
-never used by a rule). Unit tests enforce both directions:
+41 context facts, 38 of which drive rules (2 are marked `metadataOnly` — recorded for the report,
+never used by a rule — and 1 more `feeds` a derived fact instead). Unit tests enforce both directions:
 
 - every non-metadata fact must influence at least one test, so the context form cannot accumulate
   dead questions;
 - no rule may depend on a metadata fact.
 
-**163 of 184 tests are context-driven**; the remaining 21 are baseline tests that apply to any
+**159 of 177 tests are context-driven**; the remaining 18 are baseline tests that apply to any
 target (missing rate limiting, verbose errors, outdated components…).
 
 Rules are per test, not per category — `FILE-001` keys on file upload, `CLI-010` on WebSockets,

@@ -13,21 +13,21 @@ and it is now refused rather than dressed up.
 
 Measured from the library, not asserted. *Domain-specific* counts tests whose applicability rule
 names that asset type and is not simply a shared HTTP-layer rule; *shared* counts the generic HTTP
-tests a type inherits; *universal* is the 105 tests with no asset-type gate at all.
+tests a type inherits; *universal* is the 100 tests with no asset-type gate at all.
 
 | Application Type | Domain-specific | Shared HTTP | Checklist size | Questions asked | Supported? | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| **Web Application** | 42 | — | 155 | 21 | ✅ **Supported** | The library was built around this domain: client-side 10, config 8, injection 7, recon 5, session 5 |
-| **REST API** | 14 | 17 | 146 | 20 | ✅ **Supported** | Full OWASP API Top 10 2023 — API 9, authorization 3, plus CORS and schema exposure |
-| **GraphQL API** | 21 | 17 | 153 | 20 | ✅ **Supported** | 7 GraphQL-specific tests on top of the whole API surface |
-| **SOAP / XML-RPC** | 12 | 16 | 145 | 20 | ⚠️ **Limited** | Only **one** genuinely SOAP-specific test (WSDL/operation abuse); the rest is the generic API and XML surface. No WS-Security, WS-Addressing or SAML-in-SOAP, no WSDL-driven fuzzing |
-| **Android Application** | 10 | 0 | 129 | 19 | ⚠️ **Limited** | MASVS-aligned screening set, not MASTG depth. No runtime instrumentation, no reverse-engineering workflow, no SDK inventory |
-| **iOS Application** | 10 | 0 | 129 | 19 | ⚠️ **Limited** | The same ten tests — guidance is shared with Android rather than iOS-specific (no Keychain-vs-Keystore split) |
-| **Cloud Environment** | 4 | 0 | 119 | 14 | ⚠️ **Limited** | Exposure testing only: public storage, instance metadata, management ports, plus container/orchestration and subdomain takeover. **Not** a configuration review — no CIS benchmark, no serverless, no cloud logging |
+| **Web Application** | 42 | — | 149 | 21 | ✅ **Supported** | The library was built around this domain: client-side 10, config 8, injection 7, recon 5, session 5 |
+| **REST API** | 13 | 17 | 140 | 20 | ✅ **Supported** | Full OWASP API Top 10 2023 — API 9, authorization 2, recon 1, client-side 1 |
+| **GraphQL API** | 19 | 17 | 146 | 20 | ✅ **Supported** | 6 GraphQL-only tests (GQL-001…006) on top of the whole API surface |
+| **SOAP / XML-RPC** | 12 | 16 | 139 | 20 | ⚠️ **Limited** | Only **one** test is about SOAP itself (API-010 — WSDL/operation abuse); XXE (INJ-007) is the only other rule naming SOAP alone, and the rest is the generic API and XML surface. No WS-Security, WS-Addressing or SAML-in-SOAP, no WSDL-driven fuzzing |
+| **Android Application** | 10 | 0 | 123 | 19 | ⚠️ **Limited** | MASVS-aligned screening set, not MASTG depth. No runtime instrumentation, no reverse-engineering workflow, no SDK inventory |
+| **iOS Application** | 10 | 0 | 123 | 19 | ⚠️ **Limited** | The same ten tests — guidance is shared with Android rather than iOS-specific (no Keychain-vs-Keystore split) |
+| **Cloud Environment** | 4 | 0 | 113 | 14 | ⚠️ **Limited** | Exposure testing only: public storage, instance metadata, IAM scope and exposed management services. **Not** a configuration review — no CIS benchmark, no serverless, no cloud logging |
 | **Thick / Desktop Client** | **0** | 0 | — | — | ❌ **Not supported** | No binary or memory analysis, no local privilege or DLL hijacking, no local storage review, no IPC, no update-channel integrity |
 
 Support level is computed at runtime by `src/data/typeCoverage.ts`: 0 domain-specific tests →
-unsupported, fewer than 14 → limited, otherwise supported. **The UI cannot claim coverage the
+unsupported, fewer than 13 → limited, otherwise supported. **The UI cannot claim coverage the
 library does not carry**, and if someone adds ten iOS tests the product stops calling iOS limited on
 its own. A unit test pins the current verdicts so a change is deliberate.
 
@@ -127,7 +127,7 @@ change is *where that value comes from*. What changed:
 
 ## 7. Nothing else was broken
 
-Verified by the full suite (**209 tests**): vulnerability-centric library, applicability engine, the
+Verified by the full suite: vulnerability-centric library, applicability engine, the
 Not Tested default, Tested → Vulnerable / Not Vulnerable, N/A, notes, dashboard, high-value ranking,
 search, filters, persistence, multiple engagements and the Excel export — all updated to understand
 application type rather than patched around it. The export now carries **Application type**,
@@ -148,6 +148,6 @@ application type rather than patched around it. The export now carries **Applica
 4. **Cloud is exposure testing.** A configuration review needs a different input model — credentials
    and an account inventory rather than an application context — which is arguably a different
    product.
-5. **105 tests remain ungated by asset type.** They are genuinely protocol-agnostic (business logic,
+5. **100 tests remain ungated by asset type.** They are genuinely protocol-agnostic (business logic,
    cryptography, disclosure, rate limiting), but they are also why an unsupported domain looked
    plausible. The type gate now sits in front of them.

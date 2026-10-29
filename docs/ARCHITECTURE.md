@@ -28,7 +28,7 @@
 │ domain/              types · context · applicability ·           │
 │                      executionState · metrics      (pure, tested)│
 ├──────────────────────────────────────────────────────────────────┤
-│ data/                Bundled knowledge base: 184 test defs,      │
+│ data/                Bundled knowledge base: 177 test defs,      │
 │                      taxonomy, search index, reference resolver  │
 ├──────────────────────────────────────────────────────────────────┤
 │ export/              Excel workbook builder (lazy-loaded)        │
@@ -80,8 +80,8 @@ There is exactly one write path. UI components never construct a `TestState` the
 
 ```text
 data/
-  categories.ts    18 categories, each declaring its subcategories (100 total)
-  tests/*.ts       184 definitions grouped by area
+  categories.ts    18 categories, each declaring its subcategories (97 total)
+  tests/*.ts       177 definitions grouped by area
   library.ts       assembly, ordering, stats, FACT_IMPACT, validateLibrary()
   references.ts    standards code → canonical URL (references are derived)
   searchIndex.ts   lowercase haystack per test, built once at module load

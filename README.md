@@ -137,12 +137,12 @@ Any decision can be revised at any time. There are deliberately no `Retest`, `Ev
 
 | | |
 | --- | --- |
-| Vulnerability tests | **184** (31 Critical · 64 High · 73 Medium · 16 Low) |
-| Taxonomy | 18 categories → 99 subcategories |
-| Searchable aliases | 542 |
+| Vulnerability tests | **177** (30 Critical · 62 High · 69 Medium · 16 Low) |
+| Taxonomy | 18 categories → 97 subcategories |
+| Searchable aliases | 547 |
 | Testing guidance steps | 563 |
-| Context-driven tests | 163 (21 baseline tests always apply) |
-| Application context facts | 40 (38 drive applicability rules) |
+| Context-driven tests | 159 (18 baseline tests always apply) |
+| Application context facts | 41 (38 drive applicability rules) |
 
 Every entry carries a canonical vulnerability name, category **and subcategory**, priority,
 description, ordered testing guidance, a declarative applicability rule, aliases, OWASP/CWE mapping
@@ -173,7 +173,7 @@ Full conventions and how to add a test: [`docs/TEST-LIBRARY.md`](docs/TEST-LIBRA
 ```text
 Application type              (the testing domain — chosen first)
           ↓
-Complete VAPT knowledge base  (184 tests)
+Complete VAPT knowledge base  (177 tests)
           ↓
 Application context           (only the questions that domain uses)
           ↓
@@ -189,15 +189,17 @@ Testing checklist
 | Type | Support | Domain-specific tests |
 | --- | --- | --- |
 | Web Application | ✅ Supported | 42 |
-| REST API | ✅ Supported | 14 (+17 shared HTTP) |
-| GraphQL API | ✅ Supported | 21 (+17 shared HTTP) |
-| SOAP / XML-RPC API | ⚠️ Limited | 12, only one SOAP-specific |
+| REST API | ✅ Supported | 13 (+17 shared HTTP) |
+| GraphQL API | ✅ Supported | 19 (+17 shared HTTP) |
+| SOAP / XML-RPC API | ⚠️ Limited | 12 (+16 shared HTTP) — only 2 rules name SOAP alone |
 | Android / iOS | ⚠️ Limited | 10 — screening, not MASTG depth |
 | Cloud Environment | ⚠️ Limited | 4 — exposure, not a configuration review |
 | Thick / Desktop Client | ❌ Not supported | 0 — the option explains why and points you at the backend |
 
 Support levels are **computed from the library at runtime**, so the product cannot claim coverage it
-does not have. Details: [`docs/APPLICATION-TYPES.md`](docs/APPLICATION-TYPES.md).
+does not have. The counts in this README are held to the same standard: a test
+(`src/data/documentation.test.ts`) recomputes them from the bundled library and fails if the docs
+drift. Details: [`docs/APPLICATION-TYPES.md`](docs/APPLICATION-TYPES.md).
 
 Applicability is **never a black box**. Each test shows the conditions that produced the decision:
 
@@ -262,32 +264,33 @@ Each row opens straight into the workspace at that test.
 
 ## Local development
 
+Requires Node 22 (`.nvmrc`).
+
 ```bash
-npm install
+npm ci
 npm run dev        # http://localhost:5173
 npm run build      # static bundle in dist/
 npm run preview    # serve the production build
-npm test           # domain + library unit tests
+npm test           # full suite (build first — production audit tests inspect dist/)
+npm run verify     # build + bundle check + full suite, exactly as CI runs it
+npm run lint       # ESLint (TypeScript + React Hooks)
 ```
+
+Contributing, including how to add a test case: [`CONTRIBUTING.md`](CONTRIBUTING.md).
+Security reports: [`SECURITY.md`](SECURITY.md).
 
 ---
 
 ## Deploying to GitHub Pages
 
-The app is a pure static bundle and works at any base path.
+The app is a pure static bundle and works at any base path. Deployment is already wired:
+[`.github/workflows/pages.yml`](.github/workflows/pages.yml) runs on every push to `main`; pull
+requests are verified by [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
 
-1. Copy the ready-made workflows into place (they ship under `docs/deployment/` because the
-   automation account cannot push to `.github/workflows/`):
-
-   ```bash
-   mkdir -p .github/workflows
-   cp docs/deployment/deploy.yml .github/workflows/deploy.yml
-   cp docs/deployment/ci.yml     .github/workflows/ci.yml
-   ```
-
-2. Push to `main`.
-3. In **Settings → Pages**, set *Source* to **GitHub Actions**. The workflow typechecks, tests,
-   builds and publishes `dist/`.
+1. Push to `main` (or run the workflow manually from the Actions tab).
+2. In **Settings → Pages**, set *Source* to **GitHub Actions** (one-time). The workflow
+   typechecks, runs the accessibility contract and the full test suite, verifies the built
+   bundle, and publishes `dist/`.
 
 Full instructions: [`docs/deployment/README.md`](docs/deployment/README.md).
 
@@ -354,8 +357,10 @@ Clearing site data deletes your engagements, so take a backup before you do.
 - [`docs/ROBUSTNESS.md`](docs/ROBUSTNESS.md) — input validation, state integrity, error handling and defensive rendering
 - [`docs/CONTENT-AUDIT.md`](docs/CONTENT-AUDIT.md) — security content and applicability audit against WSTG / ASVS / OWASP Top 10
 - [`docs/APPLICATION-TYPES.md`](docs/APPLICATION-TYPES.md) — coverage matrix per application type, and the engagement flow built on it
+- [`docs/REVIEW.md`](docs/REVIEW.md) — independent repository review (2026-10): findings, what was fixed, what was deliberately left
 - [`docs/adr/`](docs/adr/) — architecture decision records
 - [`docs/deployment/`](docs/deployment/) — GitHub Pages deployment and workflows
+- [`docs/reports/`](docs/reports/) — dated audit and redesign reports (point-in-time record)
 
 ## Licence
 
