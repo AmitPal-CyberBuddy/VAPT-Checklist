@@ -89,5 +89,10 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+    // The audit suites drive the whole app (render + fake IndexedDB +
+    // real library) per test; the heaviest measures ~4.8s locally, which
+    // the default 5s timeout called a failure on a shared CI runner.
+    // 20s keeps a hung test detectable without failing on CPU weather.
+    testTimeout: 20_000,
   },
 });
