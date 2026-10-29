@@ -121,6 +121,13 @@ export const IconTrash = (p: P) => (
   </Svg>
 );
 
+export const IconKeyboard = (p: P) => (
+  <Svg {...p}>
+    <rect x="2" y="6" width="20" height="12" rx="2" />
+    <path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M6 14h.01M18 14h.01M9.5 14h5" />
+  </Svg>
+);
+
 export const IconCopy = (p: P) => (
   <Svg {...p}>
     <rect x="9" y="9" width="12" height="12" rx="2" />

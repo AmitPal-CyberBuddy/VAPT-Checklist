@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { NavLink, Outlet, useParams, useLocation } from 'react-router-dom';
 import clsx from 'clsx';
 import { Badge, Button, ExternalLink, InlineAlert, LoadingPanel, Modal, ProgressBar, Select } from '../../ui/primitives';
@@ -39,6 +39,28 @@ export default function EngagementLayout() {
    * being flipped silently. It stays revisable, never a hard block.
    */
   const [confirmingComplete, setConfirmingComplete] = useState(false);
+
+  /* The active-tab underline is one element that glides between tabs
+     instead of each tab owning a border that snaps. Measured from the
+     live DOM (the link carrying aria-current), so it stays correct as
+     labels, fonts and viewport change. Pure decoration: aria-current and
+     the label colour announce the same state without it. */
+  const tabsRef = useRef<HTMLElement | null>(null);
+  const [tabIndicator, setTabIndicator] = useState<{ left: number; width: number } | null>(null);
+  useLayoutEffect(() => {
+    const measure = () => {
+      const nav = tabsRef.current;
+      const active = nav?.querySelector<HTMLElement>('[aria-current="page"]');
+      setTabIndicator(active ? { left: active.offsetLeft, width: active.offsetWidth } : null);
+    };
+    measure();
+    const raf = requestAnimationFrame(measure);
+    window.addEventListener('resize', measure);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener('resize', measure);
+    };
+  }, [location.pathname, engagementId]);
 
   // A database written by an older build could hold `Tested` rows with no
   // result. Repair them once per engagement so the stored data always
@@ -201,9 +223,17 @@ export default function EngagementLayout() {
       </div>
 
       <nav
+        ref={tabsRef}
         aria-label="Engagement sections"
-        className="engagement-tabs flex gap-1 overflow-x-auto border-b border-ink-800"
+        className="engagement-tabs relative flex gap-1 overflow-x-auto border-b border-ink-800"
       >
+        {tabIndicator && (
+          <span
+            aria-hidden="true"
+            className="absolute bottom-0 h-0.5 bg-brand-500 transition-[left,width] duration-200"
+            style={{ left: tabIndicator.left, width: tabIndicator.width }}
+          />
+        )}
         {TABS.map((tab) => (
           <NavLink
             key={tab.label}
@@ -211,10 +241,8 @@ export default function EngagementLayout() {
             end={tab.end}
             className={({ isActive }) =>
               clsx(
-                'group relative -mb-px flex shrink-0 items-center gap-2 border-b-2 px-3 py-2 text-sm whitespace-nowrap transition-colors sm:px-4',
-                isActive
-                  ? 'border-brand-500 font-medium text-ink-50'
-                  : 'border-transparent text-ink-300 hover:text-ink-100',
+                'group relative -mb-px flex shrink-0 items-center gap-2 border-b-2 border-transparent px-3 py-2 text-sm whitespace-nowrap transition-colors sm:px-4',
+                isActive ? 'font-medium text-ink-50' : 'text-ink-300 hover:text-ink-100',
               )
             }
             title={tab.label}

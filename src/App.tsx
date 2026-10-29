@@ -1,19 +1,28 @@
+import { Suspense, lazy } from 'react';
 import { HashRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { AppShell } from './app/AppShell';
 import { ErrorBoundary } from './app/ErrorBoundary';
 import { RoutedErrorBoundary } from './app/RoutedErrorBoundary';
 import { Toaster } from './ui/toast';
 import { ThemeProvider } from './ui/theme';
-import EngagementsPage from './features/engagements/EngagementsPage';
-import NewEngagementPage from './features/engagements/NewEngagementPage';
-import EngagementLayout from './features/engagements/EngagementLayout';
+import { LoadingPanel } from './ui/primitives';
 import LandingPage from './features/landing/LandingPage';
-import DashboardPage from './features/dashboard/DashboardPage';
-import WorkspacePage from './features/workspace/WorkspacePage';
-import ContextPage from './features/context/ContextPage';
-import ExportPage from './features/export/ExportPage';
-import LibraryPage from './features/library/LibraryPage';
-import SettingsPage from './features/settings/SettingsPage';
+
+/**
+ * Route-level code splitting: the landing page (the default route) ships in
+ * the entry chunk; every other screen loads on first navigation. The shared
+ * shell, design system and test library stay eager because the command
+ * palette and the shell itself need them before any route can render.
+ */
+const EngagementsPage = lazy(() => import('./features/engagements/EngagementsPage'));
+const NewEngagementPage = lazy(() => import('./features/engagements/NewEngagementPage'));
+const EngagementLayout = lazy(() => import('./features/engagements/EngagementLayout'));
+const DashboardPage = lazy(() => import('./features/dashboard/DashboardPage'));
+const WorkspacePage = lazy(() => import('./features/workspace/WorkspacePage'));
+const ContextPage = lazy(() => import('./features/context/ContextPage'));
+const ExportPage = lazy(() => import('./features/export/ExportPage'));
+const LibraryPage = lazy(() => import('./features/library/LibraryPage'));
+const SettingsPage = lazy(() => import('./features/settings/SettingsPage'));
 
 function LegacyChecklistRedirect() {
   const { search } = useLocation();
@@ -31,6 +40,13 @@ export default function App() {
       <ThemeProvider>
       <AppShell>
         <RoutedErrorBoundary>
+        <Suspense
+          fallback={
+            <div className="mx-auto w-full max-w-3xl px-4 py-10">
+              <LoadingPanel label="Loading screen" />
+            </div>
+          }
+        >
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/engagements" element={<EngagementsPage />} />
@@ -47,6 +63,7 @@ export default function App() {
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </Suspense>
         </RoutedErrorBoundary>
       </AppShell>
       </ThemeProvider>

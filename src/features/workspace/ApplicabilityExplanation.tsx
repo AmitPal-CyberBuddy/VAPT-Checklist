@@ -56,7 +56,7 @@ export function ApplicabilityExplanation({
       <p
         className={clsx(
           'mb-1.5 font-medium',
-          uncertain ? 'text-warn-400' : applicable ? 'text-safe-400' : 'text-ink-400',
+          uncertain ? 'text-warn-300' : applicable ? 'text-safe-400' : 'text-ink-400',
         )}
       >
         {conditions.length === 0 ? suggestion.summary : `${heading}:`}

@@ -6,6 +6,7 @@ import {
   ExternalButton,
   LinkButton,
   PriorityBadge,
+  ResultBadge,
   SectionHeading,
   StatusBadge,
 } from '../../ui/primitives';
@@ -89,6 +90,21 @@ const METHODOLOGY = [
 
 /** Real tests pulled from the library, shown as a sample of what ships. */
 const FEATURED_IDS = ['INJ-001', 'AUTHZ-002', 'SESS-010', 'INJ-022'];
+
+/**
+ * Illustrative states for the sample rows, parallel to FEATURED_IDS.
+ * The checks are real library data; only these verdicts are scripted —
+ * a lived-in slice that shows how the same badges read once an
+ * assessment is under way, instead of four untouched rows.
+ */
+const SAMPLE_STATES: ReadonlyArray<
+  { status: 'Tested'; result: 'Vulnerable' | 'Not Vulnerable' } | { status: 'N/A' | 'Not Tested' }
+> = [
+  { status: 'Tested', result: 'Vulnerable' },
+  { status: 'Tested', result: 'Not Vulnerable' },
+  { status: 'N/A' },
+  { status: 'Not Tested' },
+];
 
 /** The capability ticker — real checks from the library, nothing invented. */
 const MARQUEE_IDS = [
@@ -225,15 +241,22 @@ export default function LandingPage() {
               </span>
             </div>
             <ul className="divide-y divide-ink-800">
-              {featured.map((t) => (
-                <li key={t.id} className="flex items-center gap-3 px-4 py-2.5">
-                  <span className="min-w-0 flex-1 truncate text-sm text-ink-200">
-                    {t.vulnerabilityName}
-                  </span>
-                  <PriorityBadge priority={t.priority} />
-                  <StatusBadge status="Not Tested" />
-                </li>
-              ))}
+              {featured.map((t, i) => {
+                const sample = SAMPLE_STATES[i] ?? { status: 'Not Tested' as const };
+                return (
+                  <li key={t.id} className="flex items-center gap-3 px-4 py-2.5">
+                    <span className="min-w-0 flex-1 truncate text-sm text-ink-200">
+                      {t.vulnerabilityName}
+                    </span>
+                    <PriorityBadge priority={t.priority} />
+                    {sample.status === 'Tested' ? (
+                      <ResultBadge result={sample.result} />
+                    ) : (
+                      <StatusBadge status={sample.status} />
+                    )}
+                  </li>
+                );
+              })}
             </ul>
             <div className="border-t border-ink-800 px-4 py-2 font-mono text-micro text-ink-500">
               …and {TEST_LIBRARY.length - featured.length} more checks across{' '}
@@ -318,7 +341,7 @@ export default function LandingPage() {
                 <span className="text-xs font-medium text-ink-200">{stage.label}</span>
               </span>
               {index < PIPELINE.length - 1 && (
-                <IconChevron size={14} aria-hidden="true" className="shrink-0 text-ink-600" />
+                <IconChevron size={14} aria-hidden="true" className="shrink-0 text-ink-500" />
               )}
             </li>
           ))}

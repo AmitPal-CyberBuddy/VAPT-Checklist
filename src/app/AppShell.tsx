@@ -1,11 +1,13 @@
-import { useEffect, useState, type ReactNode } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { NavLink, useLocation, useNavigationType } from 'react-router-dom';
 import clsx from 'clsx';
-import { IconAlert, IconBook, IconGrid, IconSearch, IconSettings, IconShield, IconSun, IconMoon } from '../ui/icons';
-import { InlineAlert } from '../ui/primitives';
+import { IconAlert, IconBook, IconGrid, IconKeyboard, IconSearch, IconSettings, IconShield, IconSun, IconMoon } from '../ui/icons';
+import { InlineAlert, ProgressBar } from '../ui/primitives';
+import { ShortcutsDialog } from './ShortcutsDialog';
+import { applicationTypeLabel } from '../domain/applicationType';
 import { CommandPalette, PALETTE_KBD } from '../ui/CommandPalette';
 import { checkStorage, requestPersistentStorage, type StorageStatus } from '../persistence/db';
-import { useEngagementDirectory } from '../hooks/useData';
+import { useEngagementDirectory, useEngagementSummariesSafe } from '../hooks/useData';
 import { useTheme } from '../ui/theme';
 import { LIBRARY_VERSION, TEST_LIBRARY } from '../data/library';
 
@@ -33,8 +35,75 @@ export function AppShell({ children }: { children: ReactNode }) {
   const location = useLocation();
   const [storage, setStorage] = useState<StorageStatus | null>(null);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const engagements = useEngagementDirectory();
+  const summaries = useEngagementSummariesSafe();
+  const navigationType = useNavigationType();
   const { theme, toggle: toggleTheme } = useTheme();
+
+  /* `?` opens the keyboard map from anywhere — except while typing, where
+     it is just a question mark. */
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== '?') return;
+      const el = event.target as HTMLElement | null;
+      if (
+        el &&
+        (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable)
+      ) {
+        return;
+      }
+      event.preventDefault();
+      setShortcutsOpen(true);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  /* Scroll discipline for a hash-routed SPA: a new screen starts at the
+     top; Back/Forward return to where that entry was left. Without this,
+     the window keeps the previous screen's scroll position — landing
+     mid-page on a screen you have never scrolled. Search-param-only
+     changes (the workspace setting ?test= as you move) never reset. */
+  useEffect(() => {
+    let queued = false;
+    const save = () => {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(() => {
+        queued = false;
+        try {
+          sessionStorage.setItem(`vapt-scroll:${location.key}`, String(window.scrollY));
+        } catch {
+          /* storage denied — restoration is best-effort */
+        }
+      });
+    };
+    window.addEventListener('scroll', save, { passive: true });
+    return () => window.removeEventListener('scroll', save);
+  }, [location.key]);
+
+  const previousPathname = useRef(location.pathname);
+  useEffect(() => {
+    const pathChanged = previousPathname.current !== location.pathname;
+    previousPathname.current = location.pathname;
+    if (!pathChanged) return;
+    if (navigationType !== 'POP') {
+      window.scrollTo(0, 0);
+      return;
+    }
+    let y = 0;
+    try {
+      y = Number(sessionStorage.getItem(`vapt-scroll:${location.key}`)) || 0;
+    } catch {
+      y = 0;
+    }
+    window.scrollTo(0, y);
+    // Engagement data arrives from IndexedDB a tick after first paint, so
+    // the page may not have its full height yet — re-apply once it does.
+    const retry = window.setTimeout(() => window.scrollTo(0, y), 140);
+    return () => window.clearTimeout(retry);
+  }, [location.pathname, location.key, navigationType]);
 
   useEffect(() => {
     void (async () => {
@@ -146,6 +215,56 @@ export function AppShell({ children }: { children: ReactNode }) {
             })}
           </nav>
 
+          {/* Rail-only engagement switcher: the engagements a tester is
+              actually juggling, one click apart, each carrying the same
+              progress the list shows. The top bar has no room for it, so
+              below `lg` the list (one tap away) stays the way in. */}
+          {summaries.length > 0 && (
+            <section aria-label="Recent engagements" className="hidden border-t border-ink-800 lg:block">
+              <div className="px-3 pt-3 pb-4">
+                <h2 className="px-1 font-mono text-micro font-medium tracking-widest text-ink-500 uppercase">
+                  Recent engagements
+                </h2>
+                <ul className="mt-2 space-y-1">
+                  {[...summaries]
+                    .sort((a, b) => b.engagement.updatedAt.localeCompare(a.engagement.updatedAt))
+                    .slice(0, 4)
+                    .map((s) => (
+                      <li key={s.engagement.id}>
+                        <NavLink
+                          to={`/e/${s.engagement.id}`}
+                          className={({ isActive }) =>
+                            clsx(
+                              'block rounded-(--radius-control) border border-transparent px-2.5 py-2 transition-colors duration-150',
+                              isActive
+                                ? 'rail-brand border-ink-700 bg-ink-800'
+                                : 'hover:border-ink-800 hover:bg-ink-900',
+                            )
+                          }
+                        >
+                          <span className="block truncate text-sm text-ink-100" title={s.engagement.name}>
+                            {s.engagement.name}
+                          </span>
+                          <span className="mt-0.5 flex items-center gap-2 text-micro text-ink-400">
+                            <span className="truncate">{applicationTypeLabel(s.engagement.applicationType)}</span>
+                            <span className="ml-auto shrink-0 tabular-nums">
+                              {Math.round(s.completion * 100)}%
+                            </span>
+                          </span>
+                          <ProgressBar
+                            height="sm"
+                            className="mt-1.5"
+                            label={`${s.engagement.name} progress in quick switch`}
+                            value={s.completion}
+                          />
+                        </NavLink>
+                      </li>
+                    ))}
+                </ul>
+              </div>
+            </section>
+          )}
+
           {/* Utility cluster — right of the top bar on mobile, pinned to the
               bottom of the rail on wide screens. */}
           <div className="ml-auto flex items-center gap-3 px-1 text-micro text-ink-400 lg:ml-0 lg:mt-auto lg:flex-col lg:items-stretch lg:gap-2.5 lg:border-t lg:border-ink-800 lg:px-3 lg:pt-3 lg:pb-4">
@@ -155,15 +274,24 @@ export function AppShell({ children }: { children: ReactNode }) {
               onClick={() => setPaletteOpen(true)}
               aria-label={`Search (${PALETTE_KBD})`}
               title={`Search (${PALETTE_KBD})`}
-              className="flex h-7 w-7 items-center justify-center rounded-(--radius-control) border border-ink-700 bg-ink-900 text-ink-400 transition-[color,border-color,box-shadow] duration-150 hover:border-ink-500 hover:text-ink-200 lg:hidden"
+              className="flex h-8 w-8 items-center justify-center rounded-(--radius-control) border border-ink-700 bg-ink-900 text-ink-400 transition-[color,border-color,box-shadow] duration-150 hover:border-ink-500 hover:text-ink-200 lg:hidden"
             >
               <IconSearch size={13} />
             </button>
             <button
               type="button"
+              onClick={() => setShortcutsOpen(true)}
+              aria-label="Keyboard shortcuts"
+              title="Keyboard shortcuts (?)"
+              className="flex h-8 w-8 items-center justify-center rounded-(--radius-control) border border-ink-700 bg-ink-900 text-ink-400 transition-[color,border-color,box-shadow] duration-150 hover:border-ink-500 hover:text-ink-200 lg:self-start"
+            >
+              <IconKeyboard size={14} />
+            </button>
+            <button
+              type="button"
               onClick={toggleTheme}
               aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-              className="flex h-7 w-7 items-center justify-center rounded-(--radius-control) border border-ink-700 bg-ink-900 text-ink-400 transition-[color,border-color,box-shadow] duration-150 hover:border-ink-500 hover:text-ink-200 lg:self-start"
+              className="flex h-8 w-8 items-center justify-center rounded-(--radius-control) border border-ink-700 bg-ink-900 text-ink-400 transition-[color,border-color,box-shadow] duration-150 hover:border-ink-500 hover:text-ink-200 lg:self-start"
             >
               {theme === 'dark' ? <IconSun size={13} /> : <IconMoon size={13} />}
             </button>
@@ -211,7 +339,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </header>
 
       {/* Main column — pushed right of the rail on wide screens. */}
-      <div className="flex min-h-full flex-col lg:pl-60">
+      <div className="app-main-column flex min-h-full flex-col lg:pl-60">
         <main id="main" className="mx-auto w-full max-w-[1600px] flex-1 px-3 py-5 sm:px-6 sm:py-6">
           {storageOk === false && (
             <InlineAlert
@@ -248,6 +376,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       {/* The command layer: Ctrl/⌘-K from anywhere in the console. */}
       <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} engagements={engagements} />
+      <ShortcutsDialog open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
     </div>
   );
 }

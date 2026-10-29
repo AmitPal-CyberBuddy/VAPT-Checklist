@@ -53,15 +53,19 @@ export default function LibraryPage() {
   const [subcategory, setSubcategory] = useState('all');
   const [priority, setPriority] = useState('all');
   const [open, setOpen] = useState<string | null>(null);
-  const stats = useMemo(libraryStats, []);
+  const stats = useMemo(() => libraryStats(), []);
 
   /* Deep links: the command palette (and shared URLs) can address one test
      directly with ?test=<id> — it arrives expanded and centred. */
   const [params] = useSearchParams();
   const testParam = params.get('test');
+  const [seenTestParam, setSeenTestParam] = useState<string | null>(null);
+  if (testParam && testParam !== seenTestParam) {
+    setSeenTestParam(testParam);
+    setOpen(testParam);
+  }
   useEffect(() => {
     if (!testParam) return;
-    setOpen(testParam);
     document.getElementById(`library-test-${testParam}`)?.scrollIntoView?.({ block: 'center' });
   }, [testParam]);
 

@@ -25,7 +25,7 @@ import type { bulkUpdateTestStates } from '../../persistence/repository';
 import { recordBulk, recordTestState } from './recordState';
 import { suggestApplicability } from '../../domain/applicability';
 import { highValueTests } from '../../domain/metrics';
-import { effectiveContext } from '../../domain/context';
+import { effectiveContext, type ApplicationContext } from '../../domain/context';
 import { PRIORITIES, PRIORITY_ORDER, type CategoryId, type ChecklistItem } from '../../domain/types';
 import { toast } from '../../ui/toast';
 
@@ -43,6 +43,8 @@ const SCOPE_LABELS: Record<ScopeFilter, string> = {
 };
 
 const STATUS_RANK: Record<string, number> = { 'Not Tested': 0, Tested: 1, 'N/A': 2 };
+
+const EMPTY_CONTEXT: ApplicationContext = {};
 
 /**
  * The testing workspace: list on the left, full test on the right.
@@ -85,16 +87,25 @@ export default function WorkspacePage() {
   const keyboardMove = useRef(false);
 
   // Rules always see the derived asset types, never the raw context.
-  const context = engagement ? effectiveContext(engagement) : {};
+  // Memoised: the derived object feeds the high-value and unconfirmed
+  // memos below, so a fresh identity per render would defeat both.
+  const context = useMemo(
+    () => (engagement ? effectiveContext(engagement) : EMPTY_CONTEXT),
+    [engagement],
+  );
 
-  useEffect(() => {
-    const requested = params.get('test');
-    if (requested) setActiveId(requested);
-  }, [params]);
+  const [seenTestParam, setSeenTestParam] = useState(params.get('test'));
+  const testParam = params.get('test');
+  if (testParam !== seenTestParam) {
+    setSeenTestParam(testParam);
+    if (testParam) setActiveId(testParam);
+  }
 
-  useEffect(() => {
+  const [prevCategory, setPrevCategory] = useState(category);
+  if (category !== prevCategory) {
+    setPrevCategory(category);
     setSubcategory('all');
-  }, [category]);
+  }
 
   /**
    * The engagement's highest-value outstanding tests, from the same ranking the
@@ -238,12 +249,9 @@ export default function WorkspacePage() {
   const activeIndex = visible.findIndex((i) => i.definition.id === activeId);
   const active = activeIndex >= 0 ? visible[activeIndex] : visible[0];
 
-  useEffect(() => {
-    if (visible.length === 0) return;
-    if (!visible.some((i) => i.definition.id === activeId)) {
-      setActiveId(visible[0].definition.id);
-    }
-  }, [visible, activeId]);
+  if (visible.length > 0 && !visible.some((i) => i.definition.id === activeId)) {
+    setActiveId(visible[0].definition.id);
+  }
 
   const open = useCallback(
     (id: string) => {
@@ -461,7 +469,7 @@ export default function WorkspacePage() {
 
       {/* Toolbar ----------------------------------------------------------- */}
       <Card
-        className="command-bar space-y-2 py-3"
+        className="command-bar no-print space-y-2 py-3"
         as="section"
         aria-labelledby="workspace-filters"
       >
@@ -495,7 +503,7 @@ export default function WorkspacePage() {
           >
             Filters
             {activeFilters > 0 && (
-              <span className="ml-1 rounded bg-brand-500 px-1.5 text-micro font-semibold text-ink-950">
+              <span className="ml-1 rounded bg-brand-500 px-1.5 text-micro font-semibold text-on-fill">
                 {activeFilters}
               </span>
             )}
@@ -604,7 +612,7 @@ export default function WorkspacePage() {
             </button>
           )}
           {unconfirmedIds.size > 0 && scope !== 'unconfirmed' && (
-            <TextButton className="text-warn-400 hover:text-warn-300" onClick={() => setScope('unconfirmed')}>
+            <TextButton className="text-warn-300" onClick={() => setScope('unconfirmed')}>
               {unconfirmedIds.size} unconfirmed
             </TextButton>
           )}
@@ -652,7 +660,7 @@ export default function WorkspacePage() {
         <div
           role="toolbar"
           aria-label="Bulk actions"
-          className="panel animate-in sticky top-16 z-30 flex flex-wrap items-center gap-2 border-brand-500/40 p-3 lg:top-3"
+          className="panel animate-in no-print sticky top-16 z-30 flex flex-wrap items-center gap-2 border-brand-500/40 p-3 lg:top-3"
         >
           <Badge tone="brand">{selected.size} selected</Badge>
           {/* Status: the outcome of testing a test that is already in the

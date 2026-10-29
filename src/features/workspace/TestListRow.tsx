@@ -1,4 +1,4 @@
-import { memo, useEffect, useState } from 'react';
+import { memo, useState } from 'react';
 import type { ReactNode } from 'react';
 import clsx from 'clsx';
 import { Badge, PriorityBadge, ResultBadge, StatusBadge } from '../../ui/primitives';
@@ -61,7 +61,11 @@ function RowStatusControl({
   const { definition: d, state: s } = item;
   /** "Tested" is never written without a result — the store refuses it. */
   const [pendingTested, setPendingTested] = useState(false);
-  useEffect(() => setPendingTested(false), [s.id, s.status]);
+  const [prevRow, setPrevRow] = useState({ id: s.id, status: s.status });
+  if (s.id !== prevRow.id || s.status !== prevRow.status) {
+    setPrevRow({ id: s.id, status: s.status });
+    setPendingTested(false);
+  }
 
   const awaitingChoice = pendingTested && s.status !== 'Tested';
   const showResults = awaitingChoice || s.status === 'Tested';
@@ -249,7 +253,7 @@ function TestListRowInner({
             <span className="font-mono">{d.id}</span>
             <span className="truncate">{categoryLabel}</span>
             {unconfirmed && s.applicable && (
-              <span className="text-warn-400" title="Applicable only because context facts are unknown">
+              <span className="text-warn-300" title="Applicable only because context facts are unknown">
                 Unconfirmed
               </span>
             )}

@@ -1,4 +1,4 @@
-import type { ReactElement } from 'react';
+import type { CSSProperties, ReactElement } from 'react';
 import clsx from 'clsx';
 import { Badge, Card, InlineAlert } from '../../ui/primitives';
 import {
@@ -55,13 +55,13 @@ export function ApplicationTypePicker({
 }) {
   return (
     <ul className="grid list-none gap-2 sm:grid-cols-2">
-      {APPLICATION_TYPES.map((type) => {
+      {APPLICATION_TYPES.map((type, index) => {
         const coverage = coverageFor(type.id);
         const badge = SUPPORT_BADGE[coverage.support];
         const selected = value === type.id;
         const unsupported = coverage.support === 'unsupported';
         return (
-          <li key={type.id}>
+          <li key={type.id} className="stagger-item h-full" style={{ '--d': Math.min(index, 7) } as CSSProperties}>
             <button
               type="button"
               aria-pressed={selected}

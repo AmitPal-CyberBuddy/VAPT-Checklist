@@ -54,21 +54,30 @@ const SEVERITY_FILL: Record<Priority, string> = {
 };
 
 /**
+ * Segments of the coverage composition strip, attention first. The four
+ * counts partition `applicable`, so the strip is always exactly full —
+ * the *shape* of the assessment, not its progress.
+ */
+const COMPOSITION = [
+  { key: 'vulnerable', label: 'Vulnerable', fill: 'bg-vuln-500' },
+  { key: 'notVulnerable', label: 'Not Vulnerable', fill: 'bg-safe-500' },
+  { key: 'na', label: 'Not Applicable', fill: 'bg-ink-500' },
+  { key: 'notTested', label: 'Not Tested', fill: 'bg-ink-800' },
+] as const;
+
+/**
  * A short eased count-up for the headline progress number. Pure presentation —
  * the stored value is never touched. Instant under prefers-reduced-motion so
  * the metric still reads correctly for users who disable animation.
  */
 function useCountUp(target: number, duration = 550): number {
   const [value, setValue] = useState(target);
+  const instant =
+    typeof window === 'undefined' ||
+    !window.matchMedia ||
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   useEffect(() => {
-    if (
-      typeof window === 'undefined' ||
-      !window.matchMedia ||
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    ) {
-      setValue(target);
-      return;
-    }
+    if (instant) return;
     let raf = 0;
     const start = performance.now();
     const tick = (now: number) => {
@@ -79,8 +88,8 @@ function useCountUp(target: number, duration = 550): number {
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [target, duration]);
-  return value;
+  }, [target, duration, instant]);
+  return instant ? target : value;
 }
 
 function surfaceLabel(engagement: { applicationType: ApplicationTypeId; context: object }): string {
@@ -256,7 +265,7 @@ export default function DashboardPage() {
                     {completed}/{c.applicable}
                   </span>
                   <span className="font-mono text-micro tracking-widest text-ink-400 uppercase">
-                    done
+                    completed
                   </span>
                 </div>
               </div>
@@ -293,6 +302,33 @@ export default function DashboardPage() {
                     <span className="text-warn-300"> · {outstandingCount} still Not Tested</span>
                   )}
                 </p>
+                {/* Coverage composition: how the applicable checks divide
+                    up. It lives with progress, not the statistics region,
+                    so the six stat tiles stay the single spelled-out
+                    source of counts there. The bar is decorative; the
+                    legend carries swatch, label and count in real text. */}
+                {c.applicable > 0 && (
+                  <div className="mt-3">
+                    <div aria-hidden="true" className="flex h-2.5 overflow-hidden rounded-full bg-ink-800">
+                      {COMPOSITION.map((segment) => (
+                        <div
+                          key={segment.key}
+                          className={`${segment.fill} h-full transition-[width] duration-500`}
+                          style={{ width: `${(c[segment.key] / c.applicable) * 100}%` }}
+                        />
+                      ))}
+                    </div>
+                    <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-micro text-ink-400">
+                      {COMPOSITION.map((segment) => (
+                        <li key={segment.key} className="flex items-center gap-1.5">
+                          <span aria-hidden="true" className={`${segment.fill} h-2 w-2 shrink-0 rounded-full`} />
+                          {segment.label}
+                          <span className="font-medium text-ink-200 tabular-nums">{c[segment.key]}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
                 {/* The one question every tester asks when the checklist closes:
                     can this assessment be exported as a report? */}
                 <p
@@ -481,7 +517,7 @@ export default function DashboardPage() {
                   <IconChevron
                     size={14}
                     aria-hidden="true"
-                    className="row-open mt-0.5 shrink-0 text-ink-600 group-hover:text-brand-400"
+                    className="row-open mt-0.5 shrink-0 text-ink-500 group-hover:text-brand-400"
                   />
                 </Link>
               </li>
@@ -572,7 +608,7 @@ export default function DashboardPage() {
                   <IconChevron
                     size={14}
                     aria-hidden="true"
-                    className="row-open mt-1 shrink-0 text-ink-600 group-hover:text-vuln-400"
+                    className="row-open mt-1 shrink-0 text-ink-500 group-hover:text-vuln-400"
                   />
                 </Link>
               </li>

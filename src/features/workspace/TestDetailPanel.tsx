@@ -10,7 +10,8 @@ import {
   SegmentedControl,
   Textarea,
 } from '../../ui/primitives';
-import { IconAlert, IconBan, IconCheck, IconChevron, IconCircle, IconCircleFilled, IconTarget } from '../../ui/icons';
+import { IconAlert, IconBan, IconCheck, IconChevron, IconCircle, IconCircleFilled, IconCopy, IconTarget } from '../../ui/icons';
+import { toast } from '../../ui/toast';
 import { categoryName } from '../../data/categories';
 import { resolveReferences } from '../../data/references';
 import { describeRule, suggestApplicability } from '../../domain/applicability';
@@ -238,7 +239,10 @@ export function TestDetailPanel({
       {/* Header: identity. The decisions live in the tray at the bottom,
           within thumb reach on a phone and always on screen on a laptop. */}
       <header className="space-y-2 border-b border-ink-800 bg-ink-900 px-4 py-3.5 sm:px-5">
-        <div className="flex items-start justify-between gap-3">
+        {/* Keyed like the body below: the identity block (id, name, badges,
+            position) crossfades with the panel content instead of swapping
+            a frame earlier than everything it describes. */}
+        <div key={d.id} className="animate-page flex items-start justify-between gap-3">
           <div className="min-w-0">
             {onBackToList && (
               <Button
@@ -260,7 +264,26 @@ export function TestDetailPanel({
             </h2>
             <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-micro text-ink-400">
               <PriorityBadge priority={d.priority} />
-              <span className="font-mono">{d.id}</span>
+              <button
+                type="button"
+                title={`Copy test ID ${d.id}`}
+                aria-label={`Copy test ID ${d.id}`}
+                className="inline-flex items-center gap-1 font-mono text-ink-400 transition-colors duration-150 hover:text-ink-100"
+                onClick={() => {
+                  const clipboard = navigator.clipboard;
+                  if (!clipboard) {
+                    toast.error('Copy is not available in this browser context');
+                    return;
+                  }
+                  clipboard.writeText(d.id).then(
+                    () => toast.success(`Copied ${d.id}`),
+                    () => toast.error('Copy failed', 'The clipboard was unavailable.'),
+                  );
+                }}
+              >
+                {d.id}
+                <IconCopy size={11} aria-hidden="true" />
+              </button>
               {!s.applicable && <Badge tone="na">Not Applicable</Badge>}
               {s.applicabilitySource === 'manual' && <Badge tone="brand">Manual</Badge>}
             </div>
@@ -294,7 +317,7 @@ export function TestDetailPanel({
         )}
 
         <Section title="What to test">
-          <p className="prose-measure text-sm leading-relaxed text-ink-200">{d.description}</p>
+          <p className="prose-measure text-sm leading-relaxed text-pretty text-ink-200">{d.description}</p>
           {d.aliases && d.aliases.length > 0 && (
             <p className="mt-2 text-micro text-ink-400">
               Also known as: <span className="text-ink-300">{d.aliases.join(' · ')}</span>
@@ -303,7 +326,7 @@ export function TestDetailPanel({
         </Section>
 
         <Section title="Testing guidance" divided>
-          <ol className="prose-measure space-y-2.5 text-base leading-relaxed text-ink-100">
+          <ol className="prose-measure space-y-2.5 text-base leading-relaxed text-pretty text-ink-100">
             {d.testingGuidance.map((step, i) => (
               <li key={i} className="flex gap-2.5">
                 <span

@@ -327,7 +327,7 @@ const BADGE_TONES: Record<BadgeTone, string> = {
   na: 'bg-ink-850 text-ink-400',
   warn: 'bg-warn-500/12 text-warn-300',
   success: 'bg-safe-500/12 text-safe-400',
-};;
+};
 
 export function Badge({
   tone = 'neutral',
@@ -652,7 +652,10 @@ export function FieldGroup({
 }
 
 const CONTROL =
-  'w-full rounded-(--radius-control) border border-ink-600 bg-ink-950/60 px-3 py-2 text-sm ' +
+  // 16px below `md`: iOS Safari auto-zooms the page when a focused field's
+  // text is smaller than 16px, then never zooms back. Desktop keeps the
+  // dense 14px control size.
+  'w-full rounded-(--radius-control) border border-ink-600 bg-ink-950/60 px-3 py-2 text-base md:text-sm ' +
   'text-ink-100 placeholder:text-ink-500 transition-[border-color,box-shadow] duration-150 hover:border-ink-500 ' +
   // Form controls focus with the same halo language as the buttons (the
   // global :focus-visible outline is suppressed on them, so it cannot weaken

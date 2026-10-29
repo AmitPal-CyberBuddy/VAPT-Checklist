@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import {
   Badge,
@@ -28,9 +28,16 @@ export default function ContextPage() {
   const [diffs, setDiffs] = useState<ApplicabilityDiff[] | null>(null);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    if (engagement) setDraft(engagement.context);
-  }, [engagement?.id, engagement?.updatedAt]);
+  // The draft follows the stored engagement: reset when a different
+  // engagement loads or a save lands (updatedAt moves) — never mid-edit.
+  // Render-time adjustment, per React's "adjusting state when a prop
+  // changes" pattern; the engagement itself lives in IndexedDB, not state.
+  const [syncedFrom, setSyncedFrom] = useState<string | null>(null);
+  const syncKey = engagement ? `${engagement.id}::${engagement.updatedAt}` : null;
+  if (engagement && syncKey !== syncedFrom) {
+    setSyncedFrom(syncKey);
+    setDraft(engagement.context);
+  }
 
   const dirty = useMemo(
     () => engagement != null && JSON.stringify(draft) !== JSON.stringify(engagement.context),

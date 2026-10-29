@@ -33,9 +33,9 @@ function TriControl({
   onChange: (v: boolean | undefined) => void;
 }) {
   const options: { key: Tri; label: string; active: string; next: boolean | undefined }[] = [
-    { key: 'yes', label: 'Yes', active: 'bg-safe-500 text-ink-950 border-safe-400', next: true },
+    { key: 'yes', label: 'Yes', active: 'bg-safe-500 text-on-fill border-safe-400', next: true },
     { key: 'no', label: 'No', active: 'bg-ink-600 text-ink-50 border-ink-500', next: false },
-    { key: 'unknown', label: 'Unknown', active: 'bg-warn-500 text-ink-950 border-warn-400', next: undefined },
+    { key: 'unknown', label: 'Unknown', active: 'bg-warn-500 text-on-fill border-warn-400', next: undefined },
   ];
   return (
     <div
