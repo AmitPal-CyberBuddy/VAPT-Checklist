@@ -14,6 +14,7 @@
  * must exist on disk. If Pages is later reconfigured to "Deploy from a branch",
  * this fails loudly in CI instead of shipping a blank site.
  */
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
@@ -59,6 +60,31 @@ if (!existsSync(indexPath)) {
     problems.push(
       'dist/index.html has no hashed ./assets/*.css stylesheet.',
     );
+  }
+
+  // The production Content-Security-Policy must be present, self-only, and
+  // actually pin the inline scripts in the document (vite.config.ts computes
+  // the hashes at build time; this proves they match what ships).
+  const csp = html.match(/http-equiv="Content-Security-Policy" content="([^"]*)"/)?.[1];
+  if (!csp) {
+    problems.push('dist/index.html has no Content-Security-Policy meta — the build-time CSP plugin did not run.');
+  } else {
+    const scriptSrc = csp.split(';').find((d) => d.trim().startsWith('script-src')) ?? '';
+    if (!csp.includes("default-src 'self'") || !csp.includes("object-src 'none'")) {
+      problems.push(`CSP is weaker than intended (needs default-src 'self' and object-src 'none'): ${csp}`);
+    }
+    if (scriptSrc.includes("'unsafe-inline'") || /https?:/.test(scriptSrc)) {
+      problems.push(`CSP script-src must not allow inline or remote scripts: ${scriptSrc.trim()}`);
+    }
+    for (const m of html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)) {
+      const hash = `'sha256-${createHash('sha256').update(m[1]).digest('base64')}'`;
+      if (!scriptSrc.includes(hash)) {
+        problems.push(`An inline script in dist/index.html is not hash-pinned by the CSP (${hash}) — it would be blocked in production.`);
+      }
+    }
+    if (html.indexOf('Content-Security-Policy') > html.indexOf('<script')) {
+      problems.push('The CSP meta appears after the first <script> — a meta policy only governs what follows it.');
+    }
   }
 
   // Every referenced asset must actually exist on disk, so GitHub Pages can't

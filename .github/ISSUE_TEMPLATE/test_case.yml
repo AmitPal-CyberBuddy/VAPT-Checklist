@@ -1,0 +1,37 @@
+name: Suggest a test case
+description: A vulnerability check the library is missing, or guidance that should be better.
+title: "library: "
+labels: [library]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Canonical names, not duplicates: **search the in-app Library first** — your
+        test may already exist under its canonical name (e.g. IDOR and BOLA are one
+        test, `AUTHZ-002`, reachable from either term). If it exists but your
+        search term missed, suggest an alias below instead.
+  - type: input
+    id: name
+    attributes:
+      label: Vulnerability name
+      description: The name a report would use, e.g. "Server-Side Template Injection".
+    validations:
+      required: true
+  - type: textarea
+    id: detail
+    attributes:
+      label: What should be tested, and how?
+      description: A one-paragraph description plus the concrete steps a tester performs. If you're suggesting an alias or a guidance fix for an existing test, say which test ID.
+    validations:
+      required: true
+  - type: textarea
+    id: applicability
+    attributes:
+      label: When does it apply?
+      description: Which targets/context facts pull it into scope (e.g. "only when the app parses XML", "GraphQL APIs only") — this becomes the applicability rule. "Always" is a valid answer for baseline checks.
+  - type: input
+    id: mapping
+    attributes:
+      label: Standards mapping (if known)
+      description: CWE and/or OWASP references (WSTG, ASVS, Top 10, MASVS…).
+      placeholder: "CWE-1336 · WSTG-INPV-18"

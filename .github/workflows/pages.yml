@@ -28,15 +28,21 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      # What ships to testers' browsers must be free of known vulnerabilities.
+      - name: Dependency audit (production)
+        run: npm audit --omit=dev --audit-level=high
       - name: Typecheck
-        run: npx tsc --noEmit
+        run: npm run typecheck
+      - name: Lint
+        run: npm run lint
       # The design-system contract IS the accessibility gate: it fails the build
       # on retired vocabulary, colour-only status, missed control labels, missing
       # progress-bar names, and non-button lookalikes. Fast (~ms) but authoritative.
@@ -46,6 +52,10 @@ jobs:
         run: npm run build
       - name: Verify built bundle (never a blank page)
         run: node .github/check-built-bundle.mjs
+      # Full suite runs after the build so the production audit tests inspect
+      # the real dist/ artefact instead of skipping. Nothing publishes red.
+      - name: Full test suite
+        run: npm test
       - uses: actions/configure-pages@v5
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
@@ -60,4 +70,4 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5

@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="keyline" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#38bdf8"/>
+      <stop offset="1" stop-color="#34d399"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="630" fill="#05070f"/>
+  <rect width="1200" height="6" fill="url(#keyline)"/>
+
+  <!-- Instrument hairlines -->
+  <g stroke="#8da2c0" stroke-opacity="0.08">
+    <line x1="200" y1="0" x2="200" y2="630"/>
+    <line x1="400" y1="0" x2="400" y2="630"/>
+    <line x1="600" y1="0" x2="600" y2="630"/>
+    <line x1="800" y1="0" x2="800" y2="630"/>
+    <line x1="1000" y1="0" x2="1000" y2="630"/>
+    <line x1="0" y1="512" x2="1200" y2="512"/>
+  </g>
+
+  <!-- Brand mark (public/favicon.svg, scaled) -->
+  <g transform="translate(96 168) scale(6.5)">
+    <rect width="32" height="32" rx="7" fill="#070b14" stroke="#22334f" stroke-width="0.35"/>
+    <path d="M16 5l8 3.4v6.9c0 5.2-3.4 8.7-8 10.2-4.6-1.5-8-5-8-10.2V8.4L16 5z" fill="none" stroke="#38bdf8" stroke-width="1.6" stroke-linejoin="round"/>
+    <path d="M12 16.2l2.6 2.6L20 12.9" fill="none" stroke="#34d399" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <text x="372" y="268" font-family="Inter" font-weight="700" font-size="86" letter-spacing="-1.5" fill="#e6edf7">VAPT Checklist</text>
+  <text x="376" y="326" font-family="Inter" font-weight="400" font-size="33" fill="#9db1cc">Penetration Testing Methodology Tracker</text>
+
+  <rect x="378" y="356" width="64" height="3" fill="#38bdf8"/>
+
+  <text x="378" y="408" font-family="JetBrains Mono" font-weight="600" font-size="20" letter-spacing="3" fill="#7dd3fc">OWASP-ALIGNED · LOCAL-FIRST · NO ACCOUNT</text>
+
+  <text x="96" y="564" font-family="JetBrains Mono" font-weight="400" font-size="18" letter-spacing="1" fill="#64748f">AMITPAL-CYBERBUDDY.GITHUB.IO/VAPT-CHECKLIST</text>
+  <text x="1104" y="564" text-anchor="end" font-family="JetBrains Mono" font-weight="400" font-size="18" letter-spacing="1" fill="#64748f">WEB · API · GRAPHQL · MOBILE · CLOUD</text>
+</svg>
