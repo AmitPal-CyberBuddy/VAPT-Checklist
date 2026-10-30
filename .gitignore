@@ -14,3 +14,5 @@ npm-debug.log*
 !.env.example
 tsconfig.tsbuildinfo
 *.tsbuildinfo
+# Derived on demand by scripts/generate-social-images.mjs --fonts-only
+scripts/fonts/

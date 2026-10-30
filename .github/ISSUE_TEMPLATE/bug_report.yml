@@ -1,0 +1,35 @@
+name: Bug report
+description: Something renders, counts, persists or exports wrongly.
+title: "bug: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Your data stays yours:** everything is stored in your browser's IndexedDB.
+        Before trying anything drastic (clearing site data deletes engagements),
+        take a backup from Data & Settings → Export all engagements.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, what the app did instead. Counts that disagree with each other (screen vs dashboard vs Excel) are especially valuable — note all three numbers.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Create an engagement (Web Application)…
+        2. …
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: Browser and where you run it
+      description: e.g. "Firefox 144, hosted GitHub Pages site" or "Chrome 140, local `npm run dev`". The library version shown in Data & Settings helps too.
+      placeholder: "Firefox 144 · GitHub Pages · library 1.4.0"
+    validations:
+      required: true

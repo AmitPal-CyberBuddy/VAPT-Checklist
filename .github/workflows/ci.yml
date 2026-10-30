@@ -1,0 +1,46 @@
+name: CI
+
+# Verifies every pull request and every non-main push. Pushes to main are
+# verified by the Pages workflow (which runs the same gates before it may
+# publish), so they are not run twice here.
+
+on:
+  pull_request:
+  push:
+    branches-ignore: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      # A security tool does not ship (or develop on) known-vulnerable deps.
+      - name: Dependency audit
+        run: npm audit --audit-level=high
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Lint
+        run: npm run lint
+      # Build before the tests: the production audit suite inspects the real
+      # dist/ artefact (and skips silently when it is absent), so the bundle
+      # must exist before `npm test` for CI to actually cover deployment.
+      - name: Build static bundle
+        run: npm run build
+      - name: Verify built bundle (never a blank page)
+        run: node .github/check-built-bundle.mjs
+      - name: Full test suite
+        run: npm test

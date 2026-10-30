@@ -68,7 +68,8 @@ describe('command palette', () => {
     });
 
     render(<App />);
-    await screen.findByText('Palette Target');
+    // Loaded once the name renders anywhere (list and/or rail switcher).
+    expect((await screen.findAllByText('Palette Target')).length).toBeGreaterThan(0);
 
     const dialog = await openPalette();
     const input = within(dialog).getByLabelText(/Search commands, engagements and tests/);

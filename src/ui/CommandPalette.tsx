@@ -136,7 +136,9 @@ export function CommandPalette({
   const inputRef = useRef<HTMLInputElement>(null);
   const itemRefs = useRef<(HTMLAnchorElement | null)[]>([]);
   const openRef = useRef(open);
-  openRef.current = open;
+  useEffect(() => {
+    openRef.current = open;
+  }, [open]);
 
   const q = query.trim().toLowerCase();
 
@@ -172,9 +174,8 @@ export function CommandPalette({
   }, [q, engagements]);
 
   // Keep the highlight inside the result set as it shrinks.
-  useEffect(() => {
-    setActive((current) => Math.min(current, Math.max(0, results.length - 1)));
-  }, [results.length]);
+  const maxActive = Math.max(0, results.length - 1);
+  if (active > maxActive) setActive(maxActive);
 
   const close = useCallback(() => onOpenChange(false), [onOpenChange]);
 
@@ -199,11 +200,19 @@ export function CommandPalette({
     return () => window.removeEventListener('keydown', onKey);
   }, [onOpenChange]);
 
+  /* Each opening starts from a clean query and the first result. */
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open) {
+      setQuery('');
+      setActive(0);
+    }
+  }
+
   /* While open: Escape closes, and the field takes focus on arrival. */
   useEffect(() => {
     if (!open) return;
-    setQuery('');
-    setActive(0);
     inputRef.current?.focus();
     function onKey(event: KeyboardEvent) {
       if (event.key === 'Escape') {
@@ -333,7 +342,7 @@ export function CommandPalette({
                       aria-hidden="true"
                       className={clsx(
                         'shrink-0 transition-colors',
-                        index === active ? 'text-brand-400' : 'text-ink-600',
+                        index === active ? 'text-brand-400' : 'text-ink-500',
                       )}
                     />
                   </a>

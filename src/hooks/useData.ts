@@ -51,31 +51,60 @@ export function useMetrics(items: ChecklistItem[] | undefined) {
   return useMemo(() => computeMetrics(items ?? []), [items]);
 }
 
+export interface EngagementSummary {
+  engagement: Engagement;
+  applicable: number;
+  resolved: number;
+  vulnerable: number;
+  completion: number;
+}
+
+async function loadEngagementSummaries(): Promise<EngagementSummary[]> {
+  const engagements = await listEngagements();
+  const summaries = await Promise.all(
+    engagements.map(async (engagement) => {
+      const states = await db.testStates.where('engagementId').equals(engagement.id).toArray();
+      let applicable = 0;
+      let resolved = 0;
+      let vulnerable = 0;
+      for (const s of states) {
+        if (!s.applicable) continue;
+        applicable += 1;
+        // Completed = Tested + N/A (same rule as domain/metrics.ts).
+        if (s.status === 'N/A' || s.status === 'Tested') resolved += 1;
+        if (s.status === 'Tested' && s.result === 'Vulnerable') vulnerable += 1;
+      }
+      return {
+        engagement,
+        applicable,
+        resolved,
+        vulnerable,
+        completion: applicable === 0 ? 0 : resolved / applicable,
+      };
+    }),
+  );
+  return summaries;
+}
+
 export function useEngagementSummaries() {
-  return useLiveQuery(async () => {
-    const engagements = await listEngagements();
-    const summaries = await Promise.all(
-      engagements.map(async (engagement) => {
-        const states = await db.testStates.where('engagementId').equals(engagement.id).toArray();
-        let applicable = 0;
-        let resolved = 0;
-        let vulnerable = 0;
-        for (const s of states) {
-          if (!s.applicable) continue;
-          applicable += 1;
-          // Completed = Tested + N/A (same rule as domain/metrics.ts).
-          if (s.status === 'N/A' || s.status === 'Tested') resolved += 1;
-          if (s.status === 'Tested' && s.result === 'Vulnerable') vulnerable += 1;
-        }
-        return {
-          engagement,
-          applicable,
-          resolved,
-          vulnerable,
-          completion: applicable === 0 ? 0 : resolved / applicable,
-        };
-      }),
-    );
-    return summaries;
-  }, []);
+  return useLiveQuery(loadEngagementSummaries, []);
+}
+
+/**
+ * Summaries for the shell's rail switcher. Like useEngagementDirectory this
+ * never throws: the shell renders on every route, including origins where
+ * IndexedDB cannot open, and an absent switcher beats a dead app.
+ */
+export function useEngagementSummariesSafe(): EngagementSummary[] {
+  return useLiveQuery(
+    async () => {
+      try {
+        return await loadEngagementSummaries();
+      } catch {
+        return [];
+      }
+    },
+    [],
+    [],
+  );
 }

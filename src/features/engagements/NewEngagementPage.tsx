@@ -158,9 +158,9 @@ export default function NewEngagementPage() {
                     className={clsx(
                       'flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold transition-all duration-150',
                       done
-                        ? 'bg-safe-500 text-ink-950'
+                        ? 'bg-safe-500 text-on-fill'
                         : current
-                          ? 'glow-active bg-brand-500 text-ink-950'
+                          ? 'glow-active bg-brand-500 text-on-fill'
                           : 'border border-ink-600 bg-ink-850 text-ink-400',
                     )}
                     aria-hidden="true"
@@ -569,7 +569,7 @@ export default function NewEngagementPage() {
                         </td>
                         <td className="px-3 py-1.5 text-xs text-ink-500">
                           {suggestion.uncertain ? (
-                            <span className="text-warn-400">Context incomplete</span>
+                            <span className="text-warn-300">Context incomplete</span>
                           ) : (
                             suggestion.conditions
                               .filter((c) => c.outcome === 'met')

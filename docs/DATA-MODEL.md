@@ -169,7 +169,7 @@ Applicable because:
   ? Multi-tenant                            — Not recorded
 ```
 
-163 of the 184 tests are context-driven; 21 are baseline (`{ kind: 'always' }`).
+159 of the 177 tests are context-driven; 18 are baseline (`{ kind: 'always' }`).
 
 ## 5. Derived metrics
 

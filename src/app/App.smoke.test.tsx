@@ -79,8 +79,10 @@ describe('application shell', () => {
     });
 
     render(<App />);
-    expect(await screen.findByText('ACME Portal')).toBeTruthy();
-    expect(await screen.findByText('ACME Ltd')).toBeTruthy();
+    // Scoped to <main>: the rail's quick switcher also lists the name.
+    const main = within(screen.getByRole('main'));
+    expect(await main.findByText('ACME Portal')).toBeTruthy();
+    expect(await main.findByText('ACME Ltd')).toBeTruthy();
     // Canonical vocabulary — never "findings", "issues" or "failed".
     await waitFor(() => expect(screen.getByText('1 vulnerable')).toBeTruthy());
     expect(screen.getByRole('progressbar', { name: 'ACME Portal progress' })).toBeTruthy();

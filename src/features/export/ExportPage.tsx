@@ -266,7 +266,7 @@ export default function ExportPage() {
           )}
         </Card>
 
-        <Card className="space-y-3">
+        <Card className="scroll-reveal space-y-3">
           <SectionHeading
             title="Engagement JSON backup"
             description="A complete, re-importable copy of this engagement: context, applicability overrides, statuses, results and notes. Engagement data lives only in this browser — take a backup before clearing site data or moving machines."
@@ -282,7 +282,7 @@ export default function ExportPage() {
           />
         </Card>
 
-        <Card className="space-y-2 text-xs text-ink-400">
+        <Card className="scroll-reveal space-y-2 text-xs text-ink-400">
           <p className="text-sm font-medium text-ink-100">Export notes</p>
           <p>Produced locally with a bundled XLSX writer — no server, no network request.</p>
           <p>

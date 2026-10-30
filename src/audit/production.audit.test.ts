@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { safeExternalUrl, safeSpreadsheetText } from '../domain/untrusted';
@@ -101,10 +102,43 @@ describe.skipIf(!built)('§10 GitHub Pages deployment artefact', () => {
     expect(entry.text).not.toMatch(/xl\/workbook\.xml/);
   });
 
+  it('ships a Content-Security-Policy that allows nothing remote', () => {
+    const csp = html.match(/http-equiv="Content-Security-Policy" content="([^"]*)"/)?.[1];
+    expect(csp, 'dist/index.html carries no CSP meta').toBeTruthy();
+    expect(csp).toContain("default-src 'self'");
+    expect(csp).toContain("object-src 'none'");
+    expect(csp).toContain("connect-src 'self'");
+    // Scripts: same-origin bundles plus hash-pinned inline code only.
+    // 'unsafe-inline' here would let any injected string run as script.
+    const scriptSrc = csp!.split(';').find((d) => d.trim().startsWith('script-src')) ?? '';
+    expect(scriptSrc).not.toContain("'unsafe-inline'");
+    expect(scriptSrc).not.toMatch(/https?:/);
+    // Every inline script actually in the document must be hash-pinned,
+    // and the meta must precede the scripts it governs.
+    const inline = [...html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)];
+    expect(inline.length).toBeGreaterThan(0);
+    for (const m of inline) {
+      const hash = `'sha256-${createHash('sha256').update(m[1]).digest('base64')}'`;
+      expect(scriptSrc, `inline script not pinned: ${hash}`).toContain(hash);
+    }
+    expect(html.indexOf('Content-Security-Policy')).toBeLessThan(html.indexOf('<script'));
+  });
+
   it('keeps the entry payload within a sane budget', () => {
+    // The entry chunk alone…
     const entry = distFiles().find((f) => /index-.*\.js$/.test(f))!;
-    const kb = readFileSync(entry).byteLength / 1024;
-    expect(kb).toBeLessThan(900);
+    const entryKb = readFileSync(entry).byteLength / 1024;
+    expect(entryKb).toBeLessThan(500);
+    // …and everything the first paint must fetch (entry + modulepreloads).
+    // Route screens past the landing page are split chunks; if one quietly
+    // becomes eager again, this budget is what notices.
+    const eager = [...html.matchAll(/(?:src|href)="\.\/assets\/([^"]+\.js)"/g)].map((m) => m[1]);
+    expect(eager.length).toBeGreaterThan(0);
+    const eagerKb = eager.reduce(
+      (sum, name) => sum + readFileSync(join(DIST, 'assets', name)).byteLength / 1024,
+      0,
+    );
+    expect(eagerKb).toBeLessThan(700);
   });
 });
 

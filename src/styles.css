@@ -48,6 +48,12 @@
   --color-ink-200: #ccd6e2;
   --color-ink-100: #e3e9f1;
   --color-ink-50: #f4f7fb;
+  /* Text that sits ON a saturated fill (answer chips, step pills, count
+     chips). Deliberately NOT redefined by the light theme: the ink scale
+     inverts there, so an ink-* token would turn near-white on paper and
+     collapse to ~3:1 on the fill. Constant near-black clears 5.3:1+ on
+     brand/safe/warn fills in both themes (see contrast.test.ts). */
+  --color-on-fill: #05070f;
 
   /* Luminous cyan — the security accent, now with a lighter gradient step. */
   --color-brand-300: #7dd3fc;
@@ -149,7 +155,7 @@
 
   /* Semantic text steps shift darker so small labels clear WCAG AA on paper. */
   --color-brand-300: #67e8f9;
-  --color-brand-400: #0e7490;
+  --color-brand-400: #0d6882;
   --color-brand-500: #0891b2;
   --color-brand-600: #155e75;
 
@@ -158,16 +164,16 @@
   --color-accent-500: #7c3aed;
   --color-accent-600: #6d28d9;
 
-  --color-vuln-400: #be123c;
+  --color-vuln-400: #b11138;
   --color-vuln-500: #e11d48;
-  --color-safe-400: #047857;
+  --color-safe-400: #046d4f;
   --color-safe-500: #059669;
 
   --color-high-300: #9a3412;
   --color-high-400: #c2410c;
   --color-high-500: #c2410c;
 
-  --color-medium-200: #a16207;
+  --color-medium-200: #875206;
   --color-medium-300: #b45309;
   --color-medium-400: #b45309;
 
@@ -227,16 +233,23 @@
     background-attachment: fixed;
   }
 
-  /* Light canvas — warm paper with the same two lights, retuned. */
+  /* Light canvas — warm paper with the same two lights, retuned, and
+     the same 28px technical grid as the dark canvas (a hairline ink
+     rule instead of a hairline light one) so the surface texture
+     matches across themes. */
   [data-theme='light'] body {
     background-image:
       radial-gradient(900px 460px at 14% -8%, rgb(8 145 178 / 0.06), transparent 55%),
       radial-gradient(760px 420px at 90% 6%, rgb(124 58 237 / 0.045), transparent 55%),
-      radial-gradient(680px 360px at 86% 110%, rgb(217 119 6 / 0.04), transparent 55%);
+      radial-gradient(680px 360px at 86% 110%, rgb(217 119 6 / 0.04), transparent 55%),
+      linear-gradient(rgb(15 23 42 / 0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(15 23 42 / 0.035) 1px, transparent 1px);
     background-size:
       100% 100%,
       100% 100%,
-      100% 100%;
+      100% 100%,
+      28px 28px,
+      28px 28px;
     background-attachment: fixed;
   }
 
@@ -306,6 +319,49 @@
 
   code {
     font-family: var(--font-mono);
+  }
+
+  /* Scrollbars, autofill, tap feedback — the browser chrome inside the
+     page. Themed from the same tokens so both themes stay in the
+     instrument language instead of defaulting to OS styling. (Text
+     selection is themed with the canvas, above.) */
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-ink-600) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background-color: var(--color-ink-600);
+    border: 3px solid transparent;
+    background-clip: padding-box;
+    border-radius: 8px;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: var(--color-ink-500);
+  }
+  *::-webkit-scrollbar-track,
+  *::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  /* Autofill otherwise paints fields with the browser's pale yellow
+     block and near-black text. The inset shadow repaints the field in
+     theme colours while the autofilled value stays fully usable. */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus {
+    -webkit-text-fill-color: var(--color-ink-100);
+    caret-color: var(--color-ink-100);
+    box-shadow: inset 0 0 0 1000px var(--color-ink-950);
+    transition: background-color 9999s ease-in-out 0s;
+  }
+
+  html {
+    -webkit-tap-highlight-color: rgb(14 165 233 / 0.15);
   }
 }
 
@@ -661,14 +717,13 @@
 
   /* Danger — a red gradient with its own halo; the only red surface. */
   .btn-danger {
-    background-color: var(--color-vuln-500);
-    background-image: linear-gradient(
-      135deg,
-      rgb(253 164 175 / 0.9) 0%,
-      var(--color-vuln-500) 45%,
-      rgb(190 18 60 / 0.95) 100%
-    );
-    border: 1px solid rgb(253 164 175 / 0.4);
+    /* Hex stops, constant across themes: white text must clear 4.5:1 at
+       EVERY point of the gradient (and after the hover brightening), so
+       the brightest stop is capped at #d80f43 (5.2:1). The previous pale
+       top-left stop measured 1.9:1 under the label. */
+    background-color: #be123c;
+    background-image: linear-gradient(135deg, #d80f43 0%, #be123c 48%, #9f1239 100%);
+    border: 1px solid rgb(251 113 133 / 0.45);
     box-shadow:
       inset 0 1px 0 rgb(255 255 255 / 0.32),
       inset 0 -1px 0 rgb(3 6 12 / 0.2),
@@ -784,10 +839,12 @@
     color: var(--color-brand-600);
   }
   [data-theme='light'] .text-seg-vuln {
-    color: var(--color-vuln-500);
+    /* The 400 steps, like badge text: the 500s measure 3.1–3.7:1 on the
+       tinted glass in light mode. Guarded by contrast.test.ts. */
+    color: var(--color-vuln-400);
   }
   [data-theme='light'] .text-seg-safe {
-    color: var(--color-safe-500);
+    color: var(--color-safe-400);
   }
   [data-theme='light'] .text-seg-neutral {
     color: var(--color-ink-100);
@@ -1636,12 +1693,109 @@
   }
 }
 
+/**
+ * Print — a readable paper rendering from either theme.
+ *
+ * The Excel export is the deliverable; printing is for the meeting-room
+ * handout. The strategy: swap in the light token set (kept in sync with
+ * [data-theme='light'] above), strip glass/shadows/glows so nothing
+ * depends on surface effects, undo the fixed rail and the panes'
+ * internal scrolling (paper has no scrollbars — a clipped checklist is
+ * worse than a long one), and hide interaction chrome. Badges keep their
+ * glyph + label, which is what makes this legible in greyscale.
+ */
 @media print {
+  :root {
+    --color-ink-950: #ffffff;
+    --color-ink-900: #ffffff;
+    --color-ink-850: #eeebe4;
+    --color-ink-800: #e6e2d9;
+    --color-ink-750: #ded9ce;
+    --color-ink-700: #b9b2a4;
+    --color-ink-600: #8f897d;
+    --color-ink-500: #6f6a61;
+    --color-ink-400: #5a554d;
+    --color-ink-300: #4a453e;
+    --color-ink-200: #3a352f;
+    --color-ink-100: #2a2620;
+    --color-ink-50: #191612;
+    --color-brand-300: #67e8f9;
+    --color-brand-400: #0d6882;
+    --color-brand-500: #0891b2;
+    --color-brand-600: #155e75;
+    --color-vuln-400: #b11138;
+    --color-vuln-500: #e11d48;
+    --color-safe-400: #046d4f;
+    --color-safe-500: #059669;
+    --color-high-300: #9a3412;
+    --color-high-400: #c2410c;
+    --color-high-500: #c2410c;
+    --color-medium-200: #875206;
+    --color-medium-300: #b45309;
+    --color-medium-400: #b45309;
+    --color-warn-300: #92400e;
+    --color-warn-400: #b45309;
+    --color-warn-500: #d97706;
+  }
+
   body {
     background: #fff;
-    color: #000;
+    background-image: none;
   }
-  .no-print {
+
+  /* No glass, glow or shadow on paper; borders carry the structure. */
+  *,
+  *::before,
+  *::after {
+    box-shadow: none !important;
+    text-shadow: none !important;
+    backdrop-filter: none !important;
+  }
+  .panel,
+  .panel-inset,
+  .panel-accent,
+  .command-bar {
+    background: #fff !important;
+    background-image: none !important;
+  }
+
+  /* Undo the app frame: no rail offset, no pinned or scrolling panes. */
+  .app-main-column {
+    padding-left: 0 !important;
+  }
+  main {
+    max-width: none !important;
+    padding: 0 !important;
+  }
+  [class*='overflow-'] {
+    overflow: visible !important;
+    max-height: none !important;
+  }
+  [class*='sticky'],
+  [class*='fixed'] {
+    position: static !important;
+  }
+
+  /* Interaction chrome: header/footer/toasts (no-print), the workspace
+     filter bar and bulk bar (no-print), and the decision tray. The
+     segmented status/result controls stay — on paper they are the
+     recorded result, not chrome. */
+  .no-print,
+  .cmd-tray {
     display: none !important;
+  }
+  button {
+    border-color: var(--color-ink-600);
+  }
+
+  .panel,
+  li,
+  tr {
+    break-inside: avoid;
+  }
+  p,
+  li {
+    orphans: 2;
+    widows: 2;
   }
 }
